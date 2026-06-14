@@ -186,14 +186,46 @@
 
   function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return clone(seedData);
+    if (!raw) return applyCustomerImports(clone(seedData));
     try {
       const parsed = JSON.parse(raw);
-      return Object.assign(clone(seedData), parsed);
+      return applyCustomerImports(Object.assign(clone(seedData), parsed));
     } catch (error) {
       console.warn("Could not parse local ERP data", error);
-      return clone(seedData);
+      return applyCustomerImports(clone(seedData));
     }
+  }
+
+  function normalizeName(name) {
+    return String(name || "").trim().toLowerCase();
+  }
+
+  function applyCustomerImports(data) {
+    const imports = window.OSM_CUSTOMER_IMPORTS || [];
+    if (!imports.length) return data;
+
+    data.customers = data.customers || [];
+    data.meta = data.meta || {};
+    data.meta.appliedImports = data.meta.appliedImports || [];
+
+    let changed = false;
+    imports.forEach((batch) => {
+      if (!batch.id || data.meta.appliedImports.includes(batch.id)) return;
+
+      const existingNames = new Set(data.customers.map((customer) => normalizeName(customer.name)));
+      (batch.customers || []).forEach((customer) => {
+        if (!customer.name || existingNames.has(normalizeName(customer.name))) return;
+        data.customers.push(Object.assign({}, customer));
+        existingNames.add(normalizeName(customer.name));
+        changed = true;
+      });
+
+      data.meta.appliedImports.push(batch.id);
+      changed = true;
+    });
+
+    if (changed) save(data);
+    return data;
   }
 
   function save(data) {
@@ -202,7 +234,7 @@
 
   function reset() {
     localStorage.removeItem(STORAGE_KEY);
-    return clone(seedData);
+    return applyCustomerImports(clone(seedData));
   }
 
   function uid(prefix) {
