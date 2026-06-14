@@ -1,0 +1,53 @@
+(function () {
+  const statusOptions = [
+    { value: "entwurf", label: "Entwurf" },
+    { value: "gesendet", label: "Gesendet" },
+    { value: "gewonnen", label: "Gewonnen" },
+    { value: "verloren", label: "Verloren" }
+  ];
+  const priceOptions = [
+    { value: "offen", label: "Offen" },
+    { value: "geschaetzt", label: "Geschaetzt" },
+    { value: "final", label: "Final" }
+  ];
+  const riskOptions = [
+    { value: "niedrig", label: "Niedrig" },
+    { value: "mittel", label: "Mittel" },
+    { value: "hoch", label: "Hoch" }
+  ];
+  const decisionOptions = [
+    { value: "anbieten", label: "Anbieten" },
+    { value: "pruefen", label: "Pruefen" },
+    { value: "ablehnen", label: "Ablehnen" }
+  ];
+
+  window.OSM.registerModule({
+    id: "quotes",
+    group: "Sales / RFQ",
+    icon: "A",
+    title: "Angebote",
+    description: "Angebote als Ergebnis der RFQ- und Kapazitaetspruefung.",
+    collection: "quotes",
+    prefix: "quo",
+    fields: [
+      { key: "rfqId", label: "RFQ", type: "select", options: (data, h) => h.options("rfqs", "partName"), required: true },
+      { key: "quoteNo", label: "Angebotsnummer", required: true },
+      { key: "status", label: "Status", type: "select", options: statusOptions, default: "entwurf" },
+      { key: "validUntil", label: "Gueltig bis", type: "date" },
+      { key: "leadTime", label: "Lieferzeit" },
+      { key: "priceStatus", label: "Preisstatus", type: "select", options: priceOptions, default: "offen" },
+      { key: "risk", label: "Risiko", type: "select", options: riskOptions, default: "mittel" },
+      { key: "decision", label: "Entscheidung", type: "select", options: decisionOptions, default: "pruefen" },
+      { key: "notes", label: "Notizen", type: "textarea", wide: true }
+    ],
+    columns: [
+      { key: "quoteNo", label: "Angebot" },
+      { key: "rfqId", label: "RFQ", render: (row, data, h) => h.escapeHtml(h.label("rfqs", row.rfqId, "partName")) },
+      { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
+      { key: "leadTime", label: "Lieferzeit" },
+      { key: "risk", label: "Risiko", render: (row, data, h) => h.badge(row.risk, h.toneForStatus(row.risk)) },
+      { key: "decision", label: "Entscheidung", render: (row, data, h) => h.badge(row.decision, h.toneForStatus(row.decision)) },
+      { key: "validUntil", label: "Gueltig bis" }
+    ]
+  });
+})();
