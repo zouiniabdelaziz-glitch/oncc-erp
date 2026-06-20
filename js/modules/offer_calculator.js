@@ -68,6 +68,8 @@
   };
 
   const defaults = {
+    sourceRfqId: "",
+    partName: "",
     customerId: "",
     partType: "Buchse",
     materialGroup: "Aluminium",
@@ -145,6 +147,65 @@
     if (partType === "Dreh-Fraesteil") return "Hyundai WIA HD2200SY";
     if (l210Parts.includes(partType)) return "Hyundai WIA L210LMA / HD2200SY pruefen";
     return "Technische Pruefung";
+  }
+
+  function mapRfqPartType(rfq) {
+    const partType = String(rfq.partType || "").toLowerCase();
+    const name = String(rfq.partName || "").toLowerCase();
+    if (partType.includes("dreh-fraes")) return "Dreh-Fraesteil";
+    if (name.includes("welle")) return "Welle";
+    if (name.includes("buchse")) return "Buchse";
+    if (name.includes("huelse") || name.includes("hulse")) return "Huelse";
+    if (name.includes("bolzen")) return "Bolzen";
+    if (name.includes("distanz")) return "Distanzstueck";
+    if (name.includes("gewinde")) return "Gewindeteil";
+    if (partType.includes("fraes")) return "Sonstiges";
+    return "Buchse";
+  }
+
+  function mapRfqMaterial(data, rfq) {
+    const material = window.OSM.state.findById(data, "materials", rfq.materialGroupId);
+    const name = String(material ? material.name : "").toLowerCase();
+    if (name.includes("aluminium")) return "Aluminium";
+    if (name.includes("stahl")) return "Zerspanbarer Stahl";
+    if (name.includes("kunststoff")) return "Technische Kunststoffe";
+    return "Aluminium";
+  }
+
+  function mapShippingDestination(data, customerId) {
+    const customer = window.OSM.state.findById(data, "customers", customerId);
+    const country = String(customer ? customer.country : "").toUpperCase();
+    if (country === "AT") return "Oesterreich";
+    if (country === "DE") return "Deutschland";
+    if (country === "CH") return "Schweiz";
+    return "Sonstiges";
+  }
+
+  function openFromRfq(rfqId) {
+    const data = window.OSM.data;
+    const rfq = window.OSM.state.findById(data, "rfqs", rfqId);
+    if (!rfq) {
+      alert("RFQ nicht gefunden.");
+      return;
+    }
+
+    const draft = Object.assign({}, loadDraft(), {
+      sourceRfqId: rfq.id,
+      partName: rfq.partName || "",
+      customerId: rfq.customerId || "",
+      partType: mapRfqPartType(rfq),
+      materialGroup: mapRfqMaterial(data, rfq),
+      quantity: Number(rfq.quantity || defaults.quantity),
+      targetDate: rfq.dueDate || "",
+      shippingDestination: mapShippingDestination(data, rfq.customerId)
+    });
+
+    saveDraft(draft);
+    if (location.hash === "#offer-calculator" && window.OSM.render) {
+      window.OSM.render();
+    } else {
+      location.hash = "#offer-calculator";
+    }
   }
 
   function selectedFreeHours(input, machineName) {
@@ -248,6 +309,89 @@
       offerPrice,
       unitPrice
     };
+  }
+
+  function quoteRisk(risk) {
+    if (risk === "NIEDRIG") return "niedrig";
+    if (risk === "MITTEL") return "mittel";
+    return "hoch";
+  }
+
+  function quoteDecision(decision) {
+    if (decision === "ANBIETEN") return "anbieten";
+    if (decision.includes("ABLEHNEN")) return "ablehnen";
+    return "pruefen";
+  }
+
+  function nextQuoteNo(data) {
+    const year = new Date().getFullYear();
+    const prefix = `ANG-${year}-`;
+    const max = (data.quotes || []).reduce((highest, quote) => {
+      const value = String(quote.quoteNo || "");
+      if (!value.startsWith(prefix)) return highest;
+      const numberPart = Number(value.slice(prefix.length));
+      return Number.isFinite(numberPart) ? Math.max(highest, numberPart) : highest;
+    }, 0);
+    return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  }
+
+  function isoDatePlus(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function saveQuoteFromCurrent() {
+    const input = readDraftFromDom();
+    if (!input.sourceRfqId) {
+      alert("Bitte zuerst eine RFQ ueber den Button 'Rechnen' aus dem RFQ-Modul uebernehmen.");
+      return;
+    }
+
+    const data = window.OSM.data;
+    const rfq = window.OSM.state.findById(data, "rfqs", input.sourceRfqId);
+    if (!rfq) {
+      alert("Die verbundene RFQ wurde nicht gefunden.");
+      return;
+    }
+
+    saveDraft(input);
+    const result = calculate(input);
+    const existingDraft = (data.quotes || []).find((quote) => quote.rfqId === input.sourceRfqId && quote.status === "entwurf");
+    const quote = Object.assign({}, existingDraft || {}, {
+      id: existingDraft ? existingDraft.id : window.OSM.state.uid("quo"),
+      rfqId: input.sourceRfqId,
+      quoteNo: existingDraft ? existingDraft.quoteNo : nextQuoteNo(data),
+      status: "entwurf",
+      validUntil: existingDraft && existingDraft.validUntil ? existingDraft.validUntil : isoDatePlus(14),
+      leadTime: `${qty(result.recommendedDays)} Werktage Fertigung + ${result.shipping.quote} Transport`,
+      priceStatus: "geschaetzt",
+      offerPrice: Number(result.offerPrice.toFixed(2)),
+      unitPrice: Number(result.unitPrice.toFixed(2)),
+      machineName: result.machineName,
+      risk: quoteRisk(result.risk),
+      decision: quoteDecision(result.decision),
+      notes: [
+        `Teil: ${rfq.partName || input.partName || "-"}`,
+        `Materialstatus: ${result.material.status}`,
+        `Toleranz-Hinweis: ${result.material.tolerance}`,
+        `Partner pruefen: ${result.partnerNeeded ? "ja" : "nein"}`,
+        `Maschinenmiete pruefen: ${result.machineRentNeeded ? "ja" : "nein"}`,
+        `Kalender: ${result.calendarChoice.label}`,
+        `Begruendung: ${result.reasons.join(" ")}`
+      ].join("\\n")
+    });
+
+    rfq.status = "angebot erstellt";
+    window.OSM.state.upsert(data, "quotes", quote);
+    window.OSM.state.upsert(data, "rfqs", rfq);
+    alert(`Angebot ${quote.quoteNo} wurde gespeichert.`);
+
+    if (location.hash === "#quotes" && window.OSM.render) {
+      window.OSM.render();
+    } else {
+      location.hash = "#quotes";
+    }
   }
 
   function readDraftFromDom() {
@@ -364,12 +508,15 @@
   const calculator = {
     update,
     calculate,
+    openFromRfq,
+    saveQuoteFromCurrent,
     render(data) {
       const draft = loadDraft();
       if (!draft.customerId && data.customers && data.customers.length) {
         draft.customerId = data.customers[0].id;
       }
       const result = calculate(draft);
+      const sourceRfq = draft.sourceRfqId ? window.OSM.state.findById(data, "rfqs", draft.sourceRfqId) : null;
 
       const customerOptions = (data.customers || []).map((customer) => ({
         value: customer.id,
@@ -388,11 +535,19 @@
             <h1 class="topbar__title">Angebotsrechner</h1>
             <p class="topbar__text">RFQ-Vorpruefung mit Maschine, Kapazitaet, Kalender, Kalkulation und Entscheidung.</p>
           </div>
+          <div class="page-actions">
+            <button class="button" onclick="window.OSM_CALCULATOR.saveQuoteFromCurrent()">Als Angebot speichern</button>
+            <a class="button button--quiet" href="#rfqs">RFQs</a>
+          </div>
         </div>
 
         <div class="notice">
-          Diese Logik basiert auf deiner Excel-Strategie. Sie ist eine schnelle Vorpruefung und ersetzt keine technische Zeichnungspruefung.
+          Diese Logik basiert auf deiner Excel-Strategie. Aktive RFQ:
+          <strong>${sourceRfq ? escapeHtml(sourceRfq.partName) : "keine RFQ uebernommen"}</strong>.
+          Sie ersetzt keine technische Zeichnungspruefung.
         </div>
+        <input class="hidden" data-calc-input="sourceRfqId" value="${escapeHtml(draft.sourceRfqId)}" />
+        <input class="hidden" data-calc-input="partName" value="${escapeHtml(draft.partName)}" />
 
         <section class="calculator-layout">
           <div class="panel panel--pad">

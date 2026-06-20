@@ -370,6 +370,10 @@ tr:last-child td {
   margin-top: 12px;
 }
 
+.decision-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .decision-cell {
   background: var(--panel-soft);
   border-radius: 8px;
@@ -384,6 +388,31 @@ tr:last-child td {
 .decision-cell__value {
   font-weight: 740;
   margin-top: 4px;
+}
+
+.calculator-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(360px, 0.85fr) minmax(420px, 1.15fr);
+}
+
+.calculator-layout--bottom {
+  margin-top: 14px;
+}
+
+.calculator-note {
+  margin: 13px 0 0;
+}
+
+.calculator-table {
+  margin-top: 13px;
+}
+
+.result-strip {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
 }
 
 .modal-backdrop {
@@ -495,7 +524,9 @@ textarea {
 
   .grid--stats,
   .grid--two,
-  .decision-grid {
+  .decision-grid,
+  .calculator-layout,
+  .result-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -519,6 +550,8 @@ textarea {
   .grid--stats,
   .grid--two,
   .decision-grid,
+  .calculator-layout,
+  .result-strip,
   .form-grid {
     grid-template-columns: 1fr;
   }

@@ -73,6 +73,18 @@ Spaeter moegliche Unterteilung:
   - Preisstatus
   - Risiko
   - Entscheidung
+- Angebotsrechner
+  - RFQ-Rechner
+  - Maschinenfit
+  - Maschinenkalender
+  - Kapazitaetspruefung
+  - Kalkulation
+  - Entscheidung
+  - Text- und Hinweislogik
+- Workflow
+  - RFQ mit `Rechnen` in den Angebotsrechner uebernehmen
+  - Ergebnis als Angebot speichern
+  - RFQ-Status automatisch auf `angebot erstellt` setzen
 
 Spaeter moegliche Unterteilung:
 

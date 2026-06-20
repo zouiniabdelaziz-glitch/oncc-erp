@@ -315,5 +315,6 @@
   }
 
   OSM.start = start;
+  OSM.render = render;
   OSM.helpers = helpers;
 })();

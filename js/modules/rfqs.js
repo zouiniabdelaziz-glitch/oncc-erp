@@ -54,6 +54,9 @@
         const decision = h.decision(row);
         return `${h.badge(decision.decision, h.toneForStatus(decision.decision))}<div class="small muted">${h.escapeHtml(decision.machineName)}</div>`;
       }},
+      { key: "calculator", label: "Rechner", render: (row, data, h) => `
+        <button class="icon-button" onclick="window.OSM_CALCULATOR.openFromRfq('${h.escapeHtml(row.id)}')">Rechnen</button>
+      ` },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
   });

@@ -18,6 +18,7 @@ Die App speichert Daten lokal im Browser. Im Modul `Daten & Module` kann ein JSO
 - RFQs / Anfragen
 - Dateien / Zeichnungen
 - Angebote
+- Angebotsrechner
 - Auftraege
 - Lieferstatus
 - Kapazitaetsentscheidung
@@ -25,6 +26,12 @@ Die App speichert Daten lokal im Browser. Im Modul `Daten & Module` kann ein JSO
 - Materialgruppen
 - Partnerbetriebe
 - Daten & Module
+
+## Aktueller Kernablauf
+
+RFQ / Anfrage -> Angebotsrechner -> Angebot
+
+Eine RFQ kann ueber `Rechnen` in den Angebotsrechner uebernommen werden. Der Rechner uebernimmt Kunde, Teiltyp, Material, Menge und Termin, berechnet Risiko, Lieferzeit, Angebotspreis und Stueckpreis und kann daraus ein Angebot speichern.
 
 ## Naechster technischer Schritt
 
