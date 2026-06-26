@@ -17,21 +17,35 @@
   }
 
   function toneForStatus(status) {
-    if (["aktiv", "gewonnen", "geliefert", "fertig", "anbieten"].includes(status)) return "ok";
-    if (["pruefen", "in arbeit", "entwurf", "neu", "offen"].includes(status)) return "warn";
-    if (["ablehnen", "verloren", "kritisch", "hoch"].includes(status)) return "danger";
+    if ([
+      "aktiv", "gewonnen", "geliefert", "fertig", "anbieten", "freigegeben",
+      "gebucht", "bezahlt", "erhalten", "verfuegbar", "abgeschlossen", "bestaetigt",
+      "reserviert", "genehmigt", "bereit"
+    ].includes(status)) return "ok";
+    if ([
+      "pruefen", "in arbeit", "entwurf", "neu", "offen", "geplant", "bestellt",
+      "teilgeliefert", "in pruefung", "angefragt", "ausstehend", "commercialista offen",
+      "wartet", "potenziell", "lead", "wartung", "aktualisiert", "angelegt"
+    ].includes(status)) return "warn";
+    if ([
+      "ablehnen", "abgelehnt", "verloren", "kritisch", "hoch", "gesperrt",
+      "mangel", "ueberfaellig", "storniert", "reklamation", "blockiert", "problem",
+      "geloescht"
+    ].includes(status)) return "danger";
     return "muted";
   }
 
   function label(collection, id, field) {
     const item = OSM.state.findById(OSM.data, collection, id);
-    return item ? item[field || "name"] || item.title || item.quoteNo || item.partName || id : "-";
+    return item ? item[field || "name"] || item.title || item.quoteNo || item.orderNo ||
+      item.invoiceNo || item.partNo || item.revision || item.code || item.partName || id : "-";
   }
 
   function options(collection, labelField) {
     return (OSM.data[collection] || []).map((item) => ({
       value: item.id,
-      label: item[labelField || "name"] || item.title || item.quoteNo || item.partName || item.id
+      label: item[labelField || "name"] || item.title || item.quoteNo || item.orderNo ||
+        item.invoiceNo || item.partNo || item.revision || item.code || item.partName || item.id
     }));
   }
 
@@ -43,6 +57,10 @@
     options,
     decision: (rfq) => OSM.state.capacityDecision(OSM.data, rfq)
   };
+
+  function areaTools() {
+    return window.OSM_AREA_TOOLS || {};
+  }
 
   function start() {
     OSM.data = OSM.state.load();
@@ -76,7 +94,7 @@
   }
 
   function groupedModules() {
-    return OSM.modules.reduce((groups, module) => {
+    return OSM.modules.filter((module) => !module.hideInNav).reduce((groups, module) => {
       const group = module.group || "Sonstiges";
       groups[group] = groups[group] || [];
       groups[group].push(module);
@@ -118,6 +136,7 @@
 
     return `
       ${renderTopbar(module)}
+      ${renderRelatedModules(module)}
       <div class="toolbar">
         <input class="search" data-action="search" value="${escapeHtml(searchTerm)}" placeholder="Suchen..." />
         <div class="muted small">${filteredRows.length} Eintraege</div>
@@ -129,17 +148,46 @@
   }
 
   function renderTopbar(module) {
+    const tools = areaTools();
+    const area = tools.findAreaForModule ? tools.findAreaForModule(module.id) : null;
+    const isDashboard = module.id === "dashboard";
     return `
       <div class="topbar">
         <div>
+          ${!isDashboard ? `
+            <div class="breadcrumb">
+              <a href="#dashboard">Hauptseite</a>
+              ${area ? `<span>/</span><a href="#area-${escapeHtml(area.id)}">${escapeHtml(area.title)}</a>` : ""}
+            </div>
+          ` : ""}
           <h1 class="topbar__title">${escapeHtml(module.title)}</h1>
           <p class="topbar__text">${escapeHtml(module.description || "")}</p>
         </div>
-        ${module.collection ? `
-          <div class="page-actions">
-            <button class="button" data-action="add" data-module="${module.id}">+ Neu</button>
-          </div>
-        ` : ""}
+        <div class="page-actions">
+          ${!isDashboard ? `<a class="button button--quiet" href="${area ? `#area-${escapeHtml(area.id)}` : "#dashboard"}">Zurueck</a>` : ""}
+          ${module.collection ? `<button class="button" data-action="add" data-module="${module.id}">+ Neu</button>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRelatedModules(module) {
+    const tools = areaTools();
+    const area = tools.findAreaForModule ? tools.findAreaForModule(module.id) : null;
+    if (!area) return "";
+    const relatedModules = (area.modules || [])
+      .map((moduleId) => tools.moduleById ? tools.moduleById(moduleId) : null)
+      .filter((item) => item && item.id !== module.id);
+    const relatedAreas = (area.related || [])
+      .map((areaId) => tools.findArea ? tools.findArea(areaId) : null)
+      .filter(Boolean);
+
+    return `
+      <div class="related-strip">
+        <span class="related-strip__label">Verbunden:</span>
+        <a href="#area-${escapeHtml(area.id)}">Bereichs-Dashboard</a>
+        ${relatedModules.slice(0, 7).map((item) => `<a href="#${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`).join("")}
+        ${relatedAreas.slice(0, 4).map((item) => `<a href="#area-${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`).join("")}
       </div>
     `;
   }

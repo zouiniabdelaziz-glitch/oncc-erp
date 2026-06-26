@@ -8,7 +8,7 @@
 
   window.OSM.registerModule({
     id: "customers",
-    group: "CRM",
+    group: "Vertrieb & CRM",
     icon: "K",
     title: "Kunden",
     description: "Firmen, Zielkunden und interne Organisationen.",

@@ -1,37 +1,51 @@
 # OS.MECHPLAST Management ERP
 
-Erster lokaler Prototyp fuer ein kleines, modulares Management-ERP/MRP.
+Lokaler Prototyp fuer ein kleines, modulares ERP/MRP mit PDM-Kern fuer eine CNC-Lohnfertigung.
 
 ## Starten
 
 `index.html` im Browser oeffnen.
 
-Die App speichert Daten lokal im Browser. Im Modul `Daten & Module` kann ein JSON-Backup exportiert und wieder importiert werden.
+Die App speichert Daten aktuell lokal im Browser. Im Modul `Daten & Module` kann ein JSON-Backup exportiert und wieder importiert werden.
 
-## V1-Module
+## Aktueller Stand
 
-- Dashboard
-- Projekte
-- Aufgaben
-- Kunden
-- Kontakte
-- RFQs / Anfragen
-- Dateien / Zeichnungen
-- Angebote
-- Angebotsrechner
-- Auftraege
-- Lieferstatus
-- Kapazitaetsentscheidung
-- Maschinen
-- Materialgruppen
-- Partnerbetriebe
-- Daten & Module
+Die App ist jetzt als Modul-Landkarte aufgebaut:
 
-## Aktueller Kernablauf
+- Start: Dashboard, Modul-Landkarte
+- System & Rechte: Gesellschaft, Rollen, Historie, Nummernkreise, Daten & Module
+- Management: Projekte, Aufgaben
+- Vertrieb & CRM: Kunden, Kontakte, RFQs, Angebotsrechner, Angebote, Auftraege
+- PDM / Konstruktion: Teile, Teilrevisionen, Dateien/Zeichnungen, Stueckliste, Aenderungen
+- Einkauf: Lieferanten, Materialbedarf, Bestellungen, Wareneingang
+- Lager: Lagerorte, Bestand, Bewegungen, Reservierungen
+- Produktion / MRP: Kapazitaetsentscheidung, Maschinen, Partnerbetriebe, Arbeitsplaene, Arbeitsgaenge, Maschinenkalender, Produktionsauftraege, Rueckmeldungen
+- Qualitaet: Pruefplaene, Erstteilfreigabe, Pruefprotokolle, Reklamationen
+- Logistik: Lieferstatus mit Packliste, DAXA-Referenz und Tracking
+- Personal: Mitarbeiter, Qualifikationen, Schichten, Abwesenheiten
+- Finanzen: Kostenstellen, Rechnungen, Gutschriften, Zahlungen, offene Posten, Finanzbuchungen
+- Stammdaten: Materialgruppen
 
-RFQ / Anfrage -> Angebotsrechner -> Angebot
+## Verbindliche Ablaeufe
 
-Eine RFQ kann ueber `Rechnen` in den Angebotsrechner uebernommen werden. Der Rechner uebernimmt Kunde, Teiltyp, Material, Menge und Termin, berechnet Risiko, Lieferzeit, Angebotspreis und Stueckpreis und kann daraus ein Angebot speichern.
+- Kunde -> RFQ -> Teilrevision -> Angebotsrechner -> Angebot -> Auftrag -> Produktionsauftrag -> Versand -> Rechnung -> Zahlung
+- Teil -> Revision -> Stueckliste -> Arbeitsplan -> Materialreservierung -> Einkauf oder Lagerentnahme
+- Mitarbeiter + Qualifikation + Verfuegbarkeit -> Schicht -> Arbeitsgang
+
+Angebote und produktionsnahe Module verwenden freigegebene Teilrevisionen. Bekannte nicht freigegebene Revisionen werden beim Speichern aus dem Angebotsrechner blockiert.
+
+## Historie
+
+Speichern und Loeschen erzeugt automatisch Historieneintraege mit Zeit, Benutzer, Modul, Datensatz und Aktion. Das ist der Start fuer Audit-Historie, Freigaben, Lagerbewegungen und spaetere Finanzbuchungen.
+
+## Bewusst noch nicht enthalten
+
+- keine rechtsverbindliche italienische Buchhaltung
+- keine FatturaPA/SDI-Logik ohne Commercialista-Pruefung
+- kein grosses Lager mit Chargen, Zeugnissen, Barcode oder Inventur
+- keine Lohnabrechnung
+- noch keine echte Dateiablage, nur Dateireferenzen
+- noch keine zentrale Mehrbenutzer-Datenbank
 
 ## Naechster technischer Schritt
 

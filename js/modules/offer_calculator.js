@@ -354,6 +354,11 @@
       alert("Die verbundene RFQ wurde nicht gefunden.");
       return;
     }
+    const revision = rfq.revisionId ? window.OSM.state.findById(data, "partRevisions", rfq.revisionId) : null;
+    if (revision && revision.status !== "freigegeben") {
+      alert("Diese RFQ verweist auf eine Teilrevision, die noch nicht freigegeben ist. Bitte zuerst im PDM freigeben.");
+      return;
+    }
 
     saveDraft(input);
     const result = calculate(input);
@@ -361,6 +366,8 @@
     const quote = Object.assign({}, existingDraft || {}, {
       id: existingDraft ? existingDraft.id : window.OSM.state.uid("quo"),
       rfqId: input.sourceRfqId,
+      partId: rfq.partId || "",
+      revisionId: rfq.revisionId || "",
       quoteNo: existingDraft ? existingDraft.quoteNo : nextQuoteNo(data),
       status: "entwurf",
       validUntil: existingDraft && existingDraft.validUntil ? existingDraft.validUntil : isoDatePlus(14),
@@ -532,10 +539,16 @@
       return `
         <div class="topbar">
           <div>
+            <div class="breadcrumb">
+              <a href="#dashboard">Hauptseite</a>
+              <span>/</span>
+              <a href="#area-sales">Vertrieb & CRM</a>
+            </div>
             <h1 class="topbar__title">Angebotsrechner</h1>
             <p class="topbar__text">RFQ-Vorpruefung mit Maschine, Kapazitaet, Kalender, Kalkulation und Entscheidung.</p>
           </div>
           <div class="page-actions">
+            <a class="button button--quiet" href="#area-sales">Zurueck</a>
             <button class="button" onclick="window.OSM_CALCULATOR.saveQuoteFromCurrent()">Als Angebot speichern</button>
             <a class="button button--quiet" href="#rfqs">RFQs</a>
           </div>
@@ -640,7 +653,7 @@
   window.OSM_CALCULATOR = calculator;
   window.OSM.registerModule({
     id: "offer-calculator",
-    group: "Sales / RFQ",
+    group: "Vertrieb & CRM",
     icon: "R",
     title: "Angebotsrechner",
     description: "Kapazitaets- und Angebotsrechner aus der OS.MECHPLAST Excel-Strategie.",

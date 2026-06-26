@@ -12,7 +12,7 @@
 
   window.OSM.registerModule({
     id: "partners",
-    group: "Stammdaten",
+    group: "Produktion / MRP",
     icon: "B",
     title: "Partnerbetriebe",
     description: "Externe Fertigungspartner fuer Overflow, Spezialfaelle und planbare Serien.",

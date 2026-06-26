@@ -12,7 +12,7 @@
 
   window.OSM.registerModule({
     id: "machines",
-    group: "Stammdaten",
+    group: "Produktion / MRP",
     icon: "M",
     title: "Maschinen",
     description: "Maschinen, Faehigkeiten und grobes Schichtmodell.",

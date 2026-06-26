@@ -1,7 +1,7 @@
 (function () {
   window.OSM.registerModule({
     id: "capacity",
-    group: "Produktion",
+    group: "Produktion / MRP",
     icon: "K",
     title: "Kapazitaetsentscheidung",
     description: "Einfache regelbasierte Entscheidung: Maschine, Schichtbedarf, Partner und Risiko.",
@@ -10,8 +10,16 @@
       return `
         <div class="topbar">
           <div>
+            <div class="breadcrumb">
+              <a href="#dashboard">Hauptseite</a>
+              <span>/</span>
+              <a href="#area-production">Produktion / MRP</a>
+            </div>
             <h1 class="topbar__title">Kapazitaetsentscheidung</h1>
             <p class="topbar__text">Erste MRP-Logik fuer anbieten, pruefen oder ablehnen.</p>
+          </div>
+          <div class="page-actions">
+            <a class="button button--quiet" href="#area-production">Zurueck</a>
           </div>
         </div>
         <div class="notice">

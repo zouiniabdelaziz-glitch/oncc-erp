@@ -1,7 +1,7 @@
 (function () {
   window.OSM.registerModule({
     id: "settings",
-    group: "System",
+    group: "System & Rechte",
     icon: "S",
     title: "Daten & Module",
     description: "Backup, Import und Moduluebersicht.",
@@ -10,8 +10,16 @@
       return `
         <div class="topbar">
           <div>
+            <div class="breadcrumb">
+              <a href="#dashboard">Hauptseite</a>
+              <span>/</span>
+              <a href="#area-system">System & Rechte</a>
+            </div>
             <h1 class="topbar__title">Daten & Module</h1>
             <p class="topbar__text">Lokale Daten sichern, importieren und Modulstruktur pruefen.</p>
+          </div>
+          <div class="page-actions">
+            <a class="button button--quiet" href="#area-system">Zurueck</a>
           </div>
         </div>
         <section class="grid grid--two">

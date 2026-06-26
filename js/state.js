@@ -75,6 +75,8 @@
         id: "rfq_1001",
         customerId: "cus_muster_at",
         contactId: "con_anna_einkauf",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
         partName: "Aluminium Adapterwelle",
         partType: "dreh-fraes",
         materialGroupId: "mat_aluminium",
@@ -93,6 +95,8 @@
         title: "Adapterwelle Zeichnung Rev A",
         linkedModule: "RFQ",
         linkedId: "rfq_1001",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
         fileType: "PDF",
         path: "adapterwelle_revA.pdf",
         version: "A",
@@ -103,6 +107,8 @@
       {
         id: "quo_1001",
         rfqId: "rfq_1001",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
         quoteNo: "ANG-2026-001",
         status: "entwurf",
         validUntil: "2026-07-01",
@@ -177,6 +183,345 @@
         trustLevel: "mittel",
         notes: "Fuer hohe Auslastung und planbare externe Fertigung pruefen."
       }
+    ],
+    companies: [
+      {
+        id: "cmp_osmechplast",
+        name: "OS.MECHPLAST SRLS",
+        country: "IT",
+        status: "aktiv",
+        legalForm: "SRLS",
+        notes: "Startgesellschaft fuer das ERP. Weitere Gesellschaften erst spaeter."
+      }
+    ],
+    roles: [
+      {
+        id: "rol_admin",
+        name: "Admin",
+        area: "System",
+        accessLevel: "voll",
+        status: "aktiv",
+        notes: "Darf alle Module sehen und Daten sichern."
+      },
+      {
+        id: "rol_sales",
+        name: "Vertrieb",
+        area: "CRM / RFQ",
+        accessLevel: "bearbeiten",
+        status: "aktiv",
+        notes: "Kunden, Kontakte, RFQ, Angebote und Auftraege."
+      },
+      {
+        id: "rol_production",
+        name: "Produktion",
+        area: "Produktion / MRP",
+        accessLevel: "bearbeiten",
+        status: "aktiv",
+        notes: "Maschinen, Arbeitsplaene, Fertigungsauftraege und Rueckmeldungen."
+      },
+      {
+        id: "rol_finance_locked",
+        name: "Finanzen gesperrt",
+        area: "Finanzen",
+        accessLevel: "gesperrt",
+        status: "in pruefung",
+        notes: "Italienische Steuer- und E-Rechnungslogik erst nach Commercialista-Pruefung freischalten."
+      }
+    ],
+    auditLogs: [
+      {
+        id: "aud_seed",
+        timestamp: "2026-06-25T00:00:00.000Z",
+        user: "System",
+        collection: "system",
+        recordId: "seed",
+        action: "angelegt",
+        summary: "Start-Historie fuer Audit, Freigaben, Lagerbewegungen und Finanzbuchungen."
+      }
+    ],
+    numberRanges: [
+      {
+        id: "num_rfq",
+        code: "RFQ",
+        nextNumber: 1002,
+        pattern: "RFQ-{YYYY}-{###}",
+        ownerArea: "Sales",
+        status: "aktiv",
+        notes: "Nummernkreis fuer Anfragen."
+      },
+      {
+        id: "num_quote",
+        code: "ANG",
+        nextNumber: 2,
+        pattern: "ANG-{YYYY}-{###}",
+        ownerArea: "Sales",
+        status: "aktiv",
+        notes: "Nummernkreis fuer Angebote."
+      },
+      {
+        id: "num_invoice",
+        code: "RE",
+        nextNumber: 1,
+        pattern: "RE-{YYYY}-{###}",
+        ownerArea: "Finanzen",
+        status: "gesperrt",
+        notes: "Rechnungsnummern erst mit Finanzfreigabe produktiv nutzen."
+      }
+    ],
+    parts: [
+      {
+        id: "prt_adapterwelle",
+        partNo: "OMP-0001",
+        name: "Aluminium Adapterwelle",
+        customerId: "cus_muster_at",
+        partType: "Dreh-Fraesteil",
+        status: "aktiv",
+        currentRevisionId: "rev_adapterwelle_a",
+        notes: "Beispiel-Teil fuer RFQ, Zeichnung, Angebot und spaeter Produktionsauftrag."
+      }
+    ],
+    partRevisions: [
+      {
+        id: "rev_adapterwelle_a",
+        partId: "prt_adapterwelle",
+        revision: "A",
+        status: "freigegeben",
+        releaseDate: "2026-06-15",
+        releasedBy: "Leitung",
+        drawingRef: "adapterwelle_revA.pdf",
+        stepRef: "adapterwelle_revA.step",
+        notes: "Freigegebene Startrevision. Nur freigegebene Revisionen duerfen in Angebot, Auftrag und Produktion verwendet werden."
+      }
+    ],
+    bomItems: [
+      {
+        id: "bom_adapter_material",
+        parentPartId: "prt_adapterwelle",
+        childPartId: "",
+        materialGroupId: "mat_aluminium",
+        quantity: 1,
+        unit: "Stk",
+        status: "aktiv",
+        notes: "V1: Materialbezug ohne echte Stueckliste; spaeter mit Unterteilen und Varianten."
+      }
+    ],
+    changeRequests: [
+      {
+        id: "chg_revision_rules",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
+        status: "offen",
+        priority: "mittel",
+        owner: "Konstruktion / Leitung",
+        dueDate: "2026-07-05",
+        reason: "Freigabeprozess fuer Zeichnung, STEP und Angebotsverwendung definieren.",
+        notes: "Aenderungsantraege werden spaeter mit Pflichtfreigabe ausgebaut."
+      }
+    ],
+    suppliers: [
+      {
+        id: "sup_material_it",
+        name: "Materiallieferant Italien",
+        country: "IT",
+        category: "Aluminium / Stahl",
+        status: "potenziell",
+        contact: "",
+        notes: "Platzhalter fuer echte Lieferantendaten und Preisverlauf."
+      }
+    ],
+    purchaseRequests: [
+      {
+        id: "preq_adapter_mat",
+        materialGroupId: "mat_aluminium",
+        partId: "prt_adapterwelle",
+        orderId: "",
+        quantity: 120,
+        unit: "Stk",
+        needDate: "2026-07-01",
+        status: "angefragt",
+        notes: "Materialbedarf aus RFQ/Angebot pruefen."
+      }
+    ],
+    purchaseOrders: [],
+    goodsReceipts: [],
+    warehouseLocations: [
+      {
+        id: "loc_raw",
+        code: "ROH-01",
+        name: "Rohmaterial",
+        type: "Rohmaterial",
+        status: "aktiv",
+        notes: "Start-Lagerort fuer Stangenmaterial und Zuschnitte."
+      },
+      {
+        id: "loc_finished",
+        code: "FERT-01",
+        name: "Fertigteile",
+        type: "Fertigteile",
+        status: "aktiv",
+        notes: "Fertige Teile vor Verpackung und Versand."
+      }
+    ],
+    stockItems: [
+      {
+        id: "stk_aluminium",
+        materialGroupId: "mat_aluminium",
+        partId: "",
+        locationId: "loc_raw",
+        quantity: 0,
+        unit: "Stk",
+        minQuantity: 0,
+        status: "mangel",
+        notes: "Noch kein echter Bestand erfasst; Einkauf/Reservierung pruefen."
+      }
+    ],
+    stockMovements: [
+      {
+        id: "mov_seed",
+        movementType: "Initial",
+        materialGroupId: "mat_aluminium",
+        partId: "",
+        fromLocationId: "",
+        toLocationId: "loc_raw",
+        quantity: 0,
+        unit: "Stk",
+        movementDate: "2026-06-25",
+        user: "System",
+        status: "gebucht",
+        notes: "Startbewegung fuer Historie und Lagerlogik."
+      }
+    ],
+    reservations: [
+      {
+        id: "res_adapter_mat",
+        orderId: "",
+        productionOrderId: "",
+        materialGroupId: "mat_aluminium",
+        partId: "prt_adapterwelle",
+        quantity: 120,
+        unit: "Stk",
+        needDate: "2026-07-01",
+        status: "offen",
+        notes: "Reservierung wird aus Auftrag/Produktionsauftrag verbindlich."
+      }
+    ],
+    workPlans: [
+      {
+        id: "wpl_adapter_a",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
+        status: "entwurf",
+        owner: "Produktion",
+        notes: "Arbeitsplan fuer Adapterwelle Rev A. Vor Produktion technisch freigeben."
+      }
+    ],
+    workOperations: [
+      {
+        id: "wop_adapter_10",
+        workPlanId: "wpl_adapter_a",
+        stepNo: 10,
+        machineId: "mac_hd2200sy",
+        skillNeeded: "Dreh-Fraesen / Y-Achse",
+        setupHours: 2,
+        cycleMin: 4,
+        status: "geplant",
+        notes: "Komplettbearbeitung auf HD2200SY bevorzugt."
+      }
+    ],
+    productionOrders: [],
+    operationFeedback: [],
+    machineCalendarEntries: [
+      {
+        id: "cal_hd2200sy_week",
+        machineId: "mac_hd2200sy",
+        date: "2026-07-01",
+        shift: "1 Schicht",
+        availableHours: 8,
+        bookedHours: 0,
+        status: "verfuegbar",
+        notes: "V1-Kalenderplatzhalter fuer Kapazitaetsrechner und Produktionsplanung."
+      }
+    ],
+    inspectionPlans: [
+      {
+        id: "ipl_adapter_a",
+        partId: "prt_adapterwelle",
+        revisionId: "rev_adapterwelle_a",
+        status: "entwurf",
+        responsible: "Qualitaet",
+        notes: "Pruefplan fuer Zeichnungsmerkmale, Erstteil und Serienfreigabe."
+      }
+    ],
+    firstArticleApprovals: [],
+    inspectionReports: [],
+    complaints: [],
+    employees: [
+      {
+        id: "emp_leitung",
+        name: "Leitung",
+        role: "Geschaeftsfuehrung / Planung",
+        status: "aktiv",
+        notes: "Startrolle fuer Freigaben, Planung und Angebotsentscheidung."
+      }
+    ],
+    employeeSkills: [
+      {
+        id: "esk_hd2200sy",
+        employeeId: "emp_leitung",
+        skill: "Dreh-Fraesen / Y-Achse",
+        level: "freigegeben",
+        validUntil: "",
+        notes: "Qualifikation fuer HD2200SY-Arbeitsgaenge."
+      }
+    ],
+    shifts: [
+      {
+        id: "shf_standard",
+        date: "2026-07-01",
+        shiftName: "Tagesschicht",
+        employeeId: "emp_leitung",
+        machineId: "mac_hd2200sy",
+        startTime: "08:00",
+        endTime: "16:00",
+        status: "geplant",
+        notes: "V1: einfache Schichtplanung ohne Lohnabrechnung."
+      }
+    ],
+    absences: [],
+    costCenters: [
+      {
+        id: "cst_sales",
+        code: "1000",
+        name: "Vertrieb",
+        area: "Sales",
+        status: "aktiv",
+        notes: "Kostenstelle fuer Angebots- und Vertriebsaufwand."
+      },
+      {
+        id: "cst_production",
+        code: "2000",
+        name: "Produktion",
+        area: "Fertigung",
+        status: "aktiv",
+        notes: "Kostenstelle fuer Maschinenzeit und Fertigungsaufwand."
+      }
+    ],
+    invoices: [],
+    creditNotes: [],
+    payments: [],
+    openItems: [],
+    financePostings: [
+      {
+        id: "fpo_lock",
+        date: "2026-06-25",
+        documentNo: "FIN-LOCK",
+        type: "Sperrhinweis",
+        costCenterId: "",
+        status: "commercialista offen",
+        amount: 0,
+        lockedReason: "Italienische Steuer-, Buchungs- und E-Rechnungslogik wird erst nach fachlicher Validierung aktiviert.",
+        notes: "Bis dahin nur Management- und Rechnungsgrundlagen, keine rechtsverbindliche Buchhaltung."
+      }
     ]
   };
 
@@ -245,20 +590,52 @@
     return (data[collection] || []).find((item) => item.id === id);
   }
 
+  function recordLabel(record) {
+    return record.name || record.title || record.partNo || record.revision || record.invoiceNo ||
+      record.orderNo || record.quoteNo || record.documentNo || record.code || record.id;
+  }
+
+  function logAudit(data, collection, record, action) {
+    if (collection === "auditLogs") return;
+    const now = new Date().toISOString();
+    data.auditLogs = data.auditLogs || [];
+    data.auditLogs.unshift({
+      id: uid("aud"),
+      timestamp: now,
+      user: data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST",
+      collection,
+      recordId: record.id,
+      action,
+      summary: `${collection}: ${recordLabel(record)} ${action}`
+    });
+    data.auditLogs = data.auditLogs.slice(0, 250);
+  }
+
   function upsert(data, collection, record) {
     const items = data[collection] || [];
     const index = items.findIndex((item) => item.id === record.id);
+    const now = new Date().toISOString();
+    const existing = index >= 0 ? items[index] : null;
+    const nextRecord = Object.assign({}, existing || {}, record, {
+      createdAt: existing && existing.createdAt ? existing.createdAt : record.createdAt || now,
+      createdBy: existing && existing.createdBy ? existing.createdBy : record.createdBy || "OS.MECHPLAST",
+      updatedAt: now,
+      updatedBy: data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST"
+    });
     if (index >= 0) {
-      items[index] = record;
+      items[index] = nextRecord;
     } else {
-      items.push(record);
+      items.push(nextRecord);
     }
     data[collection] = items;
+    logAudit(data, collection, nextRecord, index >= 0 ? "aktualisiert" : "angelegt");
     save(data);
   }
 
   function remove(data, collection, id) {
+    const existing = findById(data, collection, id);
     data[collection] = (data[collection] || []).filter((item) => item.id !== id);
+    if (existing) logAudit(data, collection, existing, "geloescht");
     save(data);
   }
 

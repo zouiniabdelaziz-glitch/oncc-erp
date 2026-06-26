@@ -1,7 +1,7 @@
 (function () {
   window.OSM.registerModule({
     id: "contacts",
-    group: "CRM",
+    group: "Vertrieb & CRM",
     icon: "C",
     title: "Kontakte",
     description: "Ansprechpartner fuer Einkauf, Technik, Leitung und Logistik.",

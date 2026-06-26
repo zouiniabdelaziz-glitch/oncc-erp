@@ -22,9 +22,20 @@
     { value: "kritisch", label: "Kritisch" }
   ];
 
+  function revisionOptions(data) {
+    return (data.partRevisions || []).map((revision) => {
+      const part = window.OSM.state.findById(data, "parts", revision.partId);
+      const partLabel = part ? `${part.partNo || part.name} - ${part.name}` : revision.partId;
+      return {
+        value: revision.id,
+        label: `${partLabel} / Rev ${revision.revision || "-"} (${revision.status || "-"})`
+      };
+    });
+  }
+
   window.OSM.registerModule({
     id: "rfqs",
-    group: "Sales / RFQ",
+    group: "Vertrieb & CRM",
     icon: "R",
     title: "RFQs / Anfragen",
     description: "Anfragen mit Zeichnungsreferenz, Material, Menge und Terminwunsch.",
@@ -33,6 +44,8 @@
     fields: [
       { key: "customerId", label: "Kunde", type: "select", options: (data, h) => h.options("customers"), required: true },
       { key: "contactId", label: "Kontakt", type: "select", options: (data, h) => h.options("contacts") },
+      { key: "partId", label: "PDM-Teil", type: "select", options: (data, h) => h.options("parts", "partNo") },
+      { key: "revisionId", label: "Teilrevision", type: "select", options: revisionOptions },
       { key: "partName", label: "Teil / Bezeichnung", required: true },
       { key: "partType", label: "Teiletyp", type: "select", options: partTypes, default: "drehen" },
       { key: "materialGroupId", label: "Materialgruppe", type: "select", options: (data, h) => h.options("materials"), required: true },
@@ -47,6 +60,8 @@
     columns: [
       { key: "partName", label: "Teil" },
       { key: "customerId", label: "Kunde", render: (row, data, h) => h.escapeHtml(h.label("customers", row.customerId)) },
+      { key: "partId", label: "PDM", render: (row, data, h) => h.escapeHtml(h.label("parts", row.partId, "partNo")) },
+      { key: "revisionId", label: "Rev", render: (row, data, h) => h.escapeHtml(h.label("partRevisions", row.revisionId, "revision")) },
       { key: "materialGroupId", label: "Material", render: (row, data, h) => h.escapeHtml(h.label("materials", row.materialGroupId)) },
       { key: "quantity", label: "Menge" },
       { key: "dueDate", label: "Termin" },

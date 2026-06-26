@@ -18,7 +18,9 @@
     fields: [
       { key: "orderId", label: "Auftrag", type: "select", options: (data, h) => h.options("orders", "orderNo"), required: true },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "offen" },
+      { key: "packListNo", label: "Packliste" },
       { key: "carrier", label: "Transporteur", default: "DAXA" },
+      { key: "daxaRef", label: "DAXA-Referenz" },
       { key: "tracking", label: "Tracking / Referenz" },
       { key: "shipDate", label: "Versanddatum", type: "date" },
       { key: "deliveredDate", label: "Geliefert am", type: "date" },
@@ -27,7 +29,9 @@
     columns: [
       { key: "orderId", label: "Auftrag", render: (row, data, h) => h.escapeHtml(h.label("orders", row.orderId, "orderNo")) },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
+      { key: "packListNo", label: "Packliste" },
       { key: "carrier", label: "Transporteur" },
+      { key: "daxaRef", label: "DAXA" },
       { key: "tracking", label: "Tracking" },
       { key: "shipDate", label: "Versand" },
       { key: "deliveredDate", label: "Geliefert" }
