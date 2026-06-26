@@ -12,7 +12,7 @@
     group: "Logistik",
     icon: "L",
     title: "Lieferstatus",
-    description: "Einfacher Versand- und Lieferstatus, spaeter mit DAXA-Referenzen erweiterbar.",
+    description: "Einfacher Versand- und Lieferstatus, später mit DAXA-Referenzen erweiterbar.",
     collection: "deliveries",
     prefix: "del",
     fields: [

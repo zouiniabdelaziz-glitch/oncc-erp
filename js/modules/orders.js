@@ -25,7 +25,7 @@
     id: "orders",
     group: "Vertrieb & CRM",
     icon: "O",
-    title: "Auftraege",
+    title: "Aufträge",
     description: "Kundenauftraege aus gewonnenen Angeboten oder Direktauftraegen.",
     collection: "orders",
     prefix: "ord",
@@ -36,7 +36,7 @@
       { key: "projectId", label: "Projekt", type: "select", options: (data, h) => h.options("projects") },
       { key: "partId", label: "PDM-Teil", type: "select", options: (data, h) => h.options("parts", "partNo") },
       { key: "revisionId", label: "Freigegebene Revision", type: "select", options: releasedRevisionOptions },
-      { key: "quantity", label: "Stueckzahl", type: "number", default: 1 },
+      { key: "quantity", label: "Stückzahl", type: "number", default: 1 },
       { key: "dueDate", label: "Liefertermin", type: "date" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "neu" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }

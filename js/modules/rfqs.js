@@ -1,15 +1,15 @@
 (function () {
   const statusOptions = [
     { value: "neu", label: "Neu" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "angebot erstellt", label: "Angebot erstellt" },
     { value: "gewonnen", label: "Gewonnen" },
     { value: "abgelehnt", label: "Abgelehnt" }
   ];
   const partTypes = [
     { value: "drehen", label: "Drehen" },
-    { value: "dreh-fraes", label: "Dreh-Fraes" },
-    { value: "fraesen", label: "Fraesen / Partner pruefen" }
+    { value: "dreh-fraes", label: "Dreh-Fräs" },
+    { value: "fraesen", label: "Fräsen / Partner prüfen" }
   ];
   const complexityOptions = [
     { value: "einfach", label: "Einfach" },
@@ -49,7 +49,7 @@
       { key: "partName", label: "Teil / Bezeichnung", required: true },
       { key: "partType", label: "Teiletyp", type: "select", options: partTypes, default: "drehen" },
       { key: "materialGroupId", label: "Materialgruppe", type: "select", options: (data, h) => h.options("materials"), required: true },
-      { key: "quantity", label: "Stueckzahl", type: "number", default: 1 },
+      { key: "quantity", label: "Stückzahl", type: "number", default: 1 },
       { key: "dueDate", label: "Terminwunsch", type: "date" },
       { key: "complexity", label: "Komplexitaet", type: "select", options: complexityOptions, default: "mittel" },
       { key: "tolerance", label: "Toleranz", type: "select", options: toleranceOptions, default: "normal" },

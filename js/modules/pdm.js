@@ -1,13 +1,13 @@
 (function () {
   const partStatus = [
     { value: "aktiv", label: "Aktiv" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "gesperrt", label: "Gesperrt" },
     { value: "archiv", label: "Archiv" }
   ];
   const revisionStatus = [
     { value: "entwurf", label: "Entwurf" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "freigegeben", label: "Freigegeben" },
     { value: "gesperrt", label: "Gesperrt" }
   ];
@@ -90,8 +90,8 @@
     id: "bom-items",
     group: "PDM / Konstruktion",
     icon: "B",
-    title: "Stueckliste",
-    description: "Einfache Stuecklisten- und Materialpositionen. Varianten und echte BOM-Logik folgen spaeter.",
+    title: "Stückliste",
+    description: "Einfache Stücklisten- und Materialpositionen. Varianten und echte BOM-Logik folgen später.",
     collection: "bomItems",
     prefix: "bom",
     fields: [
@@ -117,8 +117,8 @@
     id: "change-requests",
     group: "PDM / Konstruktion",
     icon: "C",
-    title: "Aenderungen",
-    description: "Aenderungsantraege fuer Zeichnungen, Revisionen, Varianten und technische Freigaben.",
+    title: "Änderungen",
+    description: "Änderungsantraege für Zeichnungen, Revisionen, Varianten und technische Freigaben.",
     collection: "changeRequests",
     prefix: "chg",
     fields: [
@@ -131,7 +131,7 @@
         { value: "mittel", label: "Mittel" },
         { value: "hoch", label: "Hoch" }
       ], default: "mittel" },
-      { key: "dueDate", label: "Faellig", type: "date" },
+      { key: "dueDate", label: "Fällig", type: "date" },
       { key: "status", label: "Status", type: "select", options: changeStatus, default: "offen" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
     ],
@@ -141,7 +141,7 @@
       { key: "reason", label: "Grund" },
       { key: "owner", label: "Owner" },
       { key: "priority", label: "Prio", render: (row, data, h) => h.badge(row.priority, h.toneForStatus(row.priority)) },
-      { key: "dueDate", label: "Faellig" },
+      { key: "dueDate", label: "Fällig" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
   });

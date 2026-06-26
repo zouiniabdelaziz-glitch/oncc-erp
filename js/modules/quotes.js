@@ -17,7 +17,7 @@
   ];
   const decisionOptions = [
     { value: "anbieten", label: "Anbieten" },
-    { value: "pruefen", label: "Pruefen" },
+    { value: "pruefen", label: "Prüfen" },
     { value: "ablehnen", label: "Ablehnen" }
   ];
 
@@ -39,7 +39,7 @@
     group: "Vertrieb & CRM",
     icon: "A",
     title: "Angebote",
-    description: "Angebote als Ergebnis der RFQ- und Kapazitaetspruefung.",
+    description: "Angebote als Ergebnis der RFQ- und Kapazitätspruefung.",
     collection: "quotes",
     prefix: "quo",
     fields: [
@@ -48,11 +48,11 @@
       { key: "revisionId", label: "Freigegebene Revision", type: "select", options: releasedRevisionOptions },
       { key: "quoteNo", label: "Angebotsnummer", required: true },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "entwurf" },
-      { key: "validUntil", label: "Gueltig bis", type: "date" },
+      { key: "validUntil", label: "Gültig bis", type: "date" },
       { key: "leadTime", label: "Lieferzeit" },
       { key: "priceStatus", label: "Preisstatus", type: "select", options: priceOptions, default: "offen" },
       { key: "offerPrice", label: "Angebotspreis EUR", type: "number", default: 0 },
-      { key: "unitPrice", label: "Stueckpreis EUR", type: "number", default: 0 },
+      { key: "unitPrice", label: "Stückpreis EUR", type: "number", default: 0 },
       { key: "machineName", label: "Maschine" },
       { key: "risk", label: "Risiko", type: "select", options: riskOptions, default: "mittel" },
       { key: "decision", label: "Entscheidung", type: "select", options: decisionOptions, default: "pruefen" },
@@ -66,10 +66,10 @@
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
       { key: "leadTime", label: "Lieferzeit" },
       { key: "offerPrice", label: "Preis", render: (row) => row.offerPrice ? `${Number(row.offerPrice).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR` : "-" },
-      { key: "unitPrice", label: "Stueckpreis", render: (row) => row.unitPrice ? `${Number(row.unitPrice).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR` : "-" },
+      { key: "unitPrice", label: "Stückpreis", render: (row) => row.unitPrice ? `${Number(row.unitPrice).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR` : "-" },
       { key: "risk", label: "Risiko", render: (row, data, h) => h.badge(row.risk, h.toneForStatus(row.risk)) },
       { key: "decision", label: "Entscheidung", render: (row, data, h) => h.badge(row.decision, h.toneForStatus(row.decision)) },
-      { key: "validUntil", label: "Gueltig bis" }
+      { key: "validUntil", label: "Gültig bis" }
     ]
   });
 })();

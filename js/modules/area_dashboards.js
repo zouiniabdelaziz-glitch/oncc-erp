@@ -2,14 +2,17 @@
   const areas = window.OSM_AREAS || [];
   const tools = window.OSM_AREA_TOOLS || {};
 
-  function modulePills(area, h) {
+  function moduleRows(area, h) {
     return (area.modules || [])
       .map((moduleId) => tools.moduleById(moduleId))
       .filter(Boolean)
       .map((module) => `
-        <a class="module-pill" href="#${h.escapeHtml(module.id)}">
-          <span class="module-pill__icon">${h.escapeHtml(module.icon || "")}</span>
-          <span>${h.escapeHtml(module.title)}</span>
+        <a class="area-module-row" href="#${h.escapeHtml(module.id)}">
+          <span class="area-module-row__icon">${h.escapeHtml(module.icon || module.title.slice(0, 1))}</span>
+          <span>
+            <strong>${h.escapeHtml(h.displayText(module.title))}</strong>
+            <small>${h.escapeHtml(h.displayText(module.description || "Modul öffnen"))}</small>
+          </span>
         </a>
       `)
       .join("");
@@ -20,12 +23,21 @@
       .map((areaId) => tools.findArea(areaId))
       .filter(Boolean)
       .map((related) => `
-        <a class="related-card" href="#area-${h.escapeHtml(related.id)}">
-          <strong>${h.escapeHtml(related.title)}</strong>
-          <span>${h.escapeHtml(related.description)}</span>
+        <a class="compact-area-link" href="#area-${h.escapeHtml(related.id)}">
+          <span>${h.escapeHtml(h.displayText(related.title))}</span>
+          <small>${h.escapeHtml(h.displayText(related.description))}</small>
         </a>
       `)
       .join("");
+  }
+
+  function metricCards(area, data, h) {
+    return tools.areaMetrics(area, data).map((metric) => `
+      <div class="area-metric">
+        <span>${h.escapeHtml(h.displayText(metric.label))}</span>
+        <strong>${h.escapeHtml(metric.value)}</strong>
+      </div>
+    `).join("");
   }
 
   areas.forEach((area) => {
@@ -37,59 +49,96 @@
       description: area.description,
       hideInNav: true,
       render(data, h) {
-        const metrics = tools.areaMetrics(area, data);
         const important = tools.importantRows(area, data);
 
         return `
-          <div class="topbar">
+          <section class="workspace-header workspace-header--area">
             <div>
-              <div class="breadcrumb">
-                <a href="#dashboard">Hauptseite</a>
+              <div class="breadcrumb breadcrumb--quiet">
+                <a href="#dashboard">Home</a>
                 <span>/</span>
-                <span>${h.escapeHtml(area.title)}</span>
+                <span>${h.escapeHtml(h.displayText(area.title))}</span>
               </div>
-              <h1 class="topbar__title">${h.escapeHtml(area.title)}</h1>
-              <p class="topbar__text">${h.escapeHtml(area.description)}</p>
-            </div>
-            <div class="page-actions">
-              <a class="button button--quiet" href="#dashboard">Zurueck</a>
-            </div>
-          </div>
-
-          <section class="grid grid--stats">
-            ${metrics.map((metric) => `
-              <div class="stat">
-                <div class="stat__label">${h.escapeHtml(metric.label)}</div>
-                <div class="stat__value">${h.escapeHtml(metric.value)}</div>
+              <div class="workspace-title-row">
+                <h1>${h.escapeHtml(h.displayText(area.title))}</h1>
+                <span class="workspace-state">Bereich</span>
               </div>
-            `).join("")}
+              <p>${h.escapeHtml(h.displayText(area.description))}</p>
+            </div>
+            <div class="workspace-header__actions">
+              <a class="button button--quiet" href="#dashboard">Zurück</a>
+            </div>
           </section>
 
-          <section class="grid grid--two">
-            <div class="panel panel--pad">
-              <h2>Untermenues</h2>
-              <p class="muted">Alles, was direkt zu diesem Thema gehoert.</p>
-              <div class="module-pill-grid">
-                ${modulePills(area, h)}
-              </div>
-            </div>
+          <section class="filter-bar filter-bar--compact">
+            <label class="filter-field">
+              <span>Status</span>
+              <select>
+                <option>Offen / relevant</option>
+                <option>Alle Einträge</option>
+                <option>Kritisch</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Zeitraum</span>
+              <select>
+                <option>Heute und nächste 30 Tage</option>
+                <option>Diese Woche</option>
+                <option>Dieser Monat</option>
+              </select>
+            </label>
+            <label class="filter-field filter-field--wide">
+              <span>Suche im Bereich</span>
+              <input type="search" placeholder="Teil, Vorgang, Kunde, Lieferant..." />
+            </label>
+            <button class="button button--blue" type="button">Anzeigen</button>
+          </section>
 
-            <div class="panel panel--pad">
-              <h2>Wichtige Eintraege</h2>
-              <div class="list">
+          <section class="area-summary-grid">
+            ${metricCards(area, data, h)}
+          </section>
+
+          <section class="area-layout">
+            <article class="sap-card sap-card--large">
+              <div class="sap-card__head">
+                <div>
+                  <h2>Arbeitsmodule</h2>
+                  <p>Nur die Unterpunkte dieses Bereichs</p>
+                </div>
+              </div>
+              <div class="area-module-list">
+                ${moduleRows(area, h)}
+              </div>
+            </article>
+
+            <aside class="sap-card">
+              <div class="sap-card__head">
+                <div>
+                  <h2>Wichtige Einträge</h2>
+                  <p>Offen, neu oder kritisch</p>
+                </div>
+              </div>
+              <div class="mini-table">
                 ${important.length ? important.map((item) => `
-                  <a class="list-item list-item--link" href="#${h.escapeHtml(item.moduleId)}">
-                    <div class="list-item__title">${h.escapeHtml(item.title)}</div>
-                    <div class="list-item__meta">${h.escapeHtml(item.moduleTitle)}${item.meta ? ` / ${h.escapeHtml(item.meta)}` : ""}</div>
+                  <a class="mini-row" href="#${h.escapeHtml(item.moduleId)}">
+                    <span>
+                      <strong>${h.escapeHtml(h.displayText(item.title))}</strong>
+                      <small>${h.escapeHtml(h.displayText(item.moduleTitle))}${item.meta ? ` / ${h.escapeHtml(h.displayText(item.meta))}` : ""}</small>
+                    </span>
                   </a>
-                `).join("") : `<div class="empty">Keine offenen oder kritischen Eintraege in diesem Bereich.</div>`}
+                `).join("") : `<div class="empty-message">Keine offenen oder kritischen Einträge.</div>`}
               </div>
-            </div>
+            </aside>
           </section>
 
-          <section class="panel panel--pad area-related">
-            <h2>Verbunden mit</h2>
-            <div class="related-grid">
+          <section class="launch-section launch-section--compact">
+            <div class="section-head">
+              <div>
+                <span class="kicker">Verbindungen</span>
+                <h2>Mit diesem Bereich verbunden</h2>
+              </div>
+            </div>
+            <div class="compact-area-grid">
               ${relatedAreas(area, h)}
             </div>
           </section>

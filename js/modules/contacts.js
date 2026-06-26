@@ -4,7 +4,7 @@
     group: "Vertrieb & CRM",
     icon: "C",
     title: "Kontakte",
-    description: "Ansprechpartner fuer Einkauf, Technik, Leitung und Logistik.",
+    description: "Ansprechpartner für Einkauf, Technik, Leitung und Logistik.",
     collection: "contacts",
     prefix: "con",
     fields: [

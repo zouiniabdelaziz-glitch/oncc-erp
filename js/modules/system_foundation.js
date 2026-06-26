@@ -1,7 +1,7 @@
 (function () {
   const statusOptions = [
     { value: "aktiv", label: "Aktiv" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "gesperrt", label: "Gesperrt" },
     { value: "archiv", label: "Archiv" }
   ];
@@ -11,7 +11,7 @@
     group: "System & Rechte",
     icon: "G",
     title: "Gesellschaft",
-    description: "Mandant/Gesellschaft fuer das ERP. V1 startet nur mit OS.MECHPLAST SRLS.",
+    description: "Mandant/Gesellschaft für das ERP. V1 startet nur mit OS.MECHPLAST SRLS.",
     collection: "companies",
     prefix: "cmp",
     fields: [
@@ -57,13 +57,13 @@
     group: "System & Rechte",
     icon: "N",
     title: "Nummernkreise",
-    description: "Nummernlogik fuer RFQ, Angebote, Auftraege, Rechnungen und spaetere Belege.",
+    description: "Nummernlogik für RFQ, Angebote, Aufträge, Rechnungen und spätere Belege.",
     collection: "numberRanges",
     prefix: "num",
     fields: [
       { key: "code", label: "Code", required: true },
       { key: "pattern", label: "Muster" },
-      { key: "nextNumber", label: "Naechste Nummer", type: "number", default: 1 },
+      { key: "nextNumber", label: "Nächste Nummer", type: "number", default: 1 },
       { key: "ownerArea", label: "Bereich" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "aktiv" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -71,7 +71,7 @@
     columns: [
       { key: "code", label: "Code" },
       { key: "pattern", label: "Muster" },
-      { key: "nextNumber", label: "Naechste" },
+      { key: "nextNumber", label: "Nächste" },
       { key: "ownerArea", label: "Bereich" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
@@ -82,7 +82,7 @@
     group: "System & Rechte",
     icon: "H",
     title: "Historie",
-    description: "Automatisches Protokoll fuer Aenderungen, Freigaben, Lagerbewegungen und Finanzbuchungen.",
+    description: "Automatisches Protokoll für Änderungen, Freigaben, Lagerbewegungen und Finanzbuchungen.",
     render(data, h) {
       const rows = (data.auditLogs || []).slice(0, 80);
       return `
@@ -94,10 +94,10 @@
               <a href="#area-system">System & Rechte</a>
             </div>
             <h1 class="topbar__title">Historie</h1>
-            <p class="topbar__text">Jede gespeicherte Aenderung wird mit Zeit, Benutzer, Modul und Datensatz protokolliert.</p>
+            <p class="topbar__text">Jede gespeicherte Änderung wird mit Zeit, Benutzer, Modul und Datensatz protokolliert.</p>
           </div>
           <div class="page-actions">
-            <a class="button button--quiet" href="#area-system">Zurueck</a>
+            <a class="button button--quiet" href="#area-system">Zurück</a>
           </div>
         </div>
         <section class="panel">

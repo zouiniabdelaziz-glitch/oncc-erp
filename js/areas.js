@@ -13,7 +13,7 @@
     {
       id: "management",
       title: "Management",
-      description: "Projekte, Aufgaben und Fuehrungsueberblick.",
+      description: "Projekte, Aufgaben und Führungsüberblick.",
       modules: ["projects", "tasks"],
       related: ["sales", "production", "finance"],
       metrics: [
@@ -24,27 +24,27 @@
     {
       id: "sales",
       title: "Vertrieb & CRM",
-      description: "Kunden, Kontakte, RFQs, Angebotsrechner, Angebote und Auftraege.",
+      description: "Kunden, Kontakte, RFQs, Angebotsrechner, Angebote und Aufträge.",
       modules: ["customers", "contacts", "rfqs", "offer-calculator", "quotes", "orders"],
       related: ["pdm", "production", "logistics", "finance"],
       metrics: [
         count("customers", "Kunden"),
         count("rfqs", "Offene RFQs", (item) => !["abgelehnt", "gewonnen"].includes(item.status)),
         count("quotes", "Angebote"),
-        count("orders", "Offene Auftraege", (item) => item.status !== "geliefert")
+        count("orders", "Offene Aufträge", (item) => item.status !== "geliefert")
       ]
     },
     {
       id: "pdm",
       title: "PDM / Konstruktion",
-      description: "Teile, Zeichnungen, STEP, Revisionen, Freigaben und Aenderungen.",
+      description: "Teile, Zeichnungen, STEP, Revisionen, Freigaben und Änderungen.",
       modules: ["parts", "part-revisions", "files", "bom-items", "change-requests"],
       related: ["sales", "production", "quality", "inventory"],
       metrics: [
         count("parts", "Teile"),
         count("partRevisions", "Freigegeben", (item) => item.status === "freigegeben"),
-        count("partRevisions", "Zu pruefen", (item) => item.status !== "freigegeben"),
-        count("changeRequests", "Aenderungen offen", (item) => !["abgeschlossen", "abgelehnt"].includes(item.status))
+        count("partRevisions", "Zu prüfen", (item) => item.status !== "freigegeben"),
+        count("changeRequests", "Änderungen offen", (item) => !["abgeschlossen", "abgelehnt"].includes(item.status))
       ]
     },
     {
@@ -57,7 +57,7 @@
         count("suppliers", "Lieferanten"),
         count("purchaseRequests", "Bedarf offen", (item) => !["erhalten", "storniert"].includes(item.status)),
         count("purchaseOrders", "Bestellungen offen", (item) => !["erhalten", "storniert"].includes(item.status)),
-        count("goodsReceipts", "Wareneingaenge")
+        count("goodsReceipts", "Wareneingänge")
       ]
     },
     {
@@ -76,26 +76,26 @@
     {
       id: "production",
       title: "Produktion / MRP",
-      description: "Kapazitaet, Maschinen, Partner, Arbeitsplaene und Fertigungsauftraege.",
+      description: "Kapazität, Maschinen, Partner, Arbeitspläne und Fertigungsaufträge.",
       modules: ["capacity", "machines", "partners", "work-plans", "work-operations", "machine-calendar", "production-orders", "operation-feedback"],
       related: ["sales", "pdm", "inventory", "quality", "people"],
       metrics: [
         count("machines", "Maschinen"),
-        count("productionOrders", "Fertigungsauftraege offen", (item) => !["fertig", "storniert"].includes(item.status)),
-        count("workPlans", "Arbeitsplaene"),
+        count("productionOrders", "Fertigungsaufträge offen", (item) => !["fertig", "storniert"].includes(item.status)),
+        count("workPlans", "Arbeitspläne"),
         count("machineCalendarEntries", "Kalendereintraege")
       ]
     },
     {
       id: "quality",
-      title: "Qualitaet",
-      description: "Pruefplaene, Erstteilfreigabe, Pruefprotokolle und Reklamationen.",
+      title: "Qualität",
+      description: "Prüfpläne, Erstteilfreigabe, Prüfprotokolle und Reklamationen.",
       modules: ["inspection-plans", "first-article", "inspection-reports", "complaints"],
       related: ["pdm", "production", "sales"],
       metrics: [
-        count("inspectionPlans", "Pruefplaene"),
+        count("inspectionPlans", "Prüfpläne"),
         count("firstArticleApprovals", "Erstteile offen", (item) => item.status !== "freigegeben"),
-        count("inspectionReports", "Pruefprotokolle"),
+        count("inspectionReports", "Prüfprotokolle"),
         count("complaints", "Reklamationen offen", (item) => item.status !== "abgeschlossen")
       ]
     },
@@ -114,7 +114,7 @@
     {
       id: "people",
       title: "Personal",
-      description: "Mitarbeiter, Qualifikationen, Schichten, Verfuegbarkeit und Abwesenheit.",
+      description: "Mitarbeiter, Qualifikationen, Schichten, Verfügbarkeit und Abwesenheit.",
       modules: ["employees", "employee-skills", "shifts", "absences"],
       related: ["production", "quality", "management"],
       metrics: [

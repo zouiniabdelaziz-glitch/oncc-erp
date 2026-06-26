@@ -9,7 +9,7 @@
         country: "AT",
         industry: "Sondermaschinenbau",
         status: "aktiv",
-        notes: "Guter Zielkunde fuer wiederkehrende Drehteile."
+        notes: "Guter Zielkunde für wiederkehrende Drehteile."
       },
       {
         id: "cus_internal",
@@ -30,7 +30,7 @@
         phone: "",
         language: "DE",
         consent: "Kontakt vorhanden",
-        notes: "Reagiert auf Termintreue und schnelle Rueckmeldung."
+        notes: "Reagiert auf Termintreue und schnelle Rückmeldung."
       }
     ],
     projects: [
@@ -43,20 +43,20 @@
         owner: "OS.MECHPLAST",
         dueDate: "2026-07-15",
         progress: 15,
-        notes: "Kleines lokales Management-ERP mit RFQ, Angebot, Auftrag und Kapazitaet."
+        notes: "Kleines lokales Management-ERP mit RFQ, Angebot, Auftrag und Kapazität."
       }
     ],
     tasks: [
       {
         id: "tsk_rules",
-        title: "Kapazitaetsregeln mit echten Erfahrungswerten pruefen",
+        title: "Kapazitätsregeln mit echten Erfahrungswerten prüfen",
         projectId: "pro_erp_v1",
         area: "MRP",
         status: "offen",
         priority: "hoch",
         owner: "Leitung",
         dueDate: "2026-06-24",
-        notes: "Ruestzeit, Materialrisiko und realistische Lieferzeit je Teilefamilie ergaenzen."
+        notes: "Rüstzeit, Materialrisiko und realistische Lieferzeit je Teilefamilie ergaenzen."
       },
       {
         id: "tsk_rfq_template",
@@ -86,7 +86,7 @@
         tolerance: "normal",
         status: "neu",
         fileRef: "adapterwelle_revA.pdf",
-        notes: "Y-Achse wahrscheinlich sinnvoll. Wiederkehrender Bedarf moeglich."
+        notes: "Y-Achse wahrscheinlich sinnvoll. Wiederkehrender Bedarf möglich."
       }
     ],
     files: [
@@ -100,7 +100,7 @@
         fileType: "PDF",
         path: "adapterwelle_revA.pdf",
         version: "A",
-        notes: "In V1 als Referenzpfad, spaeter echte Dateiablage in der App."
+        notes: "In V1 als Referenzpfad, später echte Dateiablage in der App."
       }
     ],
     quotes: [
@@ -116,7 +116,7 @@
         priceStatus: "offen",
         risk: "mittel",
         decision: "pruefen",
-        notes: "Material- und Kapazitaetsfenster vor Versand bestaetigen."
+        notes: "Material- und Kapazitätsfenster vor Versand bestätigen."
       }
     ],
     orders: [],
@@ -129,7 +129,7 @@
         status: "aktiv",
         shiftModel: "1 Schicht",
         capabilities: "Drehteile, Prototypen, Kleinserien, mittlere Serien",
-        notes: "Standardmaschine fuer einfache bis mittlere Drehteile."
+        notes: "Standardmaschine für einfache bis mittlere Drehteile."
       },
       {
         id: "mac_l210_b",
@@ -138,16 +138,16 @@
         status: "aktiv",
         shiftModel: "1 Schicht",
         capabilities: "Drehteile, Serienwiederholung, Entlastung",
-        notes: "Parallelmaschine fuer Wiederholteile und Kapazitaet."
+        notes: "Parallelmaschine für Wiederholteile und Kapazität."
       },
       {
         id: "mac_hd2200sy",
         name: "Hyundai WIA HD2200SY",
-        type: "Dreh-Fraeszentrum",
+        type: "Dreh-Fräszentrum",
         status: "aktiv",
         shiftModel: "1 Schicht",
         capabilities: "Y-Achse, Gegenspindel, Komplettbearbeitung, Stangenlader",
-        notes: "Beste Wahl fuer komplexe Dreh-Fraes-Teile."
+        notes: "Beste Wahl für komplexe Dreh-Fräs-Teile."
       }
     ],
     materials: [
@@ -156,7 +156,7 @@
         name: "Kunststoff",
         risk: "niedrig",
         machinability: "gut",
-        notes: "Gute Passung fuer Prototypen und Kleinserien."
+        notes: "Gute Passung für Prototypen und Kleinserien."
       },
       {
         id: "mat_aluminium",
@@ -178,10 +178,10 @@
         id: "par_it_overflow",
         name: "Partnerbetrieb Italien - Overflow",
         country: "IT",
-        capability: "Drehen, Fraesen, Serienentlastung",
+        capability: "Drehen, Fräsen, Serienentlastung",
         status: "potenziell",
         trustLevel: "mittel",
-        notes: "Fuer hohe Auslastung und planbare externe Fertigung pruefen."
+        notes: "Für hohe Auslastung und planbare externe Fertigung prüfen."
       }
     ],
     companies: [
@@ -191,7 +191,7 @@
         country: "IT",
         status: "aktiv",
         legalForm: "SRLS",
-        notes: "Startgesellschaft fuer das ERP. Weitere Gesellschaften erst spaeter."
+        notes: "Startgesellschaft für das ERP. Weitere Gesellschaften erst später."
       }
     ],
     roles: [
@@ -209,7 +209,7 @@
         area: "CRM / RFQ",
         accessLevel: "bearbeiten",
         status: "aktiv",
-        notes: "Kunden, Kontakte, RFQ, Angebote und Auftraege."
+        notes: "Kunden, Kontakte, RFQ, Angebote und Aufträge."
       },
       {
         id: "rol_production",
@@ -217,7 +217,7 @@
         area: "Produktion / MRP",
         accessLevel: "bearbeiten",
         status: "aktiv",
-        notes: "Maschinen, Arbeitsplaene, Fertigungsauftraege und Rueckmeldungen."
+        notes: "Maschinen, Arbeitspläne, Fertigungsaufträge und Rückmeldungen."
       },
       {
         id: "rol_finance_locked",
@@ -225,7 +225,7 @@
         area: "Finanzen",
         accessLevel: "gesperrt",
         status: "in pruefung",
-        notes: "Italienische Steuer- und E-Rechnungslogik erst nach Commercialista-Pruefung freischalten."
+        notes: "Italienische Steuer- und E-Rechnungslogik erst nach Commercialista-Prüfung freischalten."
       }
     ],
     auditLogs: [
@@ -236,7 +236,7 @@
         collection: "system",
         recordId: "seed",
         action: "angelegt",
-        summary: "Start-Historie fuer Audit, Freigaben, Lagerbewegungen und Finanzbuchungen."
+        summary: "Start-Historie für Audit, Freigaben, Lagerbewegungen und Finanzbuchungen."
       }
     ],
     numberRanges: [
@@ -247,7 +247,7 @@
         pattern: "RFQ-{YYYY}-{###}",
         ownerArea: "Sales",
         status: "aktiv",
-        notes: "Nummernkreis fuer Anfragen."
+        notes: "Nummernkreis für Anfragen."
       },
       {
         id: "num_quote",
@@ -256,7 +256,7 @@
         pattern: "ANG-{YYYY}-{###}",
         ownerArea: "Sales",
         status: "aktiv",
-        notes: "Nummernkreis fuer Angebote."
+        notes: "Nummernkreis für Angebote."
       },
       {
         id: "num_invoice",
@@ -274,10 +274,10 @@
         partNo: "OMP-0001",
         name: "Aluminium Adapterwelle",
         customerId: "cus_muster_at",
-        partType: "Dreh-Fraesteil",
+        partType: "Dreh-Frästeil",
         status: "aktiv",
         currentRevisionId: "rev_adapterwelle_a",
-        notes: "Beispiel-Teil fuer RFQ, Zeichnung, Angebot und spaeter Produktionsauftrag."
+        notes: "Beispiel-Teil für RFQ, Zeichnung, Angebot und später Produktionsauftrag."
       }
     ],
     partRevisions: [
@@ -302,7 +302,7 @@
         quantity: 1,
         unit: "Stk",
         status: "aktiv",
-        notes: "V1: Materialbezug ohne echte Stueckliste; spaeter mit Unterteilen und Varianten."
+        notes: "V1: Materialbezug ohne echte Stückliste; später mit Unterteilen und Varianten."
       }
     ],
     changeRequests: [
@@ -314,8 +314,8 @@
         priority: "mittel",
         owner: "Konstruktion / Leitung",
         dueDate: "2026-07-05",
-        reason: "Freigabeprozess fuer Zeichnung, STEP und Angebotsverwendung definieren.",
-        notes: "Aenderungsantraege werden spaeter mit Pflichtfreigabe ausgebaut."
+        reason: "Freigabeprozess für Zeichnung, STEP und Angebotsverwendung definieren.",
+        notes: "Änderungsantraege werden später mit Pflichtfreigabe ausgebaut."
       }
     ],
     suppliers: [
@@ -326,7 +326,7 @@
         category: "Aluminium / Stahl",
         status: "potenziell",
         contact: "",
-        notes: "Platzhalter fuer echte Lieferantendaten und Preisverlauf."
+        notes: "Platzhalter für echte Lieferantendaten und Preisverlauf."
       }
     ],
     purchaseRequests: [
@@ -339,7 +339,7 @@
         unit: "Stk",
         needDate: "2026-07-01",
         status: "angefragt",
-        notes: "Materialbedarf aus RFQ/Angebot pruefen."
+        notes: "Materialbedarf aus RFQ/Angebot prüfen."
       }
     ],
     purchaseOrders: [],
@@ -351,7 +351,7 @@
         name: "Rohmaterial",
         type: "Rohmaterial",
         status: "aktiv",
-        notes: "Start-Lagerort fuer Stangenmaterial und Zuschnitte."
+        notes: "Start-Lagerort für Stangenmaterial und Zuschnitte."
       },
       {
         id: "loc_finished",
@@ -372,7 +372,7 @@
         unit: "Stk",
         minQuantity: 0,
         status: "mangel",
-        notes: "Noch kein echter Bestand erfasst; Einkauf/Reservierung pruefen."
+        notes: "Noch kein echter Bestand erfasst; Einkauf/Reservierung prüfen."
       }
     ],
     stockMovements: [
@@ -388,7 +388,7 @@
         movementDate: "2026-06-25",
         user: "System",
         status: "gebucht",
-        notes: "Startbewegung fuer Historie und Lagerlogik."
+        notes: "Startbewegung für Historie und Lagerlogik."
       }
     ],
     reservations: [
@@ -412,7 +412,7 @@
         revisionId: "rev_adapterwelle_a",
         status: "entwurf",
         owner: "Produktion",
-        notes: "Arbeitsplan fuer Adapterwelle Rev A. Vor Produktion technisch freigeben."
+        notes: "Arbeitsplan für Adapterwelle Rev A. Vor Produktion technisch freigeben."
       }
     ],
     workOperations: [
@@ -421,7 +421,7 @@
         workPlanId: "wpl_adapter_a",
         stepNo: 10,
         machineId: "mac_hd2200sy",
-        skillNeeded: "Dreh-Fraesen / Y-Achse",
+        skillNeeded: "Dreh-Fräsen / Y-Achse",
         setupHours: 2,
         cycleMin: 4,
         status: "geplant",
@@ -439,7 +439,7 @@
         availableHours: 8,
         bookedHours: 0,
         status: "verfuegbar",
-        notes: "V1-Kalenderplatzhalter fuer Kapazitaetsrechner und Produktionsplanung."
+        notes: "V1-Kalenderplatzhalter für Kapazitätsrechner und Produktionsplanung."
       }
     ],
     inspectionPlans: [
@@ -448,8 +448,8 @@
         partId: "prt_adapterwelle",
         revisionId: "rev_adapterwelle_a",
         status: "entwurf",
-        responsible: "Qualitaet",
-        notes: "Pruefplan fuer Zeichnungsmerkmale, Erstteil und Serienfreigabe."
+        responsible: "Qualität",
+        notes: "Prüfplan für Zeichnungsmerkmale, Erstteil und Serienfreigabe."
       }
     ],
     firstArticleApprovals: [],
@@ -459,19 +459,19 @@
       {
         id: "emp_leitung",
         name: "Leitung",
-        role: "Geschaeftsfuehrung / Planung",
+        role: "Geschäftsfuehrung / Planung",
         status: "aktiv",
-        notes: "Startrolle fuer Freigaben, Planung und Angebotsentscheidung."
+        notes: "Startrolle für Freigaben, Planung und Angebotsentscheidung."
       }
     ],
     employeeSkills: [
       {
         id: "esk_hd2200sy",
         employeeId: "emp_leitung",
-        skill: "Dreh-Fraesen / Y-Achse",
+        skill: "Dreh-Fräsen / Y-Achse",
         level: "freigegeben",
         validUntil: "",
-        notes: "Qualifikation fuer HD2200SY-Arbeitsgaenge."
+        notes: "Qualifikation für HD2200SY-Arbeitsgänge."
       }
     ],
     shifts: [
@@ -495,7 +495,7 @@
         name: "Vertrieb",
         area: "Sales",
         status: "aktiv",
-        notes: "Kostenstelle fuer Angebots- und Vertriebsaufwand."
+        notes: "Kostenstelle für Angebots- und Vertriebsaufwand."
       },
       {
         id: "cst_production",
@@ -503,7 +503,7 @@
         name: "Produktion",
         area: "Fertigung",
         status: "aktiv",
-        notes: "Kostenstelle fuer Maschinenzeit und Fertigungsaufwand."
+        notes: "Kostenstelle für Maschinenzeit und Fertigungsaufwand."
       }
     ],
     invoices: [],
@@ -674,42 +674,42 @@
     const reasons = [];
 
     if (partType === "dreh-fraes") {
-      reasons.push("Dreh-Fraes-Teil: HD2200SY mit Y-Achse/Gegenspindel bevorzugt.");
+      reasons.push("Dreh-Fräs-Teil: HD2200SY mit Y-Achse/Gegenspindel bevorzugt.");
     }
     if (complexity === "hoch") {
-      reasons.push("Hohe Komplexitaet erhoeht Ruest- und Pruefaufwand.");
+      reasons.push("Hohe Komplexitaet erhöht Rüst- und Prüfaufwand.");
     }
     if (material && material.risk === "mittel") {
       reasons.push("Materialgruppe mit mittlerem Bearbeitungsrisiko.");
     }
     if (tolerance === "eng" || tolerance === "kritisch") {
-      reasons.push("Toleranz erfordert technische Pruefung vor finalem Angebot.");
+      reasons.push("Toleranz erfordert technische Prüfung vor finalem Angebot.");
     }
     if (days < 10) {
-      reasons.push("Kurzer Terminwunsch: Kapazitaetsfenster aktiv pruefen.");
+      reasons.push("Kurzer Terminwunsch: Kapazitätsfenster aktiv prüfen.");
     }
 
     if (load > 550 || days < 10) {
-      shiftNeed = "2-3 Schichten pruefen";
+      shiftNeed = "2-3 Schichten prüfen";
       risk = "mittel";
       decision = "pruefen";
       leadTime = "ca. 10-20 Arbeitstage";
     }
 
     if (load > 1200 || (quantity > 500 && days < 20)) {
-      partnerNeed = "Partnerfertigung pruefen";
+      partnerNeed = "Partnerfertigung prüfen";
       risk = "mittel";
       decision = "pruefen";
       leadTime = "ca. 3-5 Wochen";
-      reasons.push("Menge/Termin kann eigene 1-Schicht-Kapazitaet belasten.");
+      reasons.push("Menge/Termin kann eigene 1-Schicht-Kapazität belasten.");
     }
 
     if (load > 2500 || quantity > 2000) {
-      extraCapacity = "Maschinenmiete/temp. Personal pruefen";
+      extraCapacity = "Maschinenmiete/temp. Personal prüfen";
       risk = "hoch";
       decision = "pruefen";
-      leadTime = "nur nach Kapazitaetsklaerung";
-      reasons.push("Grosse planbare Menge: externe Kapazitaet oder Zusatzschicht bewerten.");
+      leadTime = "nur nach Kapazitätsklärung";
+      reasons.push("Große planbare Menge: externe Kapazität oder Zusatzschicht bewerten.");
     }
 
     if (!machine) {

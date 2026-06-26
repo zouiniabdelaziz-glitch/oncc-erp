@@ -10,7 +10,7 @@
     group: "Stammdaten",
     icon: "W",
     title: "Materialgruppen",
-    description: "Materialfamilien fuer RFQ, Angebot und Kapazitaetsentscheidung.",
+    description: "Materialfamilien für RFQ, Angebot und Kapazitätsentscheidung.",
     collection: "materials",
     prefix: "mat",
     fields: [

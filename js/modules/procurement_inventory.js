@@ -2,7 +2,7 @@
   const simpleStatus = [
     { value: "aktiv", label: "Aktiv" },
     { value: "potenziell", label: "Potenziell" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "gesperrt", label: "Gesperrt" }
   ];
   const requestStatus = [
@@ -20,7 +20,7 @@
     { value: "storniert", label: "Storniert" }
   ];
   const stockStatus = [
-    { value: "verfuegbar", label: "Verfuegbar" },
+    { value: "verfuegbar", label: "Verfügbar" },
     { value: "reserviert", label: "Reserviert" },
     { value: "mangel", label: "Mangel" },
     { value: "gesperrt", label: "Gesperrt" }
@@ -31,7 +31,7 @@
     group: "Einkauf",
     icon: "L",
     title: "Lieferanten",
-    description: "Lieferanten fuer Material, externe Bearbeitung und Dienstleistungen.",
+    description: "Lieferanten für Material, externe Bearbeitung und Dienstleistungen.",
     collection: "suppliers",
     prefix: "sup",
     fields: [
@@ -84,7 +84,7 @@
     group: "Einkauf",
     icon: "B",
     title: "Bestellungen",
-    description: "Einfache Einkaufsbestellungen fuer Material und externe Leistungen.",
+    description: "Einfache Einkaufsbestellungen für Material und externe Leistungen.",
     collection: "purchaseOrders",
     prefix: "po",
     fields: [
@@ -112,7 +112,7 @@
     group: "Einkauf",
     icon: "W",
     title: "Wareneingang",
-    description: "Wareneingang fuer Material, Einkauf und spaetere Lagerbuchung.",
+    description: "Wareneingang für Material, Einkauf und spätere Lagerbuchung.",
     collection: "goodsReceipts",
     prefix: "gr",
     fields: [
@@ -140,7 +140,7 @@
     group: "Lager",
     icon: "O",
     title: "Lagerorte",
-    description: "Einfache Lagerorte fuer Rohmaterial, Fertigteile, Sperrlager und Versand.",
+    description: "Einfache Lagerorte für Rohmaterial, Fertigteile, Sperrlager und Versand.",
     collection: "warehouseLocations",
     prefix: "loc",
     fields: [
@@ -227,7 +227,7 @@
     group: "Lager",
     icon: "R",
     title: "Reservierungen",
-    description: "Material- oder Teile-Reservierungen fuer Auftrag und Produktionsauftrag.",
+    description: "Material- oder Teile-Reservierungen für Auftrag und Produktionsauftrag.",
     collection: "reservations",
     prefix: "res",
     fields: [

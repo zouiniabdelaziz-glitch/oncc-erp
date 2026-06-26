@@ -1,7 +1,7 @@
 (function () {
   const planStatus = [
     { value: "entwurf", label: "Entwurf" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "freigegeben", label: "Freigegeben" },
     { value: "gesperrt", label: "Gesperrt" }
   ];
@@ -15,7 +15,7 @@
   ];
   const qualityStatus = [
     { value: "entwurf", label: "Entwurf" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "freigegeben", label: "Freigegeben" },
     { value: "gesperrt", label: "Gesperrt" },
     { value: "reklamation", label: "Reklamation" }
@@ -38,8 +38,8 @@
     id: "work-plans",
     group: "Produktion / MRP",
     icon: "P",
-    title: "Arbeitsplaene",
-    description: "Arbeitsplan je Teilrevision als Bruecke zwischen PDM und Fertigung.",
+    title: "Arbeitspläne",
+    description: "Arbeitsplan je Teilrevision als Brücke zwischen PDM und Fertigung.",
     collection: "workPlans",
     prefix: "wpl",
     fields: [
@@ -61,8 +61,8 @@
     id: "work-operations",
     group: "Produktion / MRP",
     icon: "A",
-    title: "Arbeitsgaenge",
-    description: "Einzelne Arbeitsgaenge mit Maschine, Qualifikation, Ruestzeit und Zykluszeit.",
+    title: "Arbeitsgänge",
+    description: "Einzelne Arbeitsgänge mit Maschine, Qualifikation, Rüstzeit und Zykluszeit.",
     collection: "workOperations",
     prefix: "wop",
     fields: [
@@ -70,7 +70,7 @@
       { key: "stepNo", label: "Schritt", type: "number", default: 10 },
       { key: "machineId", label: "Maschine", type: "select", options: (data, h) => h.options("machines") },
       { key: "skillNeeded", label: "Qualifikation" },
-      { key: "setupHours", label: "Ruestzeit h", type: "number", default: 0 },
+      { key: "setupHours", label: "Rüstzeit h", type: "number", default: 0 },
       { key: "cycleMin", label: "Zyklus min", type: "number", default: 0 },
       { key: "status", label: "Status", type: "select", options: productionStatus, default: "geplant" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -80,7 +80,7 @@
       { key: "stepNo", label: "Schritt" },
       { key: "machineId", label: "Maschine", render: (row, data, h) => h.escapeHtml(h.label("machines", row.machineId)) },
       { key: "skillNeeded", label: "Qualifikation" },
-      { key: "setupHours", label: "Ruest h" },
+      { key: "setupHours", label: "Rüst h" },
       { key: "cycleMin", label: "Zyklus min" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
@@ -91,17 +91,17 @@
     group: "Produktion / MRP",
     icon: "K",
     title: "Maschinenkalender",
-    description: "Einfacher Maschinenkalender fuer verfuegbare und gebuchte Stunden.",
+    description: "Einfacher Maschinenkalender für verfuegbare und gebuchte Stunden.",
     collection: "machineCalendarEntries",
     prefix: "cal",
     fields: [
       { key: "machineId", label: "Maschine", type: "select", options: (data, h) => h.options("machines"), required: true },
       { key: "date", label: "Datum", type: "date" },
       { key: "shift", label: "Schicht", default: "1 Schicht" },
-      { key: "availableHours", label: "Verfuegbar h", type: "number", default: 8 },
+      { key: "availableHours", label: "Verfügbar h", type: "number", default: 8 },
       { key: "bookedHours", label: "Gebucht h", type: "number", default: 0 },
       { key: "status", label: "Status", type: "select", options: [
-        { value: "verfuegbar", label: "Verfuegbar" },
+        { value: "verfuegbar", label: "Verfügbar" },
         { value: "geplant", label: "Geplant" },
         { value: "blockiert", label: "Blockiert" }
       ], default: "verfuegbar" },
@@ -111,7 +111,7 @@
       { key: "machineId", label: "Maschine", render: (row, data, h) => h.escapeHtml(h.label("machines", row.machineId)) },
       { key: "date", label: "Datum" },
       { key: "shift", label: "Schicht" },
-      { key: "availableHours", label: "Verfuegbar" },
+      { key: "availableHours", label: "Verfügbar" },
       { key: "bookedHours", label: "Gebucht" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
@@ -121,8 +121,8 @@
     id: "production-orders",
     group: "Produktion / MRP",
     icon: "F",
-    title: "Produktionsauftraege",
-    description: "Fertigungsauftraege mit Auftrag, Teil, freigegebener Revision, Menge und Maschine.",
+    title: "Produktionsaufträge",
+    description: "Fertigungsaufträge mit Auftrag, Teil, freigegebener Revision, Menge und Maschine.",
     collection: "productionOrders",
     prefix: "prd",
     fields: [
@@ -131,7 +131,7 @@
       { key: "partId", label: "Teil", type: "select", options: (data, h) => h.options("parts", "partNo"), required: true },
       { key: "revisionId", label: "Freigegebene Revision", type: "select", options: (data) => revisionOptions(data, true), required: true },
       { key: "quantity", label: "Menge", type: "number", default: 1 },
-      { key: "dueDate", label: "Faellig", type: "date" },
+      { key: "dueDate", label: "Fällig", type: "date" },
       { key: "machineId", label: "Maschine", type: "select", options: (data, h) => h.options("machines") },
       { key: "status", label: "Status", type: "select", options: productionStatus, default: "neu" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -142,7 +142,7 @@
       { key: "partId", label: "Teil", render: (row, data, h) => h.escapeHtml(h.label("parts", row.partId, "partNo")) },
       { key: "revisionId", label: "Rev", render: (row, data, h) => h.escapeHtml(h.label("partRevisions", row.revisionId, "revision")) },
       { key: "quantity", label: "Menge" },
-      { key: "dueDate", label: "Faellig" },
+      { key: "dueDate", label: "Fällig" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
   });
@@ -151,8 +151,8 @@
     id: "operation-feedback",
     group: "Produktion / MRP",
     icon: "R",
-    title: "Rueckmeldungen",
-    description: "Einfache Rueckmeldung von Gutmenge, Ausschuss, Zeit und Mitarbeiter.",
+    title: "Rückmeldungen",
+    description: "Einfache Rückmeldung von Gutmenge, Ausschuss, Zeit und Mitarbeiter.",
     collection: "operationFeedback",
     prefix: "fbk",
     fields: [
@@ -179,10 +179,10 @@
 
   window.OSM.registerModule({
     id: "inspection-plans",
-    group: "Qualitaet",
+    group: "Qualität",
     icon: "P",
-    title: "Pruefplaene",
-    description: "Pruefplan je Teilrevision. Detailmerkmale und Messmittel folgen spaeter.",
+    title: "Prüfpläne",
+    description: "Prüfplan je Teilrevision. Detailmerkmale und Messmittel folgen später.",
     collection: "inspectionPlans",
     prefix: "ipl",
     fields: [
@@ -190,7 +190,7 @@
       { key: "revisionId", label: "Revision", type: "select", options: (data) => revisionOptions(data, true) },
       { key: "responsible", label: "Verantwortlich" },
       { key: "status", label: "Status", type: "select", options: qualityStatus, default: "entwurf" },
-      { key: "notes", label: "Pruefhinweise", type: "textarea", wide: true }
+      { key: "notes", label: "Prüfhinweise", type: "textarea", wide: true }
     ],
     columns: [
       { key: "partId", label: "Teil", render: (row, data, h) => h.escapeHtml(h.label("parts", row.partId, "partNo")) },
@@ -202,7 +202,7 @@
 
   window.OSM.registerModule({
     id: "first-article",
-    group: "Qualitaet",
+    group: "Qualität",
     icon: "E",
     title: "Erstteilfreigabe",
     description: "Erstteilfreigabe vor Serienfertigung oder Wiederholauftrag.",
@@ -229,16 +229,16 @@
 
   window.OSM.registerModule({
     id: "inspection-reports",
-    group: "Qualitaet",
+    group: "Qualität",
     icon: "Q",
-    title: "Pruefprotokolle",
-    description: "Pruefberichte fuer Fertigungsauftrag, Teil und Ergebnis.",
+    title: "Prüfprotokolle",
+    description: "Prüfberichte für Fertigungsauftrag, Teil und Ergebnis.",
     collection: "inspectionReports",
     prefix: "irp",
     fields: [
       { key: "productionOrderId", label: "Produktionsauftrag", type: "select", options: (data, h) => h.options("productionOrders", "productionNo") },
       { key: "partId", label: "Teil", type: "select", options: (data, h) => h.options("parts", "partNo") },
-      { key: "inspectorId", label: "Pruefer", type: "select", options: (data, h) => h.options("employees") },
+      { key: "inspectorId", label: "Prüfer", type: "select", options: (data, h) => h.options("employees") },
       { key: "reportDate", label: "Datum", type: "date" },
       { key: "result", label: "Ergebnis" },
       { key: "status", label: "Status", type: "select", options: qualityStatus, default: "in pruefung" },
@@ -247,7 +247,7 @@
     columns: [
       { key: "productionOrderId", label: "Fertigung", render: (row, data, h) => h.escapeHtml(h.label("productionOrders", row.productionOrderId, "productionNo")) },
       { key: "partId", label: "Teil", render: (row, data, h) => h.escapeHtml(h.label("parts", row.partId, "partNo")) },
-      { key: "inspectorId", label: "Pruefer", render: (row, data, h) => h.escapeHtml(h.label("employees", row.inspectorId)) },
+      { key: "inspectorId", label: "Prüfer", render: (row, data, h) => h.escapeHtml(h.label("employees", row.inspectorId)) },
       { key: "reportDate", label: "Datum" },
       { key: "result", label: "Ergebnis" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
@@ -256,7 +256,7 @@
 
   window.OSM.registerModule({
     id: "complaints",
-    group: "Qualitaet",
+    group: "Qualität",
     icon: "K",
     title: "Reklamationen",
     description: "Kunden- und Lieferantenreklamationen mit Ursache, Status und Massnahmen.",

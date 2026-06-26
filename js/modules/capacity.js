@@ -3,7 +3,7 @@
     id: "capacity",
     group: "Produktion / MRP",
     icon: "K",
-    title: "Kapazitaetsentscheidung",
+    title: "Kapazitätsentscheidung",
     description: "Einfache regelbasierte Entscheidung: Maschine, Schichtbedarf, Partner und Risiko.",
     render(data, h) {
       const rfqs = data.rfqs || [];
@@ -15,11 +15,11 @@
               <span>/</span>
               <a href="#area-production">Produktion / MRP</a>
             </div>
-            <h1 class="topbar__title">Kapazitaetsentscheidung</h1>
-            <p class="topbar__text">Erste MRP-Logik fuer anbieten, pruefen oder ablehnen.</p>
+            <h1 class="topbar__title">Kapazitätsentscheidung</h1>
+            <p class="topbar__text">Erste MRP-Logik für anbieten, prüfen oder ablehnen.</p>
           </div>
           <div class="page-actions">
-            <a class="button button--quiet" href="#area-production">Zurueck</a>
+            <a class="button button--quiet" href="#area-production">Zurück</a>
           </div>
         </div>
         <div class="notice">
@@ -45,7 +45,7 @@
                 </div>
                 <div class="decision-grid">
                   <div class="decision-cell"><div class="decision-cell__label">Zusatzkapazitaet</div><div class="decision-cell__value">${h.escapeHtml(decision.extraCapacity)}</div></div>
-                  <div class="decision-cell"><div class="decision-cell__label">Serioese Lieferzeit</div><div class="decision-cell__value">${h.escapeHtml(decision.leadTime)}</div></div>
+                  <div class="decision-cell"><div class="decision-cell__label">Seriöse Lieferzeit</div><div class="decision-cell__value">${h.escapeHtml(decision.leadTime)}</div></div>
                   <div class="decision-cell"><div class="decision-cell__label">Teiletyp</div><div class="decision-cell__value">${h.escapeHtml(rfq.partType)}</div></div>
                   <div class="decision-cell"><div class="decision-cell__label">Toleranz</div><div class="decision-cell__value">${h.escapeHtml(rfq.tolerance)}</div></div>
                 </div>
@@ -54,7 +54,7 @@
                 </div>
               </article>
             `;
-          }).join("") : `<div class="panel panel--pad">Noch keine RFQs fuer eine Entscheidung vorhanden.</div>`}
+          }).join("") : `<div class="panel panel--pad">Noch keine RFQs für eine Entscheidung vorhanden.</div>`}
         </div>
       `;
     }

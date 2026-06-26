@@ -11,15 +11,68 @@
       .replaceAll("'", "&#039;");
   }
 
+  function displayText(value) {
+    const text = String(value ?? "");
+    const dictionary = {
+      "pruefen": "pr\u00fcfen",
+      "in pruefung": "in Pr\u00fcfung",
+      "ueberfaellig": "\u00fcberf\u00e4llig",
+      "geloescht": "gel\u00f6scht",
+      "verfuegbar": "verf\u00fcgbar",
+      "bestaetigt": "best\u00e4tigt",
+      "geschaetzt": "gesch\u00e4tzt"
+    };
+    if (dictionary[text]) return dictionary[text];
+    return text
+      .replaceAll("fuer", "f\u00fcr")
+      .replaceAll("Fuer", "F\u00fcr")
+      .replaceAll("Zurueck", "Zur\u00fcck")
+      .replaceAll("zurueck", "zur\u00fcck")
+      .replaceAll("Kapazitaets", "Kapazit\u00e4ts")
+      .replaceAll("Kapazitaet", "Kapazit\u00e4t")
+      .replaceAll("Qualitaet", "Qualit\u00e4t")
+      .replaceAll("Pruefung", "Pr\u00fcfung")
+      .replaceAll("Pruef", "Pr\u00fcf")
+      .replaceAll(" pruefen", " pr\u00fcfen")
+      .replaceAll("Stueck", "St\u00fcck")
+      .replaceAll("Rueck", "R\u00fcck")
+      .replaceAll("Ruest", "R\u00fcst")
+      .replaceAll("Aender", "\u00c4nder")
+      .replaceAll("aender", "\u00e4nder")
+      .replaceAll("Naechst", "N\u00e4chst")
+      .replaceAll("naechst", "n\u00e4chst")
+      .replaceAll("Eintraege", "Eintr\u00e4ge")
+      .replaceAll("Auftraege", "Auftr\u00e4ge")
+      .replaceAll("Arbeitsplaene", "Arbeitspl\u00e4ne")
+      .replaceAll("Arbeitsgaenge", "Arbeitsg\u00e4nge")
+      .replaceAll("Wareneingaenge", "Wareneing\u00e4nge")
+      .replaceAll("Faehig", "F\u00e4hig")
+      .replaceAll("faehig", "f\u00e4hig")
+      .replaceAll("Faellig", "F\u00e4llig")
+      .replaceAll("faellig", "f\u00e4llig")
+      .replaceAll("Gueltig", "G\u00fcltig")
+      .replaceAll("gueltig", "g\u00fcltig")
+      .replaceAll("Loeschen", "L\u00f6schen")
+      .replaceAll("loeschen", "l\u00f6schen")
+      .replaceAll("Schliessen", "Schlie\u00dfen")
+      .replaceAll("oeffnen", "\u00f6ffnen")
+      .replaceAll("Oeffnen", "\u00d6ffnen")
+      .replaceAll("moeglich", "m\u00f6glich")
+      .replaceAll("Moeglich", "M\u00f6glich")
+      .replaceAll("ueber", "\u00fcber")
+      .replaceAll("Ueber", "\u00dcber")
+      .replaceAll("spaeter", "sp\u00e4ter")
+      .replaceAll("Spaeter", "Sp\u00e4ter");
+  }
   function badge(value, tone) {
     const className = tone ? `badge badge--${tone}` : "badge";
-    return `<span class="${className}">${escapeHtml(value || "-")}</span>`;
+    return `<span class="${className}">${escapeHtml(displayText(value || "-"))}</span>`;
   }
 
   function toneForStatus(status) {
     if ([
       "aktiv", "gewonnen", "geliefert", "fertig", "anbieten", "freigegeben",
-      "gebucht", "bezahlt", "erhalten", "verfuegbar", "abgeschlossen", "bestaetigt",
+      "gebucht", "bezahlt", "erhalten", "verfuegbar", "abgeschlossen", "bestätigt",
       "reserviert", "genehmigt", "bereit"
     ].includes(status)) return "ok";
     if ([
@@ -51,6 +104,7 @@
 
   const helpers = {
     escapeHtml,
+    displayText,
     badge,
     toneForStatus,
     label,
@@ -65,15 +119,31 @@
   function start() {
     OSM.data = OSM.state.load();
     document.getElementById("app").innerHTML = `
-      <div class="shell">
-        <aside class="sidebar">
-          <div class="brand">
-            <div class="brand__eyebrow">OS.MECHPLAST SRLS</div>
-            <div class="brand__title">Management ERP</div>
-            <div class="brand__subtitle">Lokal, modular, CNC-fokussiert</div>
+      <div class="app-shell">
+        <header class="shellbar">
+          <div class="shellbar__left">
+            <a class="shellbar__icon" href="#dashboard">Start</a>
+            <button class="shellbar__icon" type="button" onclick="history.back()">Zurück</button>
+            <a class="shellbar__brand" href="#dashboard">
+              <span class="shellbar__mark">ON</span>
+              <span class="shellbar__product">ONCC ERP</span>
+            </a>
+            <span class="shellbar__workspace">OS.MECHPLAST Workspace</span>
           </div>
-          <nav class="nav" data-region="nav"></nav>
-        </aside>
+          <div class="shellbar__center">
+            <select class="shellbar__select" aria-label="Arbeitskontext">
+              <option>Management System</option>
+              <option>Vertrieb & CRM</option>
+              <option>Produktion / MRP</option>
+            </select>
+            <input class="shellbar__search" type="search" placeholder="Suchbegriff eingeben" aria-label="Globale Suche" />
+          </div>
+          <div class="shellbar__right">
+            <a class="shellbar__tool" href="#security">Sicherheit</a>
+            <a class="shellbar__tool" href="#settings">System</a>
+          </div>
+        </header>
+        <nav class="context-tabs" data-region="nav"></nav>
         <main class="main" data-region="content"></main>
       </div>
     `;
@@ -93,30 +163,46 @@
     return OSM.modules.find((module) => module.id === id) || OSM.modules[0];
   }
 
-  function groupedModules() {
-    return OSM.modules.filter((module) => !module.hideInNav).reduce((groups, module) => {
-      const group = module.group || "Sonstiges";
-      groups[group] = groups[group] || [];
-      groups[group].push(module);
-      return groups;
-    }, {});
+  function areaInitial(area) {
+    return (area.title || "?").slice(0, 1).toUpperCase();
+  }
+
+  function activeAreaId(activeId) {
+    if (activeId.startsWith("area-")) return activeId.replace("area-", "");
+    const tools = areaTools();
+    const area = tools.findAreaForModule ? tools.findAreaForModule(activeId) : null;
+    return area ? area.id : "";
   }
 
   function renderNav(activeId) {
-    const groups = groupedModules();
-    return Object.keys(groups)
-      .map((group) => `
-        <div class="nav-group">
-          <div class="nav-group__title">${escapeHtml(group)}</div>
-          ${groups[group].map((module) => `
-            <a class="nav-link ${module.id === activeId ? "is-active" : ""}" href="#${module.id}">
-              <span class="nav-link__icon">${escapeHtml(module.icon || "")}</span>
-              <span>${escapeHtml(module.title)}</span>
-            </a>
-          `).join("")}
-        </div>
-      `)
-      .join("");
+    const areas = window.OSM_AREAS || [];
+    const activeArea = activeAreaId(activeId);
+    const activeAreaRecord = areas.find((area) => area.id === activeArea);
+    const quickIds = ["rfqs", "offer-calculator", "orders", "tasks", "capacity", "module-map"];
+    const secondaryIds = activeAreaRecord ? activeAreaRecord.modules || [] : quickIds;
+    const secondaryModules = secondaryIds
+      .map((id) => OSM.modules.find((module) => module.id === id))
+      .filter(Boolean);
+
+    return `
+      <div class="context-tabs__primary">
+        <a class="context-tab ${activeId === "dashboard" ? "is-active" : ""}" href="#dashboard">Hauptseite</a>
+        ${areas.map((area) => `
+          <a class="context-tab ${activeArea === area.id ? "is-active" : ""}" href="#area-${escapeHtml(area.id)}">
+            ${escapeHtml(area.title)}
+          </a>
+        `).join("")}
+      </div>
+      <div class="context-tabs__secondary">
+        <span class="context-tabs__label">${activeAreaRecord ? escapeHtml(activeAreaRecord.title) : "Schnellstart"}</span>
+        ${secondaryModules.map((module) => `
+          <a class="sub-tab ${module.id === activeId ? "is-active" : ""}" href="#${module.id}">
+            <span>${escapeHtml(module.icon || areaInitial({ title: module.title }))}</span>
+            ${escapeHtml(module.title)}
+          </a>
+        `).join("")}
+      </div>
+    `;
   }
 
   function render() {
@@ -139,10 +225,10 @@
       ${renderRelatedModules(module)}
       <div class="toolbar">
         <input class="search" data-action="search" value="${escapeHtml(searchTerm)}" placeholder="Suchen..." />
-        <div class="muted small">${filteredRows.length} Eintraege</div>
+        <div class="muted small">${filteredRows.length} Einträge</div>
       </div>
       <section class="panel">
-        ${filteredRows.length ? renderTable(module, filteredRows) : `<div class="empty">Noch keine Eintraege in diesem Modul.</div>`}
+        ${filteredRows.length ? renderTable(module, filteredRows) : `<div class="empty">Noch keine Einträge in diesem Modul.</div>`}
       </section>
     `;
   }
@@ -164,7 +250,7 @@
           <p class="topbar__text">${escapeHtml(module.description || "")}</p>
         </div>
         <div class="page-actions">
-          ${!isDashboard ? `<a class="button button--quiet" href="${area ? `#area-${escapeHtml(area.id)}` : "#dashboard"}">Zurueck</a>` : ""}
+          ${!isDashboard ? `<a class="button button--quiet" href="${area ? `#area-${escapeHtml(area.id)}` : "#dashboard"}">Zurück</a>` : ""}
           ${module.collection ? `<button class="button" data-action="add" data-module="${module.id}">+ Neu</button>` : ""}
         </div>
       </div>
@@ -198,7 +284,7 @@
         <table>
           <thead>
             <tr>
-              ${module.columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}
+              ${module.columns.map((column) => `<th>${escapeHtml(displayText(column.label))}</th>`).join("")}
               <th></th>
             </tr>
           </thead>
@@ -206,12 +292,12 @@
             ${rows.map((row) => `
               <tr>
                 ${module.columns.map((column) => `
-                  <td>${column.render ? column.render(row, OSM.data, helpers) : escapeHtml(row[column.key])}</td>
+                  <td>${column.render ? column.render(row, OSM.data, helpers) : escapeHtml(displayText(row[column.key]))}</td>
                 `).join("")}
                 <td>
                   <div class="row-actions">
-                    <button class="icon-button" data-action="edit" data-module="${module.id}" data-id="${row.id}">Edit</button>
-                    <button class="icon-button" data-action="delete" data-module="${module.id}" data-id="${row.id}">Del</button>
+                    <button class="icon-button" data-action="edit" data-module="${module.id}" data-id="${row.id}">Bearbeiten</button>
+                    <button class="icon-button icon-button--danger" data-action="delete" data-module="${module.id}" data-id="${row.id}">Löschen</button>
                   </div>
                 </td>
               </tr>
@@ -256,7 +342,7 @@
         render();
         alert("Import erledigt.");
       } catch (error) {
-        alert("Import nicht moeglich. Bitte eine gueltige JSON-Backup-Datei waehlen.");
+        alert("Import nicht möglich. Bitte eine gültige JSON-Backup-Datei wählen.");
       }
     };
     reader.readAsText(file);
@@ -271,8 +357,8 @@
       <div class="modal-backdrop" data-modal>
         <div class="modal">
           <div class="modal__head">
-            <div class="modal__title">${existing ? "Eintrag bearbeiten" : "Neuer Eintrag"}: ${escapeHtml(module.title)}</div>
-            <button class="icon-button" data-action="close-modal">Schliessen</button>
+            <div class="modal__title">${existing ? "Eintrag bearbeiten" : "Neuer Eintrag"}: ${escapeHtml(displayText(module.title))}</div>
+            <button class="icon-button" data-action="close-modal">Schließen</button>
           </div>
           <form data-form-module="${module.id}">
             <div class="form-grid">
@@ -317,7 +403,7 @@
           <option value="">-</option>
           ${choices.map((option) => `
             <option value="${escapeHtml(option.value)}" ${String(value) === String(option.value) ? "selected" : ""}>
-              ${escapeHtml(option.label)}
+              ${escapeHtml(displayText(option.label))}
             </option>
           `).join("")}
         </select>
@@ -328,7 +414,7 @@
 
     return `
       <div class="form-field${wide}">
-        <label>${escapeHtml(field.label)}</label>
+        <label>${escapeHtml(displayText(field.label))}</label>
         ${control}
       </div>
     `;
@@ -336,7 +422,7 @@
 
   function deleteRecord(moduleId, id) {
     const module = OSM.modules.find((item) => item.id === moduleId);
-    if (!confirm("Diesen Eintrag wirklich loeschen?")) return;
+    if (!confirm("Diesen Eintrag wirklich löschen?")) return;
     OSM.state.remove(OSM.data, module.collection, id);
     render();
   }
@@ -357,7 +443,7 @@
   }
 
   function resetDemoData() {
-    if (!confirm("Demo-Daten wiederherstellen? Eigene lokale Aenderungen werden ersetzt.")) return;
+    if (!confirm("Demo-Daten wiederherstellen? Eigene lokale Änderungen werden ersetzt.")) return;
     OSM.data = OSM.state.reset();
     render();
   }

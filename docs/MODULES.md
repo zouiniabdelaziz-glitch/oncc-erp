@@ -1,30 +1,30 @@
 # OS.MECHPLAST Management ERP - Modulstruktur
 
-Ziel: klein starten, aber fachlich richtig schneiden. Jedes Thema bleibt ein eigenes Modul. Wenn ein Modul zu gross wird, wird es in kleinere Module geteilt.
+Ziel: klein starten, aber fachlich richtig schneiden. Jedes Thema bleibt ein eigenes Modul. Wenn ein Modul zu groß wird, wird es in kleinere Module geteilt.
 
 ## Grundprinzip
 
-- ERP verwaltet Geschaeftsvorgaenge: Kunde, RFQ, Angebot, Auftrag, Einkauf, Lager, Produktion, Versand, Rechnung, Zahlung.
-- PDM ist die verbindliche Quelle fuer Teil, Zeichnung, STEP, Revision, Freigabe, Stueckliste und Aenderung.
-- MRP verbindet Bedarf, Bestand, Reservierung, Einkauf, Maschine, Mitarbeiter, Qualifikation und Kapazitaet.
+- ERP verwaltet Geschäftsvorgaenge: Kunde, RFQ, Angebot, Auftrag, Einkauf, Lager, Produktion, Versand, Rechnung, Zahlung.
+- PDM ist die verbindliche Quelle für Teil, Zeichnung, STEP, Revision, Freigabe, Stückliste und Änderung.
+- MRP verbindet Bedarf, Bestand, Reservierung, Einkauf, Maschine, Mitarbeiter, Qualifikation und Kapazität.
 - Finanzen bleibt am Anfang Management- und Rechnungsgrundlage, nicht rechtsverbindliche Buchhaltung.
 
 ## Verbindliche Ablaeufe
 
 - Kunde -> RFQ -> Teilrevision -> Angebotsrechner -> Angebot -> Auftrag -> Produktionsauftrag -> Versand -> Rechnung -> Zahlung
-- Teil -> Revision -> Stueckliste -> Arbeitsplan -> Materialreservierung -> Einkauf oder Lagerentnahme
-- Mitarbeiter + Qualifikation + Verfuegbarkeit -> Schicht -> Arbeitsgang
+- Teil -> Revision -> Stückliste -> Arbeitsplan -> Materialreservierung -> Einkauf oder Lagerentnahme
+- Mitarbeiter + Qualifikation + Verfügbarkeit -> Schicht -> Arbeitsgang
 
 Nur freigegebene Teilrevisionen sollen in Angebot, Auftrag und Produktion verwendet werden. Der Angebotsrechner blockiert bekannte nicht freigegebene Revisionen beim Speichern eines Angebots.
 
 ## Start
 
 - Dashboard
-  - Aufgaben, Projekte, RFQs, Auftraege
-  - Materialbedarf, Reservierungen, Fertigungsauftraege
+  - Aufgaben, Projekte, RFQs, Aufträge
+  - Materialbedarf, Reservierungen, Fertigungsaufträge
   - PDM-Freigaben und Finanz-Sperren
 - Modul-Landkarte
-  - Bereiche jetzt/spaeter
+  - Bereiche jetzt/später
   - Ausbauphasen
   - verbindliche Workflows
 
@@ -47,9 +47,9 @@ Nur freigegebene Teilrevisionen sollen in Angebot, Auftrag und Produktion verwen
   - Backup exportieren
   - Backup importieren
   - Demo-Daten wiederherstellen
-  - Moduluebersicht
+  - Modulübersicht
 
-Spaeter:
+Später:
 
 - echte Benutzer
 - Rollenrechte pro Modul
@@ -66,11 +66,11 @@ Spaeter:
   - ERP-Ausbau
 - Aufgaben
   - Verantwortliche
-  - Faelligkeit
+  - Fälligkeit
   - Prioritaet
   - Status
 
-Spaeter:
+Später:
 
 - Wochenplanung
 - wiederkehrende Aufgaben
@@ -95,14 +95,14 @@ Spaeter:
   - PDM-Teil
   - Teilrevision
   - Materialgruppe
-  - Stueckzahl
+  - Stückzahl
   - Terminwunsch
   - Komplexitaet
   - Toleranz
 - Angebotsrechner
   - Maschinenfit
   - Maschinenkalender
-  - Kapazitaetspruefung
+  - Kapazitätspruefung
   - Preisabschaetzung
   - Risiko und Entscheidung
 - Angebote
@@ -113,7 +113,7 @@ Spaeter:
   - Preisstatus
   - Risiko
   - Entscheidung
-- Auftraege
+- Aufträge
   - Angebotsbezug
   - PDM-Teil
   - freigegebene Revision
@@ -121,7 +121,7 @@ Spaeter:
   - Termin
   - Status
 
-Spaeter:
+Später:
 
 - Follow-ups
 - Angebots-PDF
@@ -150,12 +150,12 @@ Spaeter:
   - PDM-Teil
   - Teilrevision
   - Referenz zu RFQ, Angebot, Auftrag, Projekt oder Kunde
-- Stueckliste
+- Stückliste
   - Hauptteil
   - Unterteil oder Materialgruppe
   - Menge
   - Einheit
-- Aenderungen
+- Änderungen
   - Teil
   - Revision
   - Grund
@@ -163,12 +163,12 @@ Spaeter:
   - Prioritaet
   - Status
 
-Spaeter:
+Später:
 
 - echte Dateiablage
 - Varianten
 - Entwicklungsprojekte
-- Aenderungsfreigabe mit Pflichtworkflow
+- Änderungsfreigabe mit Pflichtworkflow
 - CAD/PDM-Integration
 
 ## Einkauf
@@ -199,7 +199,7 @@ Spaeter:
   - Lagerort
   - Eingang
 
-Spaeter:
+Später:
 
 - Lieferantenbewertung
 - Preisverlauf
@@ -233,7 +233,7 @@ Spaeter:
   - Bedarfstermin
   - Status
 
-Spaeter:
+Später:
 
 - Chargen
 - Materialzeugnisse
@@ -246,12 +246,12 @@ Spaeter:
   - Hyundai WIA L210LMA #1
   - Hyundai WIA L210LMA #2
   - Hyundai WIA HD2200SY
-  - Breuning IRCO Stangenlader als Faehigkeit der HD2200SY
+  - Breuning IRCO Stangenlader als Fähigkeit der HD2200SY
 - Partnerbetriebe
   - Overflow
   - Spezialbearbeitung
   - Serienentlastung
-- Kapazitaetsentscheidung
+- Kapazitätsentscheidung
   - passende Maschine
   - Schichtbedarf
   - Partnerbedarf
@@ -259,15 +259,15 @@ Spaeter:
   - Lieferzeit
   - Risiko
   - Entscheidung
-- Arbeitsplaene
+- Arbeitspläne
   - Teil
   - Revision
   - Status
-- Arbeitsgaenge
+- Arbeitsgänge
   - Arbeitsplan
   - Maschine
   - Qualifikation
-  - Ruestzeit
+  - Rüstzeit
   - Zykluszeit
 - Maschinenkalender
   - Maschine
@@ -275,14 +275,14 @@ Spaeter:
   - Schicht
   - verfuegbare Stunden
   - gebuchte Stunden
-- Produktionsauftraege
+- Produktionsaufträge
   - Kundenauftrag
   - Teil
   - freigegebene Revision
   - Menge
   - Maschine
   - Termin
-- Rueckmeldungen
+- Rückmeldungen
   - Produktionsauftrag
   - Arbeitsgang
   - Mitarbeiter
@@ -290,7 +290,7 @@ Spaeter:
   - Ausschuss
   - Stunden
 
-Spaeter:
+Später:
 
 - echte Feinplanung
 - Nachkalkulation
@@ -298,9 +298,9 @@ Spaeter:
 - automatische Maschinenbelegung
 - Partnerfertigungs-Workflow
 
-## Qualitaet
+## Qualität
 
-- Pruefplaene
+- Prüfpläne
   - Teil
   - Revision
   - Verantwortlich
@@ -310,10 +310,10 @@ Spaeter:
   - Revision
   - Produktionsauftrag
   - Freigabe
-- Pruefprotokolle
+- Prüfprotokolle
   - Produktionsauftrag
   - Teil
-  - Pruefer
+  - Prüfer
   - Ergebnis
 - Reklamationen
   - Kunde
@@ -322,7 +322,7 @@ Spaeter:
   - Verantwortlich
   - Status
 
-Spaeter:
+Später:
 
 - Messmittelverwaltung
 - Lieferantenqualitaet
@@ -340,10 +340,10 @@ Spaeter:
   - Versanddatum
   - Lieferdatum
 
-Spaeter:
+Später:
 
 - Lieferavis
-- Ruecksendungen
+- Rücksendungen
 - Packvorschriften
 - automatische Rechnungsgrundlage nach Versand
 
@@ -357,7 +357,7 @@ Spaeter:
   - Mitarbeiter
   - Qualifikation
   - Stufe
-  - Gueltigkeit
+  - Gültigkeit
 - Schichten
   - Datum
   - Mitarbeiter
@@ -369,7 +369,7 @@ Spaeter:
   - Zeitraum
   - Status
 
-Spaeter:
+Später:
 
 - Schulungsplanung
 - Qualifikationsmatrix
@@ -384,7 +384,7 @@ Spaeter:
   - Kunde
   - Auftrag
   - Datum
-  - Faelligkeit
+  - Fälligkeit
   - Netto/Steuer/Brutto
   - Status
 - Gutschriften
@@ -399,23 +399,23 @@ Spaeter:
 - Offene Posten
   - Rechnung
   - Kunde
-  - Faelligkeit
+  - Fälligkeit
   - offen
 - Finanzbuchungen
   - aktuell Sperrmodul
-  - Aktivierung erst nach Commercialista-Pruefung
+  - Aktivierung erst nach Commercialista-Prüfung
 
-Spaeter:
+Später:
 
 - italienische Steuer-/Buchungslogik
 - FatturaPA/SDI
 - Abschlusslogik
-- Export fuer Steuerberater
+- Export für Steuerberater
 
 ## Technische Roadmap
 
-1. Fundament: lokale App, Modulstruktur, Historie, Backup, spaeter SQLite und Desktop.
+1. Fundament: lokale App, Modulstruktur, Historie, Backup, später SQLite und Desktop.
 2. Vertrieb + PDM-Kern: RFQ, Angebotsrechner, Teilstamm, Revision, Freigabe, Zeichnung.
 3. Einkauf + Lager + Produktion: Bedarf, Bestellung, Wareneingang, Bestand, Reservierung, Arbeitsplan, Produktionsauftrag.
-4. Personal + Qualitaet + Finanzen: Schicht/Qualifikation, Pruefung, Rechnungsgrundlagen, Zahlungen.
-5. Vollstaendiges PDM + rechtliche Finanzfunktionen: Varianten, Aenderungswesen, FatturaPA/SDI erst nach fachlicher Validierung.
+4. Personal + Qualität + Finanzen: Schicht/Qualifikation, Prüfung, Rechnungsgrundlagen, Zahlungen.
+5. Vollständiges PDM + rechtliche Finanzfunktionen: Varianten, Änderungswesen, FatturaPA/SDI erst nach fachlicher Validierung.

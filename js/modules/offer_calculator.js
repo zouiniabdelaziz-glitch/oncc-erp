@@ -5,7 +5,7 @@
     Aluminium: {
       tolerance: "typisch +/-0,03 bis +/-0,05 mm",
       status: "Aktiv anbieten",
-      note: "Gute Zielgruppe fuer praezise Dreh- und Dreh-Fraesteile."
+      note: "Gute Zielgruppe für praezise Dreh- und Dreh-Frästeile."
     },
     "Zerspanbarer Stahl": {
       tolerance: "typisch +/-0,03 bis +/-0,05 mm",
@@ -15,26 +15,26 @@
     POM: {
       tolerance: "typisch +/-0,05 mm",
       status: "Aktiv anbieten",
-      note: "Sehr gut fuer saubere Kunststoff-Drehteile."
+      note: "Sehr gut für saubere Kunststoff-Drehteile."
     },
     "PA / Nylon": {
       tolerance: "typisch +/-0,10 mm",
-      status: "Nur nach Pruefung",
+      status: "Nur nach Prüfung",
       note: "Materialverhalten und Feuchtigkeit beachten."
     },
     "PE / PP": {
       tolerance: "typisch +/-0,10 bis +/-0,20 mm",
-      status: "Nur nach Pruefung",
+      status: "Nur nach Prüfung",
       note: "Enge Toleranzen eher vermeiden."
     },
     "Technische Kunststoffe": {
       tolerance: "typisch +/-0,05 bis +/-0,10 mm",
       status: "Aktiv anbieten",
-      note: "Je Geometrie pruefen."
+      note: "Je Geometrie prüfen."
     },
     Hochleistungskunststoffe: {
       tolerance: "typisch +/-0,05 bis +/-0,15 mm",
-      status: "Nur nach Pruefung",
+      status: "Nur nach Prüfung",
       note: "Immer Zeichnungs- und Materialpruefung."
     },
     "Nicht aktiv anbieten": {
@@ -62,8 +62,8 @@
     },
     Sonstiges: {
       realistic: "auftragsbezogen",
-      quote: "auftragsbezogen pruefen",
-      note: "Transportzeit individuell pruefen."
+      quote: "auftragsbezogen prüfen",
+      note: "Transportzeit individuell prüfen."
     }
   };
 
@@ -144,15 +144,15 @@
 
   function machineForPart(partType) {
     const l210Parts = ["Welle", "Buchse", "Huelse", "Bolzen", "Distanzstueck", "Gewindeteil"];
-    if (partType === "Dreh-Fraesteil") return "Hyundai WIA HD2200SY";
-    if (l210Parts.includes(partType)) return "Hyundai WIA L210LMA / HD2200SY pruefen";
-    return "Technische Pruefung";
+    if (partType === "Dreh-Frästeil") return "Hyundai WIA HD2200SY";
+    if (l210Parts.includes(partType)) return "Hyundai WIA L210LMA / HD2200SY prüfen";
+    return "Technische Prüfung";
   }
 
   function mapRfqPartType(rfq) {
     const partType = String(rfq.partType || "").toLowerCase();
     const name = String(rfq.partName || "").toLowerCase();
-    if (partType.includes("dreh-fraes")) return "Dreh-Fraesteil";
+    if (partType.includes("dreh-fraes")) return "Dreh-Frästeil";
     if (name.includes("welle")) return "Welle";
     if (name.includes("buchse")) return "Buchse";
     if (name.includes("huelse") || name.includes("hulse")) return "Huelse";
@@ -224,15 +224,15 @@
   }
 
   function calendarStatus(hours) {
-    if (hours <= 0) return "Keine freie Kapazitaet";
+    if (hours <= 0) return "Keine freie Kapazität";
     if (hours < 8) return "Engpass";
-    return "Kapazitaet vorhanden";
+    return "Kapazität vorhanden";
   }
 
   function calculate(input) {
     const material = materialRules[input.materialGroup] || {
-      tolerance: "Nach Zeichnung pruefen",
-      status: "Material pruefen",
+      tolerance: "Nach Zeichnung prüfen",
+      status: "Material prüfen",
       note: "Material noch nicht in den Regeln."
     };
     const shipping = shippingRules[input.shippingDestination] || shippingRules.Sonstiges;
@@ -257,24 +257,24 @@
     if (missingCoreInput) {
       risk = "HOCH";
       decision = "PRUEFEN";
-      reasons.push("Stueckzahl, Zykluszeit oder Ruestzeit fehlen.");
+      reasons.push("Stückzahl, Zykluszeit oder Rüstzeit fehlen.");
     } else if (material.status === "Nicht aktiv anbieten") {
       risk = "HOCH";
       decision = "ABLEHNEN / SONDERPRUEFUNG";
       reasons.push("Materialgruppe ist nicht als Standardleistung vorgesehen.");
-    } else if (partnerNeeded || machineRentNeeded || material.status === "Nur nach Pruefung") {
+    } else if (partnerNeeded || machineRentNeeded || material.status === "Nur nach Prüfung") {
       risk = "MITTEL";
       decision = "ANBIETEN NACH PRUEFUNG";
     }
 
     if (partnerNeeded) {
-      reasons.push("Partnerbetrieb oder Zusatzschichten pruefen.");
+      reasons.push("Partnerbetrieb oder Zusatzschichten prüfen.");
     }
     if (machineRentNeeded) {
-      reasons.push("Maschinenmiete oder temporaeres Personal nur bei sicherem Auftrag pruefen.");
+      reasons.push("Maschinenmiete oder temporäres Personal nur bei sicherem Auftrag prüfen.");
     }
-    if (material.status === "Nur nach Pruefung") {
-      reasons.push("Materialverhalten und Zeichnung vor finalem Angebot pruefen.");
+    if (material.status === "Nur nach Prüfung") {
+      reasons.push("Materialverhalten und Zeichnung vor finalem Angebot prüfen.");
     }
     if (calendarChoice.hours > 0) {
       reasons.push(`Kalenderwert genutzt: ${qty(calendarChoice.hours)} freie Stunden (${calendarChoice.label}).`);
@@ -344,7 +344,7 @@
   function saveQuoteFromCurrent() {
     const input = readDraftFromDom();
     if (!input.sourceRfqId) {
-      alert("Bitte zuerst eine RFQ ueber den Button 'Rechnen' aus dem RFQ-Modul uebernehmen.");
+      alert("Bitte zuerst eine RFQ über den Button 'Rechnen' aus dem RFQ-Modul übernehmen.");
       return;
     }
 
@@ -382,8 +382,8 @@
         `Teil: ${rfq.partName || input.partName || "-"}`,
         `Materialstatus: ${result.material.status}`,
         `Toleranz-Hinweis: ${result.material.tolerance}`,
-        `Partner pruefen: ${result.partnerNeeded ? "ja" : "nein"}`,
-        `Maschinenmiete pruefen: ${result.machineRentNeeded ? "ja" : "nein"}`,
+        `Partner prüfen: ${result.partnerNeeded ? "ja" : "nein"}`,
+        `Maschinenmiete prüfen: ${result.machineRentNeeded ? "ja" : "nein"}`,
         `Kalender: ${result.calendarChoice.label}`,
         `Begruendung: ${result.reasons.join(" ")}`
       ].join("\\n")
@@ -443,8 +443,8 @@
     setText("recommendedDays", `${qty(result.recommendedDays)} Werktage`);
     setText("transport", `${result.shipping.quote} (${result.shipping.realistic})`);
     setText("leadTime", `${qty(result.recommendedDays)} Werktage Fertigung + ${result.shipping.quote} Transport`);
-    setText("partner", result.partnerNeeded ? "JA - Partner/Schichten pruefen" : "Nein, voraussichtlich intern");
-    setText("machineRent", result.machineRentNeeded ? "JA - bei planbarem Auftrag pruefen" : "Nein");
+    setText("partner", result.partnerNeeded ? "JA - Partner/Schichten prüfen" : "Nein, voraussichtlich intern");
+    setText("machineRent", result.machineRentNeeded ? "JA - bei planbarem Auftrag prüfen" : "Nein");
     setBadge("risk", result.risk, riskTone(result.risk));
     setBadge("decision", result.decision, decisionTone(result.decision));
     setText("machineHours", qty(result.machineHours));
@@ -530,7 +530,7 @@
         label: customer.name
       }));
       const materialOptions = Object.keys(materialRules).map((name) => ({ value: name, label: name }));
-      const partOptions = ["Welle", "Buchse", "Huelse", "Bolzen", "Distanzstueck", "Gewindeteil", "Dreh-Fraesteil", "Sonstiges"]
+      const partOptions = ["Welle", "Buchse", "Huelse", "Bolzen", "Distanzstueck", "Gewindeteil", "Dreh-Frästeil", "Sonstiges"]
         .map((name) => ({ value: name, label: name }));
       const shippingOptions = Object.keys(shippingRules).map((name) => ({ value: name, label: name }));
 
@@ -545,10 +545,10 @@
               <a href="#area-sales">Vertrieb & CRM</a>
             </div>
             <h1 class="topbar__title">Angebotsrechner</h1>
-            <p class="topbar__text">RFQ-Vorpruefung mit Maschine, Kapazitaet, Kalender, Kalkulation und Entscheidung.</p>
+            <p class="topbar__text">RFQ-Vorpruefung mit Maschine, Kapazität, Kalender, Kalkulation und Entscheidung.</p>
           </div>
           <div class="page-actions">
-            <a class="button button--quiet" href="#area-sales">Zurueck</a>
+            <a class="button button--quiet" href="#area-sales">Zurück</a>
             <button class="button" onclick="window.OSM_CALCULATOR.saveQuoteFromCurrent()">Als Angebot speichern</button>
             <a class="button button--quiet" href="#rfqs">RFQs</a>
           </div>
@@ -556,7 +556,7 @@
 
         <div class="notice">
           Diese Logik basiert auf deiner Excel-Strategie. Aktive RFQ:
-          <strong>${sourceRfq ? escapeHtml(sourceRfq.partName) : "keine RFQ uebernommen"}</strong>.
+          <strong>${sourceRfq ? escapeHtml(sourceRfq.partName) : "keine RFQ übernommen"}</strong>.
           Sie ersetzt keine technische Zeichnungspruefung.
         </div>
         <input class="hidden" data-calc-input="sourceRfqId" value="${escapeHtml(draft.sourceRfqId)}" />
@@ -570,9 +570,9 @@
               ${select("partType", "Teiltyp", draft.partType, partOptions)}
               ${select("materialGroup", "Materialgruppe", draft.materialGroup, materialOptions)}
               ${input("materialDetail", "Materialdetail", draft.materialDetail)}
-              ${input("quantity", "Stueckzahl", draft.quantity, "number")}
+              ${input("quantity", "Stückzahl", draft.quantity, "number")}
               ${input("cycleMin", "Zykluszeit Min/Teil", draft.cycleMin, "number")}
-              ${input("setupHours", "Ruestzeit Stunden", draft.setupHours, "number")}
+              ${input("setupHours", "Rüstzeit Stunden", draft.setupHours, "number")}
               ${input("targetDate", "Gewuenschter Liefertermin", draft.targetDate, "date")}
               ${select("shippingDestination", "Versandziel", draft.shippingDestination, shippingOptions)}
               ${input("workDays", "Arbeitstage verfuegbar", draft.workDays, "number")}
@@ -589,10 +589,10 @@
               ${resultCell("Materialstatus", "materialStatus", result.material.status)}
               ${resultCell("Toleranz-Hinweis", "tolerance", result.material.tolerance)}
               ${resultCell("Gesamt Maschinenminuten", "totalMinutes", qty(result.totalMachineMinutes))}
-              ${resultCell("Verfuegbare Minuten", "availableMinutes", qty(result.availableMinutes))}
+              ${resultCell("Verfügbare Minuten", "availableMinutes", qty(result.availableMinutes))}
               ${resultCell("Fertigungstage", "productionDays", qty(result.productionDays))}
               ${resultCell("Lieferzeit", "leadTime", `${qty(result.recommendedDays)} Werktage Fertigung + ${result.shipping.quote} Transport`)}
-              ${resultCell("Partner pruefen?", "partner", result.partnerNeeded ? "JA - Partner/Schichten pruefen" : "Nein, voraussichtlich intern")}
+              ${resultCell("Partner prüfen?", "partner", result.partnerNeeded ? "JA - Partner/Schichten prüfen" : "Nein, voraussichtlich intern")}
               ${badgeCell("Risiko", "risk", result.risk, riskTone(result.risk))}
               ${badgeCell("Angebotsentscheidung", "decision", result.decision, decisionTone(result.decision))}
             </div>
@@ -628,9 +628,9 @@
             <h2>Kalkulation</h2>
             <div class="form-grid">
               ${input("machineRate", "Maschinenstundensatz EUR", draft.machineRate, "number")}
-              ${input("setupRate", "Rueststundensatz EUR", draft.setupRate, "number")}
+              ${input("setupRate", "Rüststundensatz EUR", draft.setupRate, "number")}
               ${input("materialCost", "Materialkosten gesamt EUR", draft.materialCost, "number")}
-              ${input("inspectionPacking", "Pruefung/Verpackung EUR", draft.inspectionPacking, "number")}
+              ${input("inspectionPacking", "Prüfung/Verpackung EUR", draft.inspectionPacking, "number")}
               ${input("shippingCost", "Versand EUR", draft.shippingCost, "number")}
               ${input("margin", "Marge %", draft.margin, "number")}
             </div>
@@ -639,8 +639,8 @@
               ${resultCell("Fertigungskosten", "productionCost", money(result.productionCost))}
               ${resultCell("Kosten vor Marge", "costBeforeMargin", money(result.costBeforeMargin))}
               ${resultCell("Angebotspreis", "offerPrice", money(result.offerPrice))}
-              ${resultCell("Stueckpreis", "unitPrice", money(result.unitPrice))}
-              ${resultCell("Maschinenmiete?", "machineRent", result.machineRentNeeded ? "JA - bei planbarem Auftrag pruefen" : "Nein")}
+              ${resultCell("Stückpreis", "unitPrice", money(result.unitPrice))}
+              ${resultCell("Maschinenmiete?", "machineRent", result.machineRentNeeded ? "JA - bei planbarem Auftrag prüfen" : "Nein")}
             </div>
             <p class="small muted">Transport: <span data-calc-output="transport">${escapeHtml(result.shipping.quote)} (${escapeHtml(result.shipping.realistic)})</span></p>
             <p class="small muted">Materialnotiz: <span data-calc-output="materialNote">${escapeHtml(result.material.note)}</span></p>
@@ -656,7 +656,7 @@
     group: "Vertrieb & CRM",
     icon: "R",
     title: "Angebotsrechner",
-    description: "Kapazitaets- und Angebotsrechner aus der OS.MECHPLAST Excel-Strategie.",
+    description: "Kapazitäts- und Angebotsrechner aus der OS.MECHPLAST Excel-Strategie.",
     render: calculator.render
   });
 })();

@@ -4,7 +4,7 @@
     group: "System & Rechte",
     icon: "S",
     title: "Sicherheit",
-    description: "Intranet-Zugriff, Rollen, Backups und spaetere Cloudflare-Absicherung.",
+    description: "Intranet-Zugriff, Rollen, Backups und spätere Cloudflare-Absicherung.",
     render(data, h) {
       const roleCount = (data.roles || []).length;
       const auditCount = (data.auditLogs || []).length;
@@ -17,10 +17,10 @@
               <a href="#area-system">System & Rechte</a>
             </div>
             <h1 class="topbar__title">Sicherheit</h1>
-            <p class="topbar__text">Sicherheitsuebersicht fuer lokalen Intranet-Betrieb und spaetere Cloudflare-Absicherung.</p>
+            <p class="topbar__text">Sicherheitsübersicht für lokalen Intranet-Betrieb und spätere Cloudflare-Absicherung.</p>
           </div>
           <div class="page-actions">
-            <a class="button button--quiet" href="#area-system">Zurueck</a>
+            <a class="button button--quiet" href="#area-system">Zurück</a>
           </div>
         </div>
 
@@ -28,7 +28,7 @@
           <div class="stat"><div class="stat__label">Rollen angelegt</div><div class="stat__value">${roleCount}</div></div>
           <div class="stat"><div class="stat__label">Historie</div><div class="stat__value">${auditCount}</div></div>
           <div class="stat"><div class="stat__label">Modus</div><div class="stat__value">Intranet</div></div>
-          <div class="stat"><div class="stat__label">Cloudflare</div><div class="stat__value">Spaeter</div></div>
+          <div class="stat"><div class="stat__label">Cloudflare</div><div class="stat__value">Später</div></div>
         </section>
 
         <section class="grid grid--two">
@@ -37,7 +37,7 @@
             <div class="list">
               <div class="list-item">
                 <div class="list-item__title">Lokale Intranet-Seite</div>
-                <div class="list-item__meta">Aktuell ueber lokalen Server erreichbar, ohne Internet-Zwang.</div>
+                <div class="list-item__meta">Aktuell über lokalen Server erreichbar, ohne Internet-Zwang.</div>
               </div>
               <div class="list-item">
                 <div class="list-item__title">Rollenmodell vorbereitet</div>
@@ -45,7 +45,7 @@
               </div>
               <div class="list-item">
                 <div class="list-item__title">Audit-Historie</div>
-                <div class="list-item__meta">Speichern und Loeschen erzeugt Historieneintraege.</div>
+                <div class="list-item__meta">Speichern und Löschen erzeugt Historieneintraege.</div>
               </div>
               <div class="list-item">
                 <div class="list-item__title">Backup</div>
@@ -55,11 +55,11 @@
           </div>
 
           <div class="panel panel--pad">
-            <h2>Spaeter absichern</h2>
+            <h2>Später absichern</h2>
             <div class="list">
               <div class="list-item">
                 <div class="list-item__title">Cloudflare Access</div>
-                <div class="list-item__meta">ERP nur fuer erlaubte Benutzer, optional mit 2FA und Geraeteregeln.</div>
+                <div class="list-item__meta">ERP nur für erlaubte Benutzer, optional mit 2FA und Geräteregeln.</div>
               </div>
               <div class="list-item">
                 <div class="list-item__title">Echte Anmeldung</div>
@@ -71,7 +71,7 @@
               </div>
               <div class="list-item">
                 <div class="list-item__title">Keine Schein-Sicherheit</div>
-                <div class="list-item__meta">Ein simples JavaScript-Passwort waere leicht umgehbar und wird deshalb nicht als echte Sicherheit verkauft.</div>
+                <div class="list-item__meta">Ein simples JavaScript-Passwort wäre leicht umgehbar und wird deshalb nicht als echte Sicherheit verkauft.</div>
               </div>
             </div>
           </div>

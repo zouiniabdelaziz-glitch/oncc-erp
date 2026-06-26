@@ -247,7 +247,7 @@ window.OSM_CUSTOMER_IMPORTS.push({
         "id":  "cus_dach_markttest_avl_list_gmbh",
         "name":  "AVL List GmbH",
         "country":  "AT",
-        "industry":  "Prueftechnik, Automotive Engineering",
+        "industry":  "Prüftechnik, Automotive Engineering",
         "status":  "lead",
         "notes":  "Region: Steiermark\nMaterial-Fokus: Aluminium, Edelstahl, Kunststoff\nEmpfohlene Rolle: Einkauf, Prototypenbau\nKontaktweg: Kontaktseite/Website\nWebsite: https://www.avl.com/\nPrioritaet: 2"
     },

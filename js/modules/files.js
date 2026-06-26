@@ -7,7 +7,7 @@
     { value: "Kunde", label: "Kunde" },
     { value: "Teil", label: "Teil" },
     { value: "Revision", label: "Revision" },
-    { value: "Qualitaet", label: "Qualitaet" }
+    { value: "Qualität", label: "Qualität" }
   ];
   const typeOptions = [
     { value: "PDF", label: "PDF" },

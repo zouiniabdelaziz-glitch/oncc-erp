@@ -16,7 +16,7 @@
     group: "Management",
     icon: "T",
     title: "Aufgaben",
-    description: "Aufgaben fuer Management, Vertrieb, Produktion und Prozessverbesserung.",
+    description: "Aufgaben für Management, Vertrieb, Produktion und Prozessverbesserung.",
     collection: "tasks",
     prefix: "tsk",
     fields: [
@@ -26,7 +26,7 @@
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "offen" },
       { key: "priority", label: "Prioritaet", type: "select", options: priorityOptions, default: "mittel" },
       { key: "owner", label: "Verantwortlich" },
-      { key: "dueDate", label: "Faellig am", type: "date" },
+      { key: "dueDate", label: "Fällig am", type: "date" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
     ],
     columns: [
@@ -35,7 +35,7 @@
       { key: "area", label: "Bereich" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
       { key: "priority", label: "Prioritaet", render: (row, data, h) => h.badge(row.priority, h.toneForStatus(row.priority)) },
-      { key: "dueDate", label: "Faellig" }
+      { key: "dueDate", label: "Fällig" }
     ]
   });
 })();

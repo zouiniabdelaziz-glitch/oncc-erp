@@ -6,8 +6,8 @@
   ];
   const shiftOptions = [
     { value: "1 Schicht", label: "1 Schicht" },
-    { value: "2 Schichten moeglich", label: "2 Schichten moeglich" },
-    { value: "3 Schichten moeglich", label: "3 Schichten moeglich" }
+    { value: "2 Schichten möglich", label: "2 Schichten möglich" },
+    { value: "3 Schichten möglich", label: "3 Schichten möglich" }
   ];
 
   window.OSM.registerModule({
@@ -15,7 +15,7 @@
     group: "Produktion / MRP",
     icon: "M",
     title: "Maschinen",
-    description: "Maschinen, Faehigkeiten und grobes Schichtmodell.",
+    description: "Maschinen, Fähigkeiten und grobes Schichtmodell.",
     collection: "machines",
     prefix: "mac",
     fields: [
@@ -23,7 +23,7 @@
       { key: "type", label: "Typ" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "aktiv" },
       { key: "shiftModel", label: "Schichtmodell", type: "select", options: shiftOptions, default: "1 Schicht" },
-      { key: "capabilities", label: "Faehigkeiten", type: "textarea", wide: true },
+      { key: "capabilities", label: "Fähigkeiten", type: "textarea", wide: true },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
     ],
     columns: [
@@ -31,7 +31,7 @@
       { key: "type", label: "Typ" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
       { key: "shiftModel", label: "Schicht" },
-      { key: "capabilities", label: "Faehigkeiten" }
+      { key: "capabilities", label: "Fähigkeiten" }
     ]
   });
 })();

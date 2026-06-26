@@ -1,13 +1,13 @@
 (function () {
   const activeStatus = [
     { value: "aktiv", label: "Aktiv" },
-    { value: "in pruefung", label: "In Pruefung" },
+    { value: "in pruefung", label: "In Prüfung" },
     { value: "gesperrt", label: "Gesperrt" },
     { value: "archiv", label: "Archiv" }
   ];
   const shiftStatus = [
     { value: "geplant", label: "Geplant" },
-    { value: "bestaetigt", label: "Bestaetigt" },
+    { value: "bestätigt", label: "Bestaetigt" },
     { value: "ausgefallen", label: "Ausgefallen" }
   ];
   const invoiceStatus = [
@@ -29,7 +29,7 @@
     group: "Personal",
     icon: "M",
     title: "Mitarbeiter",
-    description: "Mitarbeiter fuer Einsatzplanung, Qualifikation und Fertigungsrueckmeldung.",
+    description: "Mitarbeiter für Einsatzplanung, Qualifikation und Fertigungsrueckmeldung.",
     collection: "employees",
     prefix: "emp",
     fields: [
@@ -50,21 +50,21 @@
     group: "Personal",
     icon: "Q",
     title: "Qualifikationen",
-    description: "Qualifikationen fuer Maschinen, Prozesse und pruefpflichtige Arbeiten.",
+    description: "Qualifikationen für Maschinen, Prozesse und pruefpflichtige Arbeiten.",
     collection: "employeeSkills",
     prefix: "esk",
     fields: [
       { key: "employeeId", label: "Mitarbeiter", type: "select", options: (data, h) => h.options("employees"), required: true },
       { key: "skill", label: "Qualifikation", required: true },
       { key: "level", label: "Stufe" },
-      { key: "validUntil", label: "Gueltig bis", type: "date" },
+      { key: "validUntil", label: "Gültig bis", type: "date" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
     ],
     columns: [
       { key: "employeeId", label: "Mitarbeiter", render: (row, data, h) => h.escapeHtml(h.label("employees", row.employeeId)) },
       { key: "skill", label: "Qualifikation" },
       { key: "level", label: "Stufe", render: (row, data, h) => h.badge(row.level, h.toneForStatus(row.level)) },
-      { key: "validUntil", label: "Gueltig bis" }
+      { key: "validUntil", label: "Gültig bis" }
     ]
   });
 
@@ -102,7 +102,7 @@
     group: "Personal",
     icon: "A",
     title: "Abwesenheiten",
-    description: "Abwesenheiten fuer Kapazitaets- und Schichtplanung.",
+    description: "Abwesenheiten für Kapazitäts- und Schichtplanung.",
     collection: "absences",
     prefix: "abs",
     fields: [
@@ -112,7 +112,7 @@
       { key: "endDate", label: "Bis", type: "date" },
       { key: "status", label: "Status", type: "select", options: [
         { value: "geplant", label: "Geplant" },
-        { value: "bestaetigt", label: "Bestaetigt" },
+        { value: "bestätigt", label: "Bestaetigt" },
         { value: "storniert", label: "Storniert" }
       ], default: "geplant" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -131,7 +131,7 @@
     group: "Finanzen",
     icon: "K",
     title: "Kostenstellen",
-    description: "Einfache Kostenstellen fuer Management-Auswertung und spaetere Nachkalkulation.",
+    description: "Einfache Kostenstellen für Management-Auswertung und spätere Nachkalkulation.",
     collection: "costCenters",
     prefix: "cst",
     fields: [
@@ -154,7 +154,7 @@
     group: "Finanzen",
     icon: "R",
     title: "Rechnungen",
-    description: "Rechnungsgrundlagen fuer Auftraege. Rechtsverbindliche italienische Logik bleibt gesperrt.",
+    description: "Rechnungsgrundlagen für Aufträge. Rechtsverbindliche italienische Logik bleibt gesperrt.",
     collection: "invoices",
     prefix: "inv",
     fields: [
@@ -162,10 +162,10 @@
       { key: "customerId", label: "Kunde", type: "select", options: (data, h) => h.options("customers"), required: true },
       { key: "orderId", label: "Auftrag", type: "select", options: (data, h) => h.options("orders", "orderNo") },
       { key: "invoiceDate", label: "Rechnungsdatum", type: "date" },
-      { key: "dueDate", label: "Faellig", type: "date" },
+      { key: "dueDate", label: "Fällig", type: "date" },
       { key: "netAmount", label: "Netto EUR", type: "number", default: 0 },
       { key: "taxAmount", label: "Steuer EUR", type: "number", default: 0 },
-      { key: "grossAmount", label: "Brutto EUR", type: "number", default: 0 },
+      { key: "großAmount", label: "Brutto EUR", type: "number", default: 0 },
       { key: "status", label: "Status", type: "select", options: invoiceStatus, default: "commercialista offen" },
       { key: "notes", label: "Notizen / Sperrhinweis", type: "textarea", wide: true }
     ],
@@ -174,7 +174,7 @@
       { key: "customerId", label: "Kunde", render: (row, data, h) => h.escapeHtml(h.label("customers", row.customerId)) },
       { key: "orderId", label: "Auftrag", render: (row, data, h) => h.escapeHtml(h.label("orders", row.orderId, "orderNo")) },
       { key: "invoiceDate", label: "Datum" },
-      { key: "grossAmount", label: "Brutto", render: (row) => row.grossAmount ? `${Number(row.grossAmount).toLocaleString("de-DE")} EUR` : "-" },
+      { key: "großAmount", label: "Brutto", render: (row) => row.großAmount ? `${Number(row.großAmount).toLocaleString("de-DE")} EUR` : "-" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
   });
@@ -236,17 +236,17 @@
     group: "Finanzen",
     icon: "O",
     title: "Offene Posten",
-    description: "Offene Forderungen/Belege als einfache Uebersicht.",
+    description: "Offene Forderungen/Belege als einfache Übersicht.",
     collection: "openItems",
     prefix: "opi",
     fields: [
       { key: "invoiceId", label: "Rechnung", type: "select", options: (data, h) => h.options("invoices", "invoiceNo") },
       { key: "customerId", label: "Kunde", type: "select", options: (data, h) => h.options("customers") },
-      { key: "dueDate", label: "Faellig", type: "date" },
+      { key: "dueDate", label: "Fällig", type: "date" },
       { key: "amountOpen", label: "Offen EUR", type: "number", default: 0 },
       { key: "status", label: "Status", type: "select", options: [
         { value: "offen", label: "Offen" },
-        { value: "ueberfaellig", label: "Ueberfaellig" },
+        { value: "ueberfaellig", label: "Überfällig" },
         { value: "bezahlt", label: "Bezahlt" }
       ], default: "offen" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -254,7 +254,7 @@
     columns: [
       { key: "invoiceId", label: "Rechnung", render: (row, data, h) => h.escapeHtml(h.label("invoices", row.invoiceId, "invoiceNo")) },
       { key: "customerId", label: "Kunde", render: (row, data, h) => h.escapeHtml(h.label("customers", row.customerId)) },
-      { key: "dueDate", label: "Faellig" },
+      { key: "dueDate", label: "Fällig" },
       { key: "amountOpen", label: "Offen", render: (row) => row.amountOpen ? `${Number(row.amountOpen).toLocaleString("de-DE")} EUR` : "-" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) }
     ]
@@ -265,7 +265,7 @@
     group: "Finanzen",
     icon: "F",
     title: "Finanzbuchungen",
-    description: "Sperrmodul fuer spaetere Buchungslogik. Aktivierung erst nach Commercialista-Pruefung.",
+    description: "Sperrmodul für spätere Buchungslogik. Aktivierung erst nach Commercialista-Prüfung.",
     collection: "financePostings",
     prefix: "fpo",
     fields: [

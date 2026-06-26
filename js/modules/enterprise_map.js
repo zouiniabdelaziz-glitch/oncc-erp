@@ -14,14 +14,14 @@
     },
     {
       area: "Vertrieb & CRM",
-      now: "Kunden, Kontakte, RFQ, Angebotsrechner, Angebote, Auftraege",
+      now: "Kunden, Kontakte, RFQ, Angebotsrechner, Angebote, Aufträge",
       later: "Follow-ups, Angebots-PDF, Wiederholangebote",
       status: "aktiv"
     },
     {
       area: "PDM & Konstruktion",
       now: "Teile, Zeichnungen, STEP-Referenzen, Revisionen, Freigaben",
-      later: "Stuecklisten, Aenderungsantraege, Varianten, Entwicklungsprojekte",
+      later: "Stücklisten, Änderungsantraege, Varianten, Entwicklungsprojekte",
       status: "neu"
     },
     {
@@ -38,48 +38,48 @@
     },
     {
       area: "Produktion & MRP",
-      now: "Maschinen, Kalender, Arbeitsplaene, Arbeitsgaenge, Fertigungsauftraege",
-      later: "Rueckmeldungen, Nachkalkulation, Werkzeugplanung",
+      now: "Maschinen, Kalender, Arbeitspläne, Arbeitsgänge, Fertigungsaufträge",
+      later: "Rückmeldungen, Nachkalkulation, Werkzeugplanung",
       status: "neu"
     },
     {
-      area: "Qualitaet",
-      now: "Pruefplan, Erstteilfreigabe, Pruefprotokoll, Reklamation",
+      area: "Qualität",
+      now: "Prüfplan, Erstteilfreigabe, Prüfprotokoll, Reklamation",
       later: "Messmittelverwaltung, Lieferantenqualitaet",
       status: "neu"
     },
     {
       area: "Logistik",
       now: "Packliste, Versand, DAXA-Referenz, Lieferstatus",
-      later: "Lieferavis, Ruecksendungen",
+      later: "Lieferavis, Rücksendungen",
       status: "aktiv"
     },
     {
       area: "Personal",
-      now: "Mitarbeiter, Qualifikationen, Schichten, Verfuegbarkeit, Abwesenheit",
+      now: "Mitarbeiter, Qualifikationen, Schichten, Verfügbarkeit, Abwesenheit",
       later: "Schulungsplanung, keine Lohnabrechnung ohne Auftrag",
       status: "neu"
     },
     {
       area: "Finanzen",
       now: "Rechnungsgrundlage, Zahlungen, offene Posten, Kostenstellen",
-      later: "Italienische Steuerlogik, FatturaPA/SDI, Abschluesse nach Pruefung",
+      later: "Italienische Steuerlogik, FatturaPA/SDI, Abschlüsse nach Prüfung",
       status: "gesperrt"
     }
   ];
 
   const workflows = [
     "Kunde -> RFQ -> Teilrevision -> Angebotsrechner -> Angebot -> Auftrag -> Produktionsauftrag -> Versand -> Rechnung -> Zahlung",
-    "Teil -> Revision -> Stueckliste -> Arbeitsplan -> Materialreservierung -> Einkauf oder Lagerentnahme",
-    "Mitarbeiter + Qualifikation + Verfuegbarkeit -> Schicht -> Arbeitsgang"
+    "Teil -> Revision -> Stückliste -> Arbeitsplan -> Materialreservierung -> Einkauf oder Lagerentnahme",
+    "Mitarbeiter + Qualifikation + Verfügbarkeit -> Schicht -> Arbeitsgang"
   ];
 
   const phases = [
-    "Phase 1: Fundament mit Datenmodell, Rollen, Historie, Backup und spaeter Desktop-App.",
+    "Phase 1: Fundament mit Datenmodell, Rollen, Historie, Backup und später Desktop-App.",
     "Phase 2: Vertrieb und PDM-Kern mit RFQ, Teil, Revision, Freigabe und Zeichnung.",
     "Phase 3: Einkauf, Lager und Produktion mit Bedarf, Bestand, Reservierung und Fertigungsauftrag.",
-    "Phase 4: Personal, Qualitaet und Finanzen als kontrollierte Erweiterung.",
-    "Phase 5: Vollstaendiges PDM und rechtsrelevante Finanzfunktionen erst nach externer Validierung."
+    "Phase 4: Personal, Qualität und Finanzen als kontrollierte Erweiterung.",
+    "Phase 5: Vollständiges PDM und rechtsrelevante Finanzfunktionen erst nach externer Validierung."
   ];
 
   function tone(status) {
@@ -93,7 +93,7 @@
     group: "Start",
     icon: "M",
     title: "Modul-Landkarte",
-    description: "ERP/PDM-Struktur fuer OS.MECHPLAST: jetzt sichtbar, spaeter ausbaubar.",
+    description: "ERP/PDM-Struktur für OS.MECHPLAST: jetzt sichtbar, später ausbaubar.",
     render(data, h) {
       return `
         <div class="topbar">
@@ -104,10 +104,10 @@
               <span>Modul-Landkarte</span>
             </div>
             <h1 class="topbar__title">Modul-Landkarte</h1>
-            <p class="topbar__text">Schlank starten, aber fachlich sauber wachsen: ERP fuer Geschaeftsvorgaenge, PDM fuer Teile, Zeichnungen, Revisionen und Freigaben.</p>
+            <p class="topbar__text">Schlank starten, aber fachlich sauber wachsen: ERP für Geschäftsvorgaenge, PDM für Teile, Zeichnungen, Revisionen und Freigaben.</p>
           </div>
           <div class="page-actions">
-            <a class="button button--quiet" href="#dashboard">Zurueck</a>
+            <a class="button button--quiet" href="#dashboard">Zurück</a>
           </div>
         </div>
 
@@ -120,7 +120,7 @@
               </div>
               <div class="module-card__label">Jetzt</div>
               <p>${h.escapeHtml(category.now)}</p>
-              <div class="module-card__label">Spaeter</div>
+              <div class="module-card__label">Später</div>
               <p>${h.escapeHtml(category.later)}</p>
             </article>
           `).join("")}
