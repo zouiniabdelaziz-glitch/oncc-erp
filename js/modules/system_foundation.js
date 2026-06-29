@@ -119,7 +119,7 @@
                     <td>${h.escapeHtml(row.user || "-")}</td>
                     <td>${h.escapeHtml(row.collection || "-")}</td>
                     <td>${h.badge(row.action || "-", h.toneForStatus(row.action))}</td>
-                    <td>${h.escapeHtml(row.summary || row.recordId || "-")}</td>
+                    <td>${h.escapeHtml(h.displayText(row.summary || row.recordId || "-"))}</td>
                   </tr>
                 `).join("")}
               </tbody>

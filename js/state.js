@@ -1,5 +1,16 @@
 (function () {
   const STORAGE_KEY = "osmechplast.management.erp.v1";
+  const API_STATE_URL = "/api/state";
+  const SYNC_TIMEOUT_MS = 4500;
+  let syncStatus = {
+    mode: "local",
+    available: false,
+    status: "local",
+    lastSyncAt: "",
+    lastError: "",
+    version: 0,
+    updatedBy: ""
+  };
 
   const seedData = {
     customers: [
@@ -529,7 +540,60 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  function load() {
+  function setSyncStatus(next) {
+    syncStatus = Object.assign({}, syncStatus, next);
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("osm-sync-status", { detail: syncInfo() }));
+    }
+  }
+
+  function syncInfo() {
+    return Object.assign({}, syncStatus);
+  }
+
+  function cloudPossible() {
+    return typeof fetch === "function" && location.protocol.startsWith("http");
+  }
+
+  function withTimeout(promise, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Cloud-Speicher nicht erreichbar.")), timeoutMs);
+      promise
+        .then((value) => {
+          clearTimeout(timer);
+          resolve(value);
+        })
+        .catch((error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+    });
+  }
+
+  async function requestJson(url, options) {
+    const response = await withTimeout(fetch(url, options), SYNC_TIMEOUT_MS);
+    const text = await response.text();
+    let payload = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch (error) {
+      throw new Error("Cloud-Speicher ist hier nicht aktiv.");
+    }
+    if (!response.ok || !payload || payload.ok === false) {
+      throw new Error(payload && payload.error ? payload.error : "Cloud-Speicher nicht verfügbar.");
+    }
+    return payload;
+  }
+
+  function markCloudMeta(data, payload) {
+    const meta = ensureMeta(data);
+    meta.storageMode = "cloud";
+    meta.lastCloudSyncAt = payload.updatedAt || new Date().toISOString();
+    meta.lastCloudSyncBy = payload.updatedBy || payload.user || currentUser(data);
+    meta.cloudVersion = payload.version || meta.cloudVersion || 0;
+  }
+
+  function loadLocal() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return applyCustomerImports(clone(seedData));
     try {
@@ -538,6 +602,46 @@
     } catch (error) {
       console.warn("Could not parse local ERP data", error);
       return applyCustomerImports(clone(seedData));
+    }
+  }
+
+  async function load() {
+    const localData = loadLocal();
+    if (!cloudPossible()) {
+      setSyncStatus({ mode: "local", available: false, status: "local", lastError: "" });
+      return localData;
+    }
+
+    try {
+      setSyncStatus({ status: "syncing", lastError: "" });
+      const payload = await requestJson(API_STATE_URL, { method: "GET" });
+      if (payload.found && payload.data) {
+        const remoteData = applyCustomerImports(Object.assign(clone(seedData), payload.data));
+        markCloudMeta(remoteData, payload);
+        saveLocalOnly(remoteData);
+        setSyncStatus({
+          mode: "cloud",
+          available: true,
+          status: "synced",
+          lastSyncAt: payload.updatedAt || new Date().toISOString(),
+          lastError: "",
+          version: payload.version || 0,
+          updatedBy: payload.updatedBy || ""
+        });
+        return remoteData;
+      }
+
+      await pushCloud(localData, "Erste ERP-Daten aus lokalem Stand übernommen");
+      return localData;
+    } catch (error) {
+      setSyncStatus({
+        mode: "local",
+        available: false,
+        status: "offline",
+        lastError: error.message,
+        lastSyncAt: ""
+      });
+      return localData;
     }
   }
 
@@ -569,12 +673,107 @@
       changed = true;
     });
 
-    if (changed) save(data);
+    if (changed) saveLocalOnly(data);
     return data;
   }
 
-  function save(data) {
+  function currentUser(data) {
+    return data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST";
+  }
+
+  function ensureMeta(data) {
+    data.meta = data.meta || {};
+    return data.meta;
+  }
+
+  function saveLocalOnly(data) {
+    const meta = ensureMeta(data);
+    meta.lastLocalSaveAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function save(data, options = {}) {
+    saveLocalOnly(data);
+    if (options.cloud !== false) {
+      pushCloud(data, options.summary || "Automatische Speicherung");
+    }
+  }
+
+  async function pushCloud(data, summary) {
+    if (!cloudPossible()) {
+      setSyncStatus({ mode: "local", available: false, status: "local" });
+      return { ok: false, mode: "local" };
+    }
+
+    try {
+      setSyncStatus({ status: "syncing", lastError: "" });
+      const payload = await requestJson(API_STATE_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          data,
+          user: currentUser(data),
+          eventType: "state_saved",
+          summary: summary || "ERP-Daten gespeichert"
+        })
+      });
+      markCloudMeta(data, payload);
+      saveLocalOnly(data);
+      setSyncStatus({
+        mode: "cloud",
+        available: true,
+        status: "synced",
+        lastSyncAt: payload.updatedAt || new Date().toISOString(),
+        lastError: "",
+        version: payload.version || 0,
+        updatedBy: payload.updatedBy || currentUser(data)
+      });
+      return { ok: true, mode: "cloud", payload };
+    } catch (error) {
+      setSyncStatus({
+        mode: "local",
+        available: false,
+        status: "offline",
+        lastError: error.message
+      });
+      return { ok: false, mode: "local", error };
+    }
+  }
+
+  async function saveCheckpoint(data, reason) {
+    const now = new Date().toISOString();
+    const meta = ensureMeta(data);
+    const user = currentUser(data);
+    const version = Number(meta.saveVersion || 0) + 1;
+    const summary = reason || "Manuelle Speicherung";
+
+    meta.saveVersion = version;
+    meta.lastManualSaveAt = now;
+    meta.lastManualSaveBy = user;
+    meta.saveHistory = Array.isArray(meta.saveHistory) ? meta.saveHistory : [];
+    meta.saveHistory.unshift({
+      id: uid("sav"),
+      timestamp: now,
+      user,
+      version,
+      summary
+    });
+    meta.saveHistory = meta.saveHistory.slice(0, 80);
+
+    data.auditLogs = data.auditLogs || [];
+    data.auditLogs.unshift({
+      id: uid("aud"),
+      timestamp: now,
+      user,
+      collection: "system",
+      recordId: "manual-save",
+      action: "gespeichert",
+      summary: `${summary} · Version ${version}`
+    });
+    data.auditLogs = data.auditLogs.slice(0, 250);
+
+    saveLocalOnly(data);
+    return pushCloud(data, summary);
   }
 
   function reset() {
@@ -740,6 +939,9 @@
     state: {
       load,
       save,
+      saveCheckpoint,
+      pushCloud,
+      syncInfo,
       reset,
       uid,
       findById,

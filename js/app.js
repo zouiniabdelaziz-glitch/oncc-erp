@@ -73,7 +73,7 @@
     if ([
       "aktiv", "gewonnen", "geliefert", "fertig", "anbieten", "freigegeben",
       "gebucht", "bezahlt", "erhalten", "verfuegbar", "abgeschlossen", "bestätigt",
-      "reserviert", "genehmigt", "bereit"
+      "reserviert", "genehmigt", "bereit", "gespeichert", "synchronisiert"
     ].includes(status)) return "ok";
     if ([
       "pruefen", "in arbeit", "entwurf", "neu", "offen", "geplant", "bestellt",
@@ -116,8 +116,8 @@
     return window.OSM_AREA_TOOLS || {};
   }
 
-  function start() {
-    OSM.data = OSM.state.load();
+  async function start() {
+    OSM.data = await OSM.state.load();
     document.getElementById("app").innerHTML = `
       <div class="app-shell">
         <header class="shellbar">
@@ -139,6 +139,8 @@
             <input class="shellbar__search" type="search" placeholder="Suchbegriff eingeben" aria-label="Globale Suche" />
           </div>
           <div class="shellbar__right">
+            <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
+            <span class="save-status" data-save-status>Lokal</span>
             <a class="shellbar__tool" href="#security">Sicherheit</a>
             <a class="shellbar__tool" href="#settings">System</a>
           </div>
@@ -155,6 +157,7 @@
     document.addEventListener("click", handleClick);
     document.addEventListener("input", handleInput);
     document.addEventListener("change", handleChange);
+    window.addEventListener("osm-sync-status", () => updateSaveStatus());
     render();
   }
 
@@ -213,6 +216,7 @@
       ? module.render(OSM.data, helpers)
       : renderGeneric(module);
     document.title = `${module.title} - OS.MECHPLAST ERP`;
+    updateSaveStatus();
   }
 
   function renderGeneric(module) {
@@ -318,6 +322,8 @@
     if (action === "edit") openForm(target.dataset.module, target.dataset.id);
     if (action === "delete") deleteRecord(target.dataset.module, target.dataset.id);
     if (action === "close-modal") closeModal();
+    if (action === "manual-save") manualSave();
+    if (action === "refresh-cloud") refreshCloud();
     if (action === "export-data") exportData();
     if (action === "import-data") document.getElementById("import-file").click();
     if (action === "reset-demo") resetDemoData();
@@ -341,6 +347,7 @@
         OSM.data = JSON.parse(reader.result);
         OSM.state.save(OSM.data);
         render();
+        updateSaveStatus("Import lokal gespeichert");
         alert("Import erledigt.");
       } catch (error) {
         alert("Import nicht möglich. Bitte eine gültige JSON-Backup-Datei wählen.");
@@ -431,6 +438,54 @@
   function closeModal() {
     const modal = document.querySelector("[data-modal]");
     if (modal) modal.remove();
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "";
+    try {
+      return new Intl.DateTimeFormat("de-DE", {
+        dateStyle: "short",
+        timeStyle: "short"
+      }).format(new Date(value));
+    } catch (error) {
+      return value;
+    }
+  }
+
+  function updateSaveStatus(message) {
+    const status = document.querySelector("[data-save-status]");
+    if (!status || !OSM.data) return;
+    const meta = OSM.data.meta || {};
+    const sync = OSM.state.syncInfo ? OSM.state.syncInfo() : {};
+    const cloudStamp = sync.lastSyncAt || meta.lastCloudSyncAt;
+    const localStamp = meta.lastManualSaveAt || meta.lastLocalSaveAt;
+    if (message) {
+      status.textContent = message;
+    } else if (sync.status === "syncing") {
+      status.textContent = "Synchronisiere...";
+    } else if (sync.mode === "cloud" && cloudStamp) {
+      status.textContent = `Cloud ${formatDateTime(cloudStamp)}`;
+    } else if (sync.status === "offline") {
+      status.textContent = "Lokal (Cloud offline)";
+    } else {
+      status.textContent = localStamp ? `Lokal ${formatDateTime(localStamp)}` : "Lokal";
+    }
+    status.title = sync.lastError || "Cloudflare D1 wird genutzt, sobald die D1-Bindung aktiv ist. Sonst bleibt lokale Speicherung als Fallback.";
+  }
+
+  async function manualSave() {
+    updateSaveStatus("Speichere...");
+    const result = await OSM.state.saveCheckpoint(OSM.data, "Manuell gespeichert");
+    render();
+    updateSaveStatus(result && result.ok ? "Cloud gespeichert" : "Lokal gespeichert");
+  }
+
+  async function refreshCloud() {
+    updateSaveStatus("Aktualisiere...");
+    OSM.data = await OSM.state.load();
+    render();
+    const sync = OSM.state.syncInfo ? OSM.state.syncInfo() : {};
+    updateSaveStatus(sync.mode === "cloud" ? "Cloud aktualisiert" : "Lokal aktualisiert");
   }
 
   function exportData() {
