@@ -1,247 +1,192 @@
 (function () {
-  const primaryAreaIds = ["sales", "pdm", "production", "procurement"];
-  const secondaryAreaIds = ["inventory", "quality", "logistics", "finance", "management", "people", "system", "masterdata"];
+  const allAppIds = [
+    "customers", "contacts", "rfqs", "offer-calculator", "quotes", "orders",
+    "tasks", "projects", "parts", "part-revisions", "files", "suppliers",
+    "purchase-requests", "stock-items", "capacity", "production-orders",
+    "machine-calendar", "deliveries", "inspection-reports", "settings"
+  ];
+
+  const defaultPersonalApps = {
+    owner: ["customers", "rfqs", "offer-calculator", "tasks", "capacity", "settings"],
+    mohammed: ["production-orders", "machine-calendar", "tasks", "capacity", "deliveries", "inspection-reports"]
+  };
+
+  const appColors = [
+    "blue", "green", "orange", "red", "violet", "cyan", "slate", "lime"
+  ];
+
+  const compactLabels = {
+    "offer-calculator": "Rechner",
+    "part-revisions": "Revisionen",
+    "purchase-requests": "Einkaufsbedarf",
+    "stock-items": "Bestände",
+    "production-orders": "Fertigung",
+    "machine-calendar": "Kalender",
+    "inspection-reports": "Qualität",
+    "module-map": "Module",
+    "capacity": "Kapazität"
+  };
 
   function count(collection, data, filter) {
     const rows = data[collection] || [];
     return filter ? rows.filter(filter).length : rows.length;
   }
 
-  function areaById(id) {
-    return (window.OSM_AREAS || []).find((area) => area.id === id);
+  function moduleById(id) {
+    return (window.OSM.modules || []).find((module) => module.id === id);
   }
 
-  function areaMetricLine(area, data, h) {
-    return window.OSM_AREA_TOOLS.areaMetrics(area, data)
-      .slice(0, 2)
-      .map((metric) => `<span>${h.escapeHtml(h.displayText(metric.label))}: <strong>${h.escapeHtml(metric.value)}</strong></span>`)
-      .join("");
+  function moduleInitial(module) {
+    return (module.icon || module.title || "?").slice(0, 1).toUpperCase();
   }
 
-  function launchTile(area, data, h) {
+  function compactTitle(module, h) {
+    return compactLabels[module.id] || h.displayText(module.title);
+  }
+
+  function ensurePersonal(data) {
+    data.meta = data.meta || {};
+    data.meta.personalWorkspaces = data.meta.personalWorkspaces || {};
+    Object.keys(defaultPersonalApps).forEach((key) => {
+      if (!Array.isArray(data.meta.personalWorkspaces[key])) {
+        data.meta.personalWorkspaces[key] = defaultPersonalApps[key].slice();
+      }
+    });
+    return data.meta.personalWorkspaces;
+  }
+
+  function appTile(module, h, options) {
+    const color = appColors[Math.abs(module.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % appColors.length];
+    const remove = options && options.user ? `
+      <button class="app-tile__remove" type="button" data-action="personal-remove" data-user="${h.escapeHtml(options.user)}" data-module="${h.escapeHtml(module.id)}" aria-label="Entfernen">x</button>
+    ` : "";
     return `
-      <a class="launch-tile" href="#area-${h.escapeHtml(area.id)}">
-        <div class="launch-tile__head">
-          <span class="launch-tile__icon">${h.escapeHtml((area.title || "?").slice(0, 1).toUpperCase())}</span>
-          <strong>${h.escapeHtml(h.displayText(area.title))}</strong>
+      <div class="app-tile-wrap">
+        <a class="app-tile" href="#${h.escapeHtml(module.id)}">
+          <span class="app-icon app-icon--${color}">${h.escapeHtml(moduleInitial(module))}</span>
+          <span>${h.escapeHtml(compactTitle(module, h))}</span>
+        </a>
+        ${remove}
+      </div>
+    `;
+  }
+
+  function personalPanel(key, title, subtitle, data, h) {
+    const personal = ensurePersonal(data);
+    const modules = (personal[key] || [])
+      .map(moduleById)
+      .filter(Boolean);
+
+    return `
+      <section class="personal-panel">
+        <div class="personal-panel__head">
+          <div>
+            <span class="kicker">Persönlich</span>
+            <h2>${h.escapeHtml(title)}</h2>
+            <p>${h.escapeHtml(subtitle)}</p>
+          </div>
         </div>
-        <p>${h.escapeHtml(h.displayText(area.description))}</p>
-        <div class="launch-tile__meta">${areaMetricLine(area, data, h)}</div>
-      </a>
+        <div class="personal-app-grid">
+          ${modules.length ? modules.map((module) => appTile(module, h, { user: key })).join("") : `
+            <div class="personal-empty">Noch keine Apps. Unten aus der App-Bibliothek hinzufügen.</div>
+          `}
+        </div>
+      </section>
     `;
   }
 
-  function compactArea(area, data, h) {
-    const firstMetric = window.OSM_AREA_TOOLS.areaMetrics(area, data)[0];
+  function libraryTile(module, h) {
+    const color = appColors[Math.abs(module.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % appColors.length];
     return `
-      <a class="compact-area-link" href="#area-${h.escapeHtml(area.id)}">
-        <span>${h.escapeHtml(h.displayText(area.title))}</span>
-        ${firstMetric ? `<strong>${h.escapeHtml(firstMetric.value)}</strong>` : ""}
-      </a>
+      <article class="library-app">
+        <a class="library-app__main" href="#${h.escapeHtml(module.id)}">
+          <span class="app-icon app-icon--${color}">${h.escapeHtml(moduleInitial(module))}</span>
+          <span>
+            <strong>${h.escapeHtml(h.displayText(module.title))}</strong>
+            <small>${h.escapeHtml(h.displayText(module.description || "Modul öffnen"))}</small>
+          </span>
+        </a>
+        <div class="library-app__actions">
+          <button type="button" data-action="personal-add" data-user="owner" data-module="${h.escapeHtml(module.id)}">Zu mir</button>
+          <button type="button" data-action="personal-add" data-user="mohammed" data-module="${h.escapeHtml(module.id)}">Zu Mohammed</button>
+        </div>
+      </article>
     `;
   }
 
-  function rfqRows(data, h) {
-    const rfqs = (data.rfqs || [])
-      .filter((rfq) => !["abgelehnt", "gewonnen"].includes(rfq.status))
-      .slice(0, 4);
+  function bindPersonalActions() {
+    if (window.OSM_DASHBOARD_PERSONAL_BOUND) return;
+    window.OSM_DASHBOARD_PERSONAL_BOUND = true;
 
-    if (!rfqs.length) {
-      return `<div class="empty-message">Keine offenen RFQs.</div>`;
-    }
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action='personal-add'], [data-action='personal-remove']");
+      if (!button || !window.OSM || !window.OSM.data) return;
+      const user = button.dataset.user;
+      const moduleId = button.dataset.module;
+      const personal = ensurePersonal(window.OSM.data);
+      personal[user] = personal[user] || [];
 
-    return `
-      <div class="mini-table">
-        ${rfqs.map((rfq) => {
-          const decision = h.decision(rfq);
-          return `
-            <a class="mini-row" href="#rfqs">
-              <span>
-                <strong>${h.escapeHtml(h.displayText(rfq.partName))}</strong>
-                <small>${h.escapeHtml(h.label("customers", rfq.customerId))}</small>
-              </span>
-              ${h.badge(decision.decision, h.toneForStatus(decision.decision))}
-            </a>
-          `;
-        }).join("")}
-      </div>
-    `;
+      if (button.dataset.action === "personal-add" && !personal[user].includes(moduleId)) {
+        personal[user].push(moduleId);
+      }
+      if (button.dataset.action === "personal-remove") {
+        personal[user] = personal[user].filter((id) => id !== moduleId);
+      }
+
+      window.OSM.state.save(window.OSM.data);
+      window.OSM.render();
+    });
   }
 
-  function taskRows(data, h) {
-    const tasks = (data.tasks || [])
-      .filter((task) => task.status !== "erledigt")
-      .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
-      .slice(0, 4);
-
-    if (!tasks.length) {
-      return `<div class="empty-message">Keine offenen Aufgaben.</div>`;
-    }
-
-    return `
-      <div class="mini-table">
-        ${tasks.map((task) => `
-          <a class="mini-row" href="#tasks">
-            <span>
-              <strong>${h.escapeHtml(h.displayText(task.title))}</strong>
-              <small>${h.escapeHtml(h.displayText(task.owner || "-"))} / ${h.escapeHtml(task.dueDate || "-")}</small>
-            </span>
-            ${h.badge(task.priority, h.toneForStatus(task.priority))}
-          </a>
-        `).join("")}
-      </div>
-    `;
-  }
+  bindPersonalActions();
 
   window.OSM.registerModule({
     id: "dashboard",
     group: "Start",
     icon: "H",
     title: "Hauptseite",
-    description: "Führungs- und Arbeitsdashboard für OS.MECHPLAST.",
+    description: "App-Workspace für OS.MECHPLAST.",
     render(data, h) {
-      const primaryAreas = primaryAreaIds.map(areaById).filter(Boolean);
-      const secondaryAreas = secondaryAreaIds.map(areaById).filter(Boolean);
+      ensurePersonal(data);
+      const apps = allAppIds.map(moduleById).filter(Boolean);
       const openRfqs = count("rfqs", data, (item) => !["abgelehnt", "gewonnen"].includes(item.status));
       const openOrders = count("orders", data, (item) => item.status !== "geliefert");
+      const openTasks = count("tasks", data, (item) => item.status !== "erledigt");
       const materialNeeds = count("purchaseRequests", data, (item) => !["erhalten", "storniert"].includes(item.status));
-      const productionOpen = count("productionOrders", data, (item) => !["fertig", "storniert"].includes(item.status));
-      const financeLocks = count("financePostings", data, (item) => item.status === "commercialista offen");
-      const critical = materialNeeds + financeLocks;
 
       return `
-        <section class="workspace-header">
-          <div>
-            <div class="breadcrumb breadcrumb--quiet">
-              <a href="#dashboard">Home</a>
-              <span>/</span>
-              <span>ONCC ERP</span>
-            </div>
-            <div class="workspace-title-row">
-              <h1>OS.MECHPLAST ERP Workspace</h1>
-              <span class="workspace-state">Pilotbetrieb</span>
-            </div>
-            <p>Ein ruhiger Einstieg für RFQ, Angebot, PDM, Einkauf, Lager, Fertigung und Versand.</p>
-          </div>
-          <div class="workspace-header__actions">
-            <a class="button button--quiet" href="#module-map">Modul-Landkarte</a>
-            <a class="button" href="#rfqs">Neue RFQ</a>
-          </div>
-        </section>
-
-        <section class="filter-bar">
-          <label class="filter-field">
-            <span>Kunde</span>
-            <div class="filter-control">Alle Kunden</div>
-          </label>
-          <label class="filter-field">
-            <span>Bereich</span>
-            <select>
-              <option>Alle Arbeitsbereiche</option>
-              <option>Vertrieb & CRM</option>
-              <option>Produktion / MRP</option>
-              <option>Einkauf</option>
-            </select>
-          </label>
-          <label class="filter-field">
-            <span>Status</span>
-            <select>
-              <option>Offen / relevant</option>
-              <option>Kritisch</option>
-              <option>Heute</option>
-            </select>
-          </label>
-          <label class="filter-field filter-field--wide">
-            <span>Suche</span>
-            <input type="search" placeholder="Teil, Kunde, RFQ, Auftrag..." />
-          </label>
-          <button class="button button--blue" type="button">Anzeigen</button>
-        </section>
-
-        <section class="sap-dashboard-grid">
-          <article class="sap-card">
-            <div class="sap-card__head">
-              <div>
-                <h2>Alerts</h2>
-                <p>Entscheidende offene Punkte</p>
-              </div>
-              <a href="#tasks">Alle</a>
-            </div>
-            <div class="alert-line ${critical ? "alert-line--warn" : "alert-line--ok"}">
-              <strong>${critical}</strong>
-              <span>${critical ? "Punkte brauchen Prüfung" : "Keine kritischen Punkte"}</span>
-            </div>
-            <div class="status-list">
-              <div><span>Materialbedarf</span><strong>${materialNeeds}</strong></div>
-              <div><span>Finanz-Sperren</span><strong>${financeLocks}</strong></div>
-            </div>
-          </article>
-
-          <article class="sap-card">
-            <div class="sap-card__head">
-              <div>
-                <h2>Overall Rating</h2>
-                <p>Operative Lage</p>
-              </div>
-              <a href="#capacity">Details</a>
-            </div>
-            <div class="rating-block">
-              <span class="rating-number">${openRfqs + productionOpen}</span>
-              <span>von 8 Prüfpunkten aktiv</span>
-            </div>
-            <div class="status-list">
-              <div><span>Offene RFQs</span><strong>${openRfqs}</strong></div>
-              <div><span>Fertigung offen</span><strong>${productionOpen}</strong></div>
-            </div>
-          </article>
-
-          <article class="sap-card sap-card--wide">
-            <div class="sap-card__head">
-              <div>
-                <h2>Nächste Arbeit</h2>
-                <p>RFQs und Aufgaben, die zuerst entschieden werden sollten</p>
-              </div>
-              <div class="segmented">
-                <a class="is-active" href="#rfqs">RFQs</a>
-                <a href="#tasks">Aufgaben</a>
-              </div>
-            </div>
-            <div class="two-column-list">
-              <div>
-                <h3>RFQ Pipeline</h3>
-                ${rfqRows(data, h)}
-              </div>
-              <div>
-                <h3>Aufgaben</h3>
-                ${taskRows(data, h)}
-              </div>
-            </div>
-          </article>
-        </section>
-
-        <section class="launch-section">
-          <div class="section-head">
+        <section class="app-home">
+          <div class="app-home__hero">
             <div>
-              <span class="kicker">Arbeitsbereiche</span>
-              <h2>Hauptarbeit</h2>
+              <span class="kicker">ONCC ERP</span>
+              <h1>Workspace</h1>
+              <p>Öffne nur die App, die du gerade brauchst. Details, Tabellen und Entscheidungen liegen in den einzelnen Modulen.</p>
             </div>
-            <span class="section-note">${openOrders} offene Aufträge</span>
+            <div class="home-status-strip">
+              <a href="#rfqs"><strong>${openRfqs}</strong><span>RFQs</span></a>
+              <a href="#orders"><strong>${openOrders}</strong><span>Aufträge</span></a>
+              <a href="#tasks"><strong>${openTasks}</strong><span>Aufgaben</span></a>
+              <a href="#purchase-requests"><strong>${materialNeeds}</strong><span>Materialbedarf</span></a>
+            </div>
           </div>
-          <div class="launch-grid">
-            ${primaryAreas.map((area) => launchTile(area, data, h)).join("")}
-          </div>
-        </section>
 
-        <section class="launch-section launch-section--compact">
-          <div class="section-head">
-            <div>
-              <span class="kicker">Weitere Bereiche</span>
-              <h2>Bei Bedarf öffnen</h2>
+          <div class="personal-workspaces">
+            ${personalPanel("owner", "Mein Bereich", "Alles, was für dich schnell erreichbar sein soll.", data, h)}
+            ${personalPanel("mohammed", "Mohammed", "Apps und Funktionen für Mohammeds tägliche Arbeit.", data, h)}
+          </div>
+
+          <section class="app-library">
+            <div class="section-head">
+              <div>
+                <span class="kicker">Apps</span>
+                <h2>Alle wichtigen Module</h2>
+              </div>
+              <span class="section-note">Apps öffnen oder zu einem persönlichen Bereich hinzufügen</span>
             </div>
-          </div>
-          <div class="compact-area-grid">
-            ${secondaryAreas.map((area) => compactArea(area, data, h)).join("")}
-          </div>
+            <div class="library-grid">
+              ${apps.map((module) => libraryTile(module, h)).join("")}
+            </div>
+          </section>
         </section>
       `;
     }

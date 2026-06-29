@@ -207,6 +207,7 @@
 
   function render() {
     const module = currentModule();
+    document.body.dataset.view = module.id === "dashboard" ? "dashboard" : "module";
     document.querySelector('[data-region="nav"]').innerHTML = renderNav(module.id);
     document.querySelector('[data-region="content"]').innerHTML = module.render
       ? module.render(OSM.data, helpers)
