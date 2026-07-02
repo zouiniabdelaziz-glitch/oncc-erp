@@ -2,6 +2,148 @@
   const OSM = window.OSM;
   let searchTerm = "";
 
+  const sidebarGroups = [
+    {
+      id: "start",
+      title: "Start",
+      links: [
+        ["dashboard", "Start"],
+        ["area-management", "Management Dashboard"]
+      ]
+    },
+    {
+      id: "sales",
+      title: "Vertrieb & CRM",
+      links: [
+        ["area-sales", "Vertrieb & CRM"],
+        ["customers", "Kunden"],
+        ["contacts", "Kontakte"],
+        ["rfqs", "RFQs / Anfragen"],
+        ["offer-calculator", "Angebotsrechner"],
+        ["quotes", "Angebote"],
+        ["orders", "Aufträge"]
+      ]
+    },
+    {
+      id: "production",
+      title: "Fertigung",
+      links: [
+        ["area-production", "Fertigung"],
+        ["work-plans", "Arbeitsvorbereitung"],
+        ["work-operations", "Arbeitsgänge"],
+        ["production-orders", "Fertigungsaufträge"],
+        ["operation-feedback", "Rückmeldungen"],
+        ["machines", "Maschinen"],
+        ["capacity", "Kapazität"],
+        ["machine-calendar", "Maschinenkalender"]
+      ]
+    },
+    {
+      id: "procurement",
+      title: "Material / Einkauf",
+      links: [
+        ["area-procurement", "Einkauf"],
+        ["materials", "Materialgruppen"],
+        ["purchase-requests", "Materialbedarf"],
+        ["suppliers", "Lieferanten"],
+        ["purchase-orders", "Bestellungen"],
+        ["goods-receipts", "Wareneingang"],
+        ["partners", "Partnerbetriebe"]
+      ]
+    },
+    {
+      id: "inventory",
+      title: "Lager",
+      links: [
+        ["area-inventory", "Lager"],
+        ["warehouse-locations", "Lagerorte"],
+        ["stock-items", "Bestand"],
+        ["stock-movements", "Bewegungen"],
+        ["reservations", "Reservierungen"]
+      ]
+    },
+    {
+      id: "quality",
+      title: "Qualität",
+      links: [
+        ["area-quality", "Qualität"],
+        ["inspection-plans", "Prüfpläne"],
+        ["first-article", "Erstteilfreigabe"],
+        ["inspection-reports", "Messprotokolle"],
+        ["complaints", "Reklamationen"]
+      ]
+    },
+    {
+      id: "documents",
+      title: "Dokumente / PDM",
+      links: [
+        ["area-pdm", "PDM / Konstruktion"],
+        ["parts", "Teile"],
+        ["part-revisions", "Revisionen"],
+        ["files", "Dokumente"],
+        ["bom-items", "Stücklisten"],
+        ["change-requests", "Änderungen"]
+      ]
+    },
+    {
+      id: "people",
+      title: "Personal",
+      links: [
+        ["area-people", "Personal"],
+        ["employees", "Mitarbeiter"],
+        ["employee-skills", "Qualifikationen"],
+        ["shifts", "Schichten"],
+        ["absences", "Abwesenheiten"]
+      ]
+    },
+    {
+      id: "tasks-calendar",
+      title: "Aufgaben / Kalender",
+      links: [
+        ["tasks", "Aufgaben"],
+        ["projects", "Projekte"],
+        ["machine-calendar", "Kalender"]
+      ]
+    },
+    {
+      id: "maps-reports",
+      title: "Karte / Berichte",
+      links: [
+        ["maps", "Karte / Maps"],
+        ["module-map", "Berichte"],
+        ["area-logistics", "Logistik"],
+        ["deliveries", "Lieferstatus"]
+      ]
+    },
+    {
+      id: "finance",
+      title: "Finanzen",
+      links: [
+        ["area-finance", "Finanzen"],
+        ["cost-centers", "Kostenstellen"],
+        ["invoices", "Rechnungen"],
+        ["credit-notes", "Gutschriften"],
+        ["payments", "Zahlungen"],
+        ["open-items", "Offene Posten"],
+        ["finance-postings", "Finanzbuchungen"]
+      ]
+    },
+    {
+      id: "system",
+      title: "System & Einstellungen",
+      links: [
+        ["area-system", "System & Rechte"],
+        ["companies", "Gesellschaft"],
+        ["users", "Benutzerprofile"],
+        ["roles", "Rollen"],
+        ["security", "Sicherheit"],
+        ["number-ranges", "Nummernkreise"],
+        ["audit-log", "Änderungshistorie"],
+        ["settings", "Einstellungen"]
+      ]
+    }
+  ];
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -14,56 +156,57 @@
   function displayText(value) {
     const text = String(value ?? "");
     const dictionary = {
-      "pruefen": "pr\u00fcfen",
-      "in pruefung": "in Pr\u00fcfung",
-      "ueberfaellig": "\u00fcberf\u00e4llig",
-      "geloescht": "gel\u00f6scht",
-      "verfuegbar": "verf\u00fcgbar",
-      "bestaetigt": "best\u00e4tigt",
-      "geschaetzt": "gesch\u00e4tzt"
+      "pruefen": "prüfen",
+      "in pruefung": "in Prüfung",
+      "ueberfaellig": "überfällig",
+      "geloescht": "gelöscht",
+      "verfuegbar": "verfügbar",
+      "bestaetigt": "bestätigt",
+      "geschaetzt": "geschätzt"
     };
     if (dictionary[text]) return dictionary[text];
     return text
-      .replaceAll("fuer", "f\u00fcr")
-      .replaceAll("Fuer", "F\u00fcr")
-      .replaceAll("Zurueck", "Zur\u00fcck")
-      .replaceAll("zurueck", "zur\u00fcck")
-      .replaceAll("Kapazitaets", "Kapazit\u00e4ts")
-      .replaceAll("Kapazitaet", "Kapazit\u00e4t")
-      .replaceAll("Qualitaet", "Qualit\u00e4t")
-      .replaceAll("Pruefung", "Pr\u00fcfung")
-      .replaceAll("Pruef", "Pr\u00fcf")
-      .replaceAll(" pruefen", " pr\u00fcfen")
-      .replaceAll("Stueck", "St\u00fcck")
-      .replaceAll("Rueck", "R\u00fcck")
-      .replaceAll("Ruest", "R\u00fcst")
-      .replaceAll("Aender", "\u00c4nder")
-      .replaceAll("aender", "\u00e4nder")
-      .replaceAll("Naechst", "N\u00e4chst")
-      .replaceAll("naechst", "n\u00e4chst")
-      .replaceAll("Eintraege", "Eintr\u00e4ge")
-      .replaceAll("Auftraege", "Auftr\u00e4ge")
-      .replaceAll("Arbeitsplaene", "Arbeitspl\u00e4ne")
-      .replaceAll("Arbeitsgaenge", "Arbeitsg\u00e4nge")
-      .replaceAll("Wareneingaenge", "Wareneing\u00e4nge")
-      .replaceAll("Faehig", "F\u00e4hig")
-      .replaceAll("faehig", "f\u00e4hig")
-      .replaceAll("Faellig", "F\u00e4llig")
-      .replaceAll("faellig", "f\u00e4llig")
-      .replaceAll("Gueltig", "G\u00fcltig")
-      .replaceAll("gueltig", "g\u00fcltig")
-      .replaceAll("Loeschen", "L\u00f6schen")
-      .replaceAll("loeschen", "l\u00f6schen")
-      .replaceAll("Schliessen", "Schlie\u00dfen")
-      .replaceAll("oeffnen", "\u00f6ffnen")
-      .replaceAll("Oeffnen", "\u00d6ffnen")
-      .replaceAll("moeglich", "m\u00f6glich")
-      .replaceAll("Moeglich", "M\u00f6glich")
-      .replaceAll("ueber", "\u00fcber")
-      .replaceAll("Ueber", "\u00dcber")
-      .replaceAll("spaeter", "sp\u00e4ter")
-      .replaceAll("Spaeter", "Sp\u00e4ter");
+      .replaceAll("fuer", "für")
+      .replaceAll("Fuer", "Für")
+      .replaceAll("Zurueck", "Zurück")
+      .replaceAll("zurueck", "zurück")
+      .replaceAll("Kapazitaets", "Kapazitäts")
+      .replaceAll("Kapazitaet", "Kapazität")
+      .replaceAll("Qualitaet", "Qualität")
+      .replaceAll("Pruefung", "Prüfung")
+      .replaceAll("Pruef", "Prüf")
+      .replaceAll(" pruefen", " prüfen")
+      .replaceAll("Stueck", "Stück")
+      .replaceAll("Rueck", "Rück")
+      .replaceAll("Ruest", "Rüst")
+      .replaceAll("Aender", "Änder")
+      .replaceAll("aender", "änder")
+      .replaceAll("Naechst", "Nächst")
+      .replaceAll("naechst", "nächst")
+      .replaceAll("Eintraege", "Einträge")
+      .replaceAll("Auftraege", "Aufträge")
+      .replaceAll("Arbeitsplaene", "Arbeitspläne")
+      .replaceAll("Arbeitsgaenge", "Arbeitsgänge")
+      .replaceAll("Wareneingaenge", "Wareneingänge")
+      .replaceAll("Faehig", "Fähig")
+      .replaceAll("faehig", "fähig")
+      .replaceAll("Faellig", "Fällig")
+      .replaceAll("faellig", "fällig")
+      .replaceAll("Gueltig", "Gültig")
+      .replaceAll("gueltig", "gültig")
+      .replaceAll("Loeschen", "Löschen")
+      .replaceAll("loeschen", "löschen")
+      .replaceAll("Schliessen", "Schließen")
+      .replaceAll("oeffnen", "öffnen")
+      .replaceAll("Oeffnen", "Öffnen")
+      .replaceAll("moeglich", "möglich")
+      .replaceAll("Moeglich", "Möglich")
+      .replaceAll("ueber", "über")
+      .replaceAll("Ueber", "Über")
+      .replaceAll("spaeter", "später")
+      .replaceAll("Spaeter", "Später");
   }
+
   function badge(value, tone) {
     const className = tone ? `badge badge--${tone}` : "badge";
     return `<span class="${className}">${escapeHtml(displayText(value || "-"))}</span>`;
@@ -72,18 +215,20 @@
   function toneForStatus(status) {
     if ([
       "aktiv", "gewonnen", "geliefert", "fertig", "anbieten", "freigegeben",
-      "gebucht", "bezahlt", "erhalten", "verfuegbar", "abgeschlossen", "bestätigt",
-      "reserviert", "genehmigt", "bereit", "gespeichert", "synchronisiert"
+      "gebucht", "bezahlt", "erhalten", "verfuegbar", "verfügbar", "abgeschlossen",
+      "bestätigt", "reserviert", "genehmigt", "bereit", "gespeichert",
+      "synchronisiert", "erledigt"
     ].includes(status)) return "ok";
     if ([
-      "pruefen", "in arbeit", "entwurf", "neu", "offen", "geplant", "bestellt",
-      "teilgeliefert", "in pruefung", "angefragt", "ausstehend", "commercialista offen",
-      "wartet", "potenziell", "lead", "wartung", "aktualisiert", "angelegt"
+      "prüfen", "pruefen", "in arbeit", "entwurf", "neu", "offen", "geplant",
+      "bestellt", "teilgeliefert", "in prüfung", "in pruefung", "angefragt",
+      "ausstehend", "commercialista offen", "wartet", "potenziell", "lead",
+      "wartung", "aktualisiert", "angelegt"
     ].includes(status)) return "warn";
     if ([
       "ablehnen", "abgelehnt", "verloren", "kritisch", "hoch", "gesperrt",
-      "mangel", "ueberfaellig", "storniert", "reklamation", "blockiert", "problem",
-      "geloescht"
+      "mangel", "überfällig", "ueberfaellig", "storniert", "reklamation",
+      "blockiert", "problem", "gelöscht", "geloescht"
     ].includes(status)) return "danger";
     return "muted";
   }
@@ -119,34 +264,37 @@
   async function start() {
     OSM.data = await OSM.state.load();
     document.getElementById("app").innerHTML = `
-      <div class="app-shell">
-        <header class="shellbar">
-          <div class="shellbar__left">
-            <a class="shellbar__icon" href="#dashboard">Start</a>
-            <button class="shellbar__icon" type="button" onclick="history.back()">Zurück</button>
-            <a class="shellbar__brand" href="#dashboard">
-              <span class="shellbar__mark">ON</span>
-              <span class="shellbar__product">ONCC ERP</span>
-            </a>
-            <span class="shellbar__workspace">OS.MECHPLAST Workspace</span>
-          </div>
-          <div class="shellbar__center">
-            <select class="shellbar__select" aria-label="Arbeitskontext">
-              <option>Management System</option>
-              <option>Vertrieb & CRM</option>
-              <option>Produktion / MRP</option>
-            </select>
-            <input class="shellbar__search" type="search" placeholder="Suchbegriff eingeben" aria-label="Globale Suche" />
-          </div>
-          <div class="shellbar__right">
-            <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
-            <span class="save-status" data-save-status>Lokal</span>
-            <a class="shellbar__tool" href="#security">Sicherheit</a>
-            <a class="shellbar__tool" href="#settings">System</a>
-          </div>
-        </header>
-        <nav class="context-tabs" data-region="nav"></nav>
-        <main class="main" data-region="content"></main>
+      <div class="app-shell app-shell--erp">
+        <aside class="sidebar">
+          <a class="sidebar__brand" href="#dashboard">
+            <span class="sidebar__mark">ON</span>
+            <span>
+              <strong>ONCC ERP</strong>
+              <small>OS.MECHPLAST Workspace</small>
+            </span>
+          </a>
+          <div class="sidebar__user" data-region="sidebar-user"></div>
+          <nav class="sidebar__nav" data-region="nav"></nav>
+        </aside>
+        <div class="workspace">
+          <header class="top-shellbar">
+            <div class="top-shellbar__left">
+              <a class="top-shellbar__button" href="#dashboard">Start</a>
+              <button class="top-shellbar__button" type="button" onclick="history.back()">Zurück</button>
+              <input class="top-shellbar__search" type="search" data-action="global-search" placeholder="Suchen..." aria-label="Globale Suche" />
+            </div>
+            <div class="top-shellbar__right">
+              <label class="user-switch">
+                <span>Benutzer</span>
+                <select data-action="current-user" aria-label="Aktueller Benutzer"></select>
+              </label>
+              <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
+              <span class="save-status" data-save-status>Lokal</span>
+              <a class="shellbar__tool" href="#settings">System</a>
+            </div>
+          </header>
+          <main class="main" data-region="content"></main>
+        </div>
       </div>
     `;
 
@@ -163,11 +311,7 @@
 
   function currentModule() {
     const id = (location.hash || "#dashboard").replace("#", "");
-    return OSM.modules.find((module) => module.id === id) || OSM.modules[0];
-  }
-
-  function areaInitial(area) {
-    return (area.title || "?").slice(0, 1).toUpperCase();
+    return OSM.modules.find((module) => module.id === id) || OSM.modules.find((module) => module.id === "dashboard") || OSM.modules[0];
   }
 
   function activeAreaId(activeId) {
@@ -177,49 +321,92 @@
     return area ? area.id : "";
   }
 
-  function renderNav(activeId) {
-    const areas = window.OSM_AREAS || [];
-    const activeArea = activeAreaId(activeId);
-    const activeAreaRecord = areas.find((area) => area.id === activeArea);
-    const quickIds = ["rfqs", "offer-calculator", "orders", "tasks", "capacity", "module-map"];
-    const secondaryIds = activeAreaRecord ? activeAreaRecord.modules || [] : quickIds;
-    const secondaryModules = secondaryIds
-      .map((id) => OSM.modules.find((module) => module.id === id))
-      .filter(Boolean);
+  function moduleExists(moduleId) {
+    return OSM.modules.some((module) => module.id === moduleId);
+  }
 
+  function renderSidebarUser() {
+    const user = OSM.state.currentUserRecord(OSM.data);
+    const permissions = OSM.state.permissionsForCurrentUser(OSM.data);
     return `
-      <div class="context-tabs__primary">
-        <a class="context-tab ${activeId === "dashboard" ? "is-active" : ""}" href="#dashboard">Hauptseite</a>
-        ${areas.map((area) => `
-          <a class="context-tab ${activeArea === area.id ? "is-active" : ""}" href="#area-${escapeHtml(area.id)}">
-            ${escapeHtml(area.title)}
-          </a>
-        `).join("")}
-      </div>
-      <div class="context-tabs__secondary">
-        <span class="context-tabs__label">${activeAreaRecord ? escapeHtml(activeAreaRecord.title) : "Schnellstart"}</span>
-        ${secondaryModules.map((module) => `
-          <a class="sub-tab ${module.id === activeId ? "is-active" : ""}" href="#${module.id}">
-            <span>${escapeHtml(module.icon || areaInitial({ title: module.title }))}</span>
-            ${escapeHtml(module.title)}
-          </a>
-        `).join("")}
+      <div class="sidebar-user-card">
+        <div>
+          <strong>${escapeHtml(user.name)}</strong>
+          <span>${escapeHtml(user.roleName || "Super Admin")}</span>
+        </div>
+        ${badge(permissions.edit_all_modules ? "Vollzugriff" : "eingeschränkt", permissions.edit_all_modules ? "ok" : "warn")}
       </div>
     `;
+  }
+
+  function renderNav(activeId) {
+    const activeArea = activeAreaId(activeId);
+    const collapsed = (OSM.data.meta && OSM.data.meta.sidebarCollapsed) || {};
+
+    return sidebarGroups.map((group) => {
+      const links = group.links.filter(([id]) => moduleExists(id));
+      if (!links.length) return "";
+      const groupActive = links.some(([id]) => id === activeId || (id.startsWith("area-") && id === `area-${activeArea}`));
+      const isCollapsed = collapsed[group.id] === true && !groupActive;
+      return `
+        <section class="sidebar-group ${groupActive ? "is-active" : ""}">
+          <button class="sidebar-group__toggle" type="button" data-action="toggle-sidebar-section" data-section="${escapeHtml(group.id)}" aria-expanded="${isCollapsed ? "false" : "true"}">
+            <span>${escapeHtml(group.title)}</span>
+            <span>${isCollapsed ? "+" : "−"}</span>
+          </button>
+          <div class="sidebar-group__links" ${isCollapsed ? "hidden" : ""}>
+            ${links.map(([id, labelText]) => {
+              const module = OSM.modules.find((item) => item.id === id);
+              const active = id === activeId || (id.startsWith("area-") && id === `area-${activeArea}`);
+              return `
+                <a class="sidebar-link ${active ? "is-active" : ""}" href="#${escapeHtml(id)}">
+                  <span>${escapeHtml(module && module.icon ? module.icon : labelText.slice(0, 1))}</span>
+                  ${escapeHtml(displayText(labelText || (module && module.title) || id))}
+                </a>
+              `;
+            }).join("")}
+          </div>
+        </section>
+      `;
+    }).join("");
+  }
+
+  function renderUserSelect() {
+    const select = document.querySelector('[data-action="current-user"]');
+    if (!select) return;
+    const currentId = OSM.state.currentUserId(OSM.data);
+    select.innerHTML = (OSM.data.users || []).map((user) => `
+      <option value="${escapeHtml(user.id)}" ${user.id === currentId ? "selected" : ""}>
+        ${escapeHtml(user.name)} · ${escapeHtml(user.roleName || "Super Admin")}
+      </option>
+    `).join("");
   }
 
   function render() {
     const module = currentModule();
     document.body.dataset.view = module.id === "dashboard" ? "dashboard" : "module";
+    document.body.dataset.sidebar = "erp";
+    document.querySelector('[data-region="sidebar-user"]').innerHTML = renderSidebarUser();
     document.querySelector('[data-region="nav"]').innerHTML = renderNav(module.id);
     document.querySelector('[data-region="content"]').innerHTML = module.render
       ? module.render(OSM.data, helpers)
       : renderGeneric(module);
     document.title = `${module.title} - OS.MECHPLAST ERP`;
+    renderUserSelect();
     updateSaveStatus();
   }
 
   function renderGeneric(module) {
+    if (!module.collection) {
+      return `
+        ${renderTopbar(module)}
+        ${renderRelatedModules(module)}
+        <section class="panel panel--pad">
+          <p class="muted">Dieses Modul ist als Arbeitsbereich vorbereitet.</p>
+        </section>
+      `;
+    }
+
     const rows = OSM.data[module.collection] || [];
     const filteredRows = rows.filter((row) =>
       JSON.stringify(row).toLowerCase().includes(searchTerm.toLowerCase())
@@ -229,7 +416,7 @@
       ${renderTopbar(module)}
       ${renderRelatedModules(module)}
       <div class="toolbar">
-        <input class="search" data-action="search" value="${escapeHtml(searchTerm)}" placeholder="Suchen..." />
+        <input class="search" data-action="search" value="${escapeHtml(searchTerm)}" placeholder="In diesem Modul suchen..." />
         <div class="muted small">${filteredRows.length} Einträge</div>
       </div>
       <section class="panel">
@@ -247,12 +434,12 @@
         <div>
           ${!isDashboard ? `
             <div class="breadcrumb">
-              <a href="#dashboard">Hauptseite</a>
+              <a href="#dashboard">Start</a>
               ${area ? `<span>/</span><a href="#area-${escapeHtml(area.id)}">${escapeHtml(area.title)}</a>` : ""}
             </div>
           ` : ""}
-          <h1 class="topbar__title">${escapeHtml(module.title)}</h1>
-          <p class="topbar__text">${escapeHtml(module.description || "")}</p>
+          <h1 class="topbar__title">${escapeHtml(displayText(module.title))}</h1>
+          <p class="topbar__text">${escapeHtml(displayText(module.description || ""))}</p>
         </div>
         <div class="page-actions">
           ${!isDashboard ? `<a class="button button--quiet" href="${area ? `#area-${escapeHtml(area.id)}` : "#dashboard"}">Zurück</a>` : ""}
@@ -277,7 +464,7 @@
       <div class="related-strip">
         <span class="related-strip__label">Verbunden:</span>
         <a href="#area-${escapeHtml(area.id)}">Bereichs-Dashboard</a>
-        ${relatedModules.slice(0, 7).map((item) => `<a href="#${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`).join("")}
+        ${relatedModules.slice(0, 7).map((item) => `<a href="#${escapeHtml(item.id)}">${escapeHtml(displayText(item.title))}</a>`).join("")}
         ${relatedAreas.slice(0, 4).map((item) => `<a href="#area-${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>`).join("")}
       </div>
     `;
@@ -301,8 +488,8 @@
                 `).join("")}
                 <td>
                   <div class="row-actions">
-                    <button class="icon-button" data-action="edit" data-module="${module.id}" data-id="${row.id}">Bearbeiten</button>
-                    <button class="icon-button icon-button--danger" data-action="delete" data-module="${module.id}" data-id="${row.id}">Löschen</button>
+                    <button class="icon-button" data-action="edit" data-module="${module.id}" data-id="${escapeHtml(row.id)}">Bearbeiten</button>
+                    <button class="icon-button icon-button--danger" data-action="delete" data-module="${module.id}" data-id="${escapeHtml(row.id)}">Löschen</button>
                   </div>
                 </td>
               </tr>
@@ -327,17 +514,32 @@
     if (action === "export-data") exportData();
     if (action === "import-data") document.getElementById("import-file").click();
     if (action === "reset-demo") resetDemoData();
+    if (action === "toggle-sidebar-section") toggleSidebarSection(target.dataset.section);
   }
 
   function handleInput(event) {
-    if (event.target.dataset.action !== "search") return;
-    searchTerm = event.target.value;
-    render();
-    const input = document.querySelector('[data-action="search"]');
-    if (input) input.focus();
+    if (event.target.dataset.action === "search") {
+      searchTerm = event.target.value;
+      render();
+      const input = document.querySelector('[data-action="search"]');
+      if (input) input.focus();
+    }
+    if (event.target.dataset.action === "global-search") {
+      searchTerm = event.target.value;
+      const module = currentModule();
+      if (module.collection) render();
+      const input = document.querySelector('[data-action="global-search"]');
+      if (input) input.focus();
+    }
   }
 
   function handleChange(event) {
+    if (event.target.dataset.action === "current-user") {
+      OSM.state.setCurrentUser(OSM.data, event.target.value);
+      render();
+      return;
+    }
+
     if (event.target.dataset.action !== "import-file") return;
     const file = event.target.files[0];
     if (!file) return;
@@ -356,8 +558,17 @@
     reader.readAsText(file);
   }
 
+  function toggleSidebarSection(sectionId) {
+    OSM.data.meta = OSM.data.meta || {};
+    OSM.data.meta.sidebarCollapsed = OSM.data.meta.sidebarCollapsed || {};
+    OSM.data.meta.sidebarCollapsed[sectionId] = !OSM.data.meta.sidebarCollapsed[sectionId];
+    OSM.state.save(OSM.data, { summary: "Sidebar angepasst" });
+    render();
+  }
+
   function openForm(moduleId, id) {
     const module = OSM.modules.find((item) => item.id === moduleId);
+    if (!module || !module.collection) return;
     const existing = id ? OSM.state.findById(OSM.data, module.collection, id) : null;
     const record = existing || { id: OSM.state.uid(module.prefix || module.collection.slice(0, 3)) };
 
@@ -397,17 +608,18 @@
   }
 
   function renderField(field, record) {
-    const value = record[field.key] ?? field.default ?? "";
+    const defaultValue = typeof field.default === "function" ? field.default(OSM.data, helpers) : field.default;
+    const value = record[field.key] ?? defaultValue ?? "";
     const wide = field.type === "textarea" || field.wide ? " form-field--wide" : "";
     const required = field.required ? " required" : "";
     let control = "";
 
     if (field.type === "textarea") {
-      control = `<textarea name="${field.key}"${required}>${escapeHtml(value)}</textarea>`;
+      control = `<textarea name="${escapeHtml(field.key)}"${required}>${escapeHtml(value)}</textarea>`;
     } else if (field.type === "select") {
       const choices = typeof field.options === "function" ? field.options(OSM.data, helpers) : field.options || [];
       control = `
-        <select name="${field.key}"${required}>
+        <select name="${escapeHtml(field.key)}"${required}>
           <option value="">-</option>
           ${choices.map((option) => `
             <option value="${escapeHtml(option.value)}" ${String(value) === String(option.value) ? "selected" : ""}>
@@ -417,7 +629,7 @@
         </select>
       `;
     } else {
-      control = `<input name="${field.key}" type="${field.type || "text"}" value="${escapeHtml(value)}"${required} />`;
+      control = `<input name="${escapeHtml(field.key)}" type="${field.type || "text"}" value="${escapeHtml(value)}"${required} />`;
     }
 
     return `
@@ -430,6 +642,7 @@
 
   function deleteRecord(moduleId, id) {
     const module = OSM.modules.find((item) => item.id === moduleId);
+    if (!module || !module.collection) return;
     if (!confirm("Diesen Eintrag wirklich löschen?")) return;
     OSM.state.remove(OSM.data, module.collection, id);
     render();

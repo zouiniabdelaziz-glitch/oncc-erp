@@ -103,7 +103,7 @@
       id: "logistics",
       title: "Logistik",
       description: "Lieferstatus, Packliste, DAXA-Referenz, Tracking und Versand.",
-      modules: ["deliveries"],
+      modules: ["deliveries", "maps"],
       related: ["sales", "inventory", "finance", "quality"],
       metrics: [
         count("deliveries", "Sendungen"),
@@ -141,7 +141,7 @@
       id: "system",
       title: "System & Rechte",
       description: "Gesellschaft, Rollen, Historie, Nummernkreise, Sicherheit und Backups.",
-      modules: ["companies", "roles", "security", "number-ranges", "audit-log", "settings"],
+      modules: ["companies", "users", "roles", "security", "number-ranges", "audit-log", "settings"],
       related: ["management", "finance"],
       metrics: [
         count("companies", "Gesellschaften"),

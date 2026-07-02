@@ -1,437 +1,323 @@
 (function () {
-  const baseModuleIds = [
-    "customers", "contacts", "rfqs", "offer-calculator", "quotes", "orders",
-    "tasks", "projects", "parts", "part-revisions", "files", "suppliers",
-    "purchase-requests", "stock-items", "capacity", "production-orders",
-    "machine-calendar", "deliveries", "inspection-reports", "settings"
-  ];
-
-  const defaultPersonalShortcuts = {
-    owner: [
-      "app:customers", "action:customer-import", "app:rfqs", "app:offer-calculator",
-      "app:tasks", "area:sales", "area:management", "action:save-status"
-    ],
-    mohammed: [
-      "app:production-orders", "app:machine-calendar", "app:tasks", "app:capacity",
-      "app:deliveries", "app:inspection-reports", "area:production"
-    ]
+  const defaultLayouts = {
+    usr_abdelaziz: ["overview", "tasks", "sales", "capacity", "audit", "quickLinks"],
+    usr_mohammed: ["overview", "tasks", "production", "quality", "map", "quickLinks"]
   };
-
-  const specialShortcuts = [
-    {
-      id: "action:customer-import",
-      title: "Kundenimport",
-      description: "Excel, CSV oder TSV in Kunden übernehmen.",
-      icon: "KI",
-      color: "green",
-      kind: "Funktion",
-      action: "customer-import"
-    },
-    {
-      id: "action:new-task",
-      title: "Neue Aufgabe",
-      description: "Schnell eine Aufgabe für dich oder Mohammed anlegen.",
-      icon: "+A",
-      color: "blue",
-      kind: "Funktion",
-      action: "add:tasks"
-    },
-    {
-      id: "action:new-project",
-      title: "Neues Projekt",
-      description: "Ein internes oder Kundenprojekt starten.",
-      icon: "+P",
-      color: "violet",
-      kind: "Funktion",
-      action: "add:projects"
-    },
-    {
-      id: "action:capacity-check",
-      title: "Kapazitätscheck",
-      description: "Maschine, Schichtbedarf und Risiko bewerten.",
-      icon: "KC",
-      color: "orange",
-      kind: "Funktion",
-      href: "#offer-calculator"
-    },
-    {
-      id: "action:save-status",
-      title: "Speichern & Historie",
-      description: "Speicherstand, Cloud-Fallback und Historie prüfen.",
-      icon: "SH",
-      color: "slate",
-      kind: "System",
-      href: "#settings"
-    }
-  ];
-
-  const appColors = ["blue", "green", "orange", "red", "violet", "cyan", "slate", "lime"];
-  let workspaceFilter = "";
 
   function count(collection, data, filter) {
     const rows = data[collection] || [];
     return filter ? rows.filter(filter).length : rows.length;
   }
 
-  function moduleById(id) {
-    return (window.OSM.modules || []).find((module) => module.id === id);
+  function userId(data) {
+    return window.OSM.state.currentUserId(data);
   }
 
-  function areaById(id) {
-    return (window.OSM_AREAS || []).find((area) => area.id === id);
+  function userName(data) {
+    const user = window.OSM.state.currentUserRecord(data);
+    return user ? user.name : "Abdelaziz";
   }
 
-  function hashColor(id) {
-    return appColors[Math.abs(String(id).split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % appColors.length];
-  }
-
-  function initials(text) {
-    const words = String(text || "?").replace("&", " ").split(/\s+/).filter(Boolean);
-    if (!words.length) return "?";
-    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return `${words[0][0]}${words[1][0]}`.toUpperCase();
-  }
-
-  function compactTitle(module, h) {
-    const labels = {
-      "offer-calculator": "Rechner",
-      "part-revisions": "Revisionen",
-      "purchase-requests": "Einkaufsbedarf",
-      "stock-items": "Bestände",
-      "production-orders": "Fertigung",
-      "machine-calendar": "Kalender",
-      "inspection-reports": "Qualität",
-      "module-map": "Module",
-      "capacity": "Kapazität"
-    };
-    return labels[module.id] || h.displayText(module.title);
-  }
-
-  function normalizeShortcutId(id) {
-    if (!id) return "";
-    if (id.startsWith("app:") || id.startsWith("area:") || id.startsWith("action:")) return id;
-    if (moduleById(id)) return `app:${id}`;
-    if (areaById(id)) return `area:${id}`;
-    return id;
-  }
-
-  function ensurePersonal(data) {
+  function normalizeLayout(data) {
     data.meta = data.meta || {};
-    data.meta.personalWorkspaces = data.meta.personalWorkspaces || {};
-    const shouldMergeLaunchpadDefaults = !data.meta.launchpadV2PersonalDefaultsApplied;
-    Object.keys(defaultPersonalShortcuts).forEach((key) => {
-      const current = data.meta.personalWorkspaces[key];
-      if (!Array.isArray(current)) {
-        data.meta.personalWorkspaces[key] = defaultPersonalShortcuts[key].slice();
-      } else {
-        data.meta.personalWorkspaces[key] = current.map(normalizeShortcutId).filter(Boolean);
-        if (shouldMergeLaunchpadDefaults) {
-          defaultPersonalShortcuts[key].forEach((shortcutId) => {
-            if (!data.meta.personalWorkspaces[key].includes(shortcutId)) {
-              data.meta.personalWorkspaces[key].push(shortcutId);
-            }
-          });
-        }
+    data.meta.dashboardLayouts = data.meta.dashboardLayouts || {};
+    const currentUserId = userId(data);
+    const defaults = defaultLayouts[currentUserId] || defaultLayouts.usr_abdelaziz;
+    if (!Array.isArray(data.meta.dashboardLayouts[currentUserId])) {
+      data.meta.dashboardLayouts[currentUserId] = defaults.map((id) => ({ id, visible: true }));
+    }
+
+    const known = new Set(widgetDefinitions().map((widget) => widget.id));
+    data.meta.dashboardLayouts[currentUserId] = data.meta.dashboardLayouts[currentUserId]
+      .filter((item) => item && known.has(item.id))
+      .map((item) => ({ id: item.id, visible: item.visible !== false }));
+
+    defaults.forEach((id) => {
+      if (!data.meta.dashboardLayouts[currentUserId].some((item) => item.id === id)) {
+        data.meta.dashboardLayouts[currentUserId].push({ id, visible: true });
       }
     });
-    data.meta.launchpadV2PersonalDefaultsApplied = true;
-    return data.meta.personalWorkspaces;
+
+    widgetDefinitions().forEach((widget) => {
+      if (!data.meta.dashboardLayouts[currentUserId].some((item) => item.id === widget.id)) {
+        data.meta.dashboardLayouts[currentUserId].push({ id: widget.id, visible: false });
+      }
+    });
+
+    return data.meta.dashboardLayouts[currentUserId];
   }
 
-  function shortcutById(id, h) {
-    const normalizedId = normalizeShortcutId(id);
-    const special = specialShortcuts.find((item) => item.id === normalizedId);
-    if (special) return special;
-
-    if (normalizedId.startsWith("app:")) {
-      const module = moduleById(normalizedId.slice(4));
-      if (!module) return null;
-      return {
-        id: normalizedId,
-        title: compactTitle(module, h),
-        description: h.displayText(module.description || "Modul öffnen"),
-        icon: module.icon || initials(module.title),
-        color: hashColor(module.id),
-        kind: module.group || "App",
-        href: `#${module.id}`
-      };
-    }
-
-    if (normalizedId.startsWith("area:")) {
-      const area = areaById(normalizedId.slice(5));
-      if (!area) return null;
-      return {
-        id: normalizedId,
-        title: area.title,
-        description: h.displayText(area.description || "Bereich öffnen"),
-        icon: initials(area.title),
-        color: hashColor(area.id),
-        kind: "Bereich",
-        href: `#area-${area.id}`
-      };
-    }
-
-    return null;
+  function widgetDefinitions() {
+    return [
+      { id: "overview", title: "Überblick", render: renderOverview },
+      { id: "tasks", title: "Aufgaben", render: renderTasks },
+      { id: "sales", title: "Vertrieb", render: renderSales },
+      { id: "capacity", title: "Kapazität", render: renderCapacity },
+      { id: "production", title: "Fertigung", render: renderProduction },
+      { id: "quality", title: "Qualität", render: renderQuality },
+      { id: "map", title: "Karte", render: renderMap },
+      { id: "audit", title: "Änderungen", render: renderAudit },
+      { id: "quickLinks", title: "Schnellzugriff", render: renderQuickLinks }
+    ];
   }
 
-  function allShortcuts(h) {
-    const moduleIds = Array.from(new Set(baseModuleIds.concat(
-      (window.OSM.modules || []).map((module) => module.id)
-    ))).filter((id) => id && id !== "dashboard" && !id.startsWith("area-"));
-    const appShortcuts = moduleIds
-      .map((id) => shortcutById(`app:${id}`, h))
-      .filter(Boolean);
-    const areaShortcuts = (window.OSM_AREAS || [])
-      .map((area) => shortcutById(`area:${area.id}`, h))
-      .filter(Boolean);
-    return specialShortcuts.concat(areaShortcuts, appShortcuts);
-  }
-
-  function shortcutMatches(shortcut) {
-    if (!workspaceFilter) return true;
-    const haystack = `${shortcut.title} ${shortcut.description} ${shortcut.kind}`.toLowerCase();
-    return haystack.includes(workspaceFilter.toLowerCase());
-  }
-
-  function shortcutInner(shortcut, h) {
+  function metric(label, value, href, h, tone) {
     return `
-      <span class="app-icon app-icon--${h.escapeHtml(shortcut.color || "blue")}">${h.escapeHtml(shortcut.icon || initials(shortcut.title))}</span>
-      <span class="shortcut-tile__text">
-        <strong>${h.escapeHtml(h.displayText(shortcut.title))}</strong>
-        <small>${h.escapeHtml(h.displayText(shortcut.kind || ""))}</small>
-      </span>
-    `;
-  }
-
-  function shortcutTile(shortcut, h, options = {}) {
-    const remove = options.user ? `
-      <button class="shortcut-tile__remove" type="button" data-action="personal-remove" data-user="${h.escapeHtml(options.user)}" data-shortcut="${h.escapeHtml(shortcut.id)}" aria-label="Entfernen">×</button>
-    ` : "";
-    const attrs = shortcut.action
-      ? `button type="button" data-action="workspace-shortcut" data-shortcut="${h.escapeHtml(shortcut.id)}"`
-      : `a href="${h.escapeHtml(shortcut.href || "#dashboard")}"`;
-    const closing = shortcut.action ? "button" : "a";
-
-    return `
-      <div class="shortcut-tile-wrap">
-        <${attrs} class="shortcut-tile">
-          ${shortcutInner(shortcut, h)}
-        </${closing}>
-        ${remove}
-      </div>
-    `;
-  }
-
-  function personalPanel(key, title, subtitle, data, h) {
-    const personal = ensurePersonal(data);
-    const shortcuts = (personal[key] || [])
-      .map((id) => shortcutById(id, h))
-      .filter(Boolean);
-
-    return `
-      <section class="workspace-person">
-        <div class="workspace-person__head">
-          <div>
-            <span class="kicker">Persönlicher Bereich</span>
-            <h2>${h.escapeHtml(title)}</h2>
-            <p>${h.escapeHtml(subtitle)}</p>
-          </div>
-        </div>
-        <div class="shortcut-grid shortcut-grid--personal">
-          ${shortcuts.length ? shortcuts.map((shortcut) => shortcutTile(shortcut, h, { user: key })).join("") : `
-            <div class="personal-empty">Noch leer. Öffne unten die App-Bibliothek und füge passende Apps hinzu.</div>
-          `}
-        </div>
-      </section>
-    `;
-  }
-
-  function areaFolder(area, data, h) {
-    const tools = window.OSM_AREA_TOOLS || {};
-    const metrics = tools.areaMetrics ? tools.areaMetrics(area, data).slice(0, 2) : [];
-    return `
-      <a class="area-folder" href="#area-${h.escapeHtml(area.id)}">
-        <span class="area-folder__icon app-icon app-icon--${h.escapeHtml(hashColor(area.id))}">${h.escapeHtml(initials(area.title))}</span>
-        <span class="area-folder__body">
-          <strong>${h.escapeHtml(area.title)}</strong>
-          <small>${h.escapeHtml(h.displayText(area.description || ""))}</small>
-          <span class="area-folder__metrics">
-            ${metrics.map((metric) => `<span>${h.escapeHtml(metric.label)}: <b>${h.escapeHtml(metric.value)}</b></span>`).join("")}
-          </span>
-        </span>
+      <a class="metric-card metric-card--link ${tone ? `metric-card--${tone}` : ""}" href="${h.escapeHtml(href)}">
+        <span>${h.escapeHtml(label)}</span>
+        <strong>${h.escapeHtml(value)}</strong>
       </a>
     `;
   }
 
-  function libraryItem(shortcut, h) {
+  function widgetShell(widget, index, total, content, h) {
     return `
-      <article class="library-app">
-        ${shortcut.action ? `
-          <button class="library-app__main" type="button" data-action="workspace-shortcut" data-shortcut="${h.escapeHtml(shortcut.id)}">
-            ${shortcutInner(shortcut, h)}
-          </button>
-        ` : `
-          <a class="library-app__main" href="${h.escapeHtml(shortcut.href || "#dashboard")}">
-            ${shortcutInner(shortcut, h)}
-          </a>
-        `}
-        <p>${h.escapeHtml(h.displayText(shortcut.description || ""))}</p>
-        <div class="library-app__actions">
-          <button type="button" data-action="personal-add" data-user="owner" data-shortcut="${h.escapeHtml(shortcut.id)}">Zu mir</button>
-          <button type="button" data-action="personal-add" data-user="mohammed" data-shortcut="${h.escapeHtml(shortcut.id)}">Zu Mohammed</button>
+      <section class="dashboard-widget" data-widget="${h.escapeHtml(widget.id)}">
+        <div class="dashboard-widget__head">
+          <h2>${h.escapeHtml(widget.title)}</h2>
+          <div class="widget-actions">
+            <button type="button" data-action="widget-up" data-widget="${h.escapeHtml(widget.id)}" ${index === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" data-action="widget-down" data-widget="${h.escapeHtml(widget.id)}" ${index === total - 1 ? "disabled" : ""}>↓</button>
+            <button type="button" data-action="widget-hide" data-widget="${h.escapeHtml(widget.id)}">Ausblenden</button>
+          </div>
         </div>
-      </article>
+        ${content}
+      </section>
     `;
   }
 
-  function renderFocusStrip(data, h) {
-    const openRfqs = count("rfqs", data, (item) => !["abgelehnt", "gewonnen"].includes(item.status));
-    const openOrders = count("orders", data, (item) => item.status !== "geliefert");
-    const openTasks = count("tasks", data, (item) => item.status !== "erledigt");
-    const materialNeeds = count("purchaseRequests", data, (item) => !["erhalten", "storniert"].includes(item.status));
-    const items = [
-      { label: "RFQs", value: openRfqs, href: "#rfqs" },
-      { label: "Aufträge", value: openOrders, href: "#orders" },
-      { label: "Aufgaben", value: openTasks, href: "#tasks" },
-      { label: "Materialbedarf", value: materialNeeds, href: "#purchase-requests" }
-    ];
+  function renderOverview(data, h) {
     return `
-      <div class="focus-strip">
-        ${items.map((item) => `
-          <a href="${h.escapeHtml(item.href)}">
-            <strong>${h.escapeHtml(item.value)}</strong>
-            <span>${h.escapeHtml(item.label)}</span>
+      <div class="dashboard-metrics">
+        ${metric("Offene RFQs", count("rfqs", data, (item) => !["abgelehnt", "gewonnen"].includes(item.status)), "#rfqs", h)}
+        ${metric("Offene Aufgaben", count("tasks", data, (item) => item.status !== "erledigt"), "#tasks", h)}
+        ${metric("Offene Aufträge", count("orders", data, (item) => item.status !== "geliefert"), "#orders", h)}
+        ${metric("Materialbedarf", count("purchaseRequests", data, (item) => !["erhalten", "storniert"].includes(item.status)), "#purchase-requests", h)}
+      </div>
+      <div class="notice notice--plain">Abdelaziz und Mohammed sind Super Admins. Dieses Dashboard ist nur persönliche Oberfläche, kein Rechte-System.</div>
+    `;
+  }
+
+  function renderTasks(data, h) {
+    const currentUserId = userId(data);
+    const tasks = (data.tasks || [])
+      .filter((task) => task.status !== "erledigt")
+      .sort((a, b) => String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")))
+      .slice(0, 6);
+    const ownCount = (data.tasks || []).filter((task) => task.assignedTo === currentUserId && task.status !== "erledigt").length;
+    return `
+      <div class="widget-summary">
+        <strong>${h.escapeHtml(ownCount)}</strong>
+        <span>offene Aufgaben für ${h.escapeHtml(userName(data))}</span>
+        <button class="button" type="button" data-action="add" data-module="tasks">+ Aufgabe</button>
+      </div>
+      <div class="list">
+        ${tasks.length ? tasks.map((task) => `
+          <a class="list-item list-item--link" href="#tasks">
+            <span class="list-item__title">${h.escapeHtml(h.displayText(task.title))}</span>
+            <span class="list-item__meta">${h.escapeHtml(h.label("users", task.assignedTo))} · ${h.escapeHtml(h.displayText(task.status))} · ${h.escapeHtml(task.dueDate || "kein Datum")}</span>
           </a>
-        `).join("")}
+        `).join("") : `<div class="empty">Keine offenen Aufgaben.</div>`}
       </div>
     `;
   }
 
-  function bindWorkspaceActions() {
-    if (window.OSM_DASHBOARD_PERSONAL_BOUND) return;
-    window.OSM_DASHBOARD_PERSONAL_BOUND = true;
+  function renderSales(data, h) {
+    return `
+      <div class="dashboard-metrics">
+        ${metric("Kunden", count("customers", data), "#customers", h)}
+        ${metric("RFQs", count("rfqs", data), "#rfqs", h)}
+        ${metric("Angebote", count("quotes", data), "#quotes", h)}
+        ${metric("Aufträge", count("orders", data), "#orders", h)}
+      </div>
+    `;
+  }
+
+  function renderCapacity(data, h) {
+    const machines = data.machines || [];
+    const blocked = count("machineCalendarEntries", data, (item) => item.status === "blockiert");
+    return `
+      <div class="dashboard-metrics">
+        ${metric("Maschinen", machines.length, "#machines", h)}
+        ${metric("Kalender", count("machineCalendarEntries", data), "#machine-calendar", h)}
+        ${metric("Blockiert", blocked, "#machine-calendar", h, blocked ? "danger" : "")}
+        ${metric("Partner", count("partners", data), "#partners", h)}
+      </div>
+    `;
+  }
+
+  function renderProduction(data, h) {
+    return `
+      <div class="dashboard-metrics">
+        ${metric("Arbeitspläne", count("workPlans", data), "#work-plans", h)}
+        ${metric("Arbeitsgänge", count("workOperations", data), "#work-operations", h)}
+        ${metric("Fertigungsaufträge", count("productionOrders", data), "#production-orders", h)}
+        ${metric("Rückmeldungen", count("operationFeedback", data), "#operation-feedback", h)}
+      </div>
+    `;
+  }
+
+  function renderQuality(data, h) {
+    return `
+      <div class="dashboard-metrics">
+        ${metric("Prüfpläne", count("inspectionPlans", data), "#inspection-plans", h)}
+        ${metric("Messprotokolle", count("inspectionReports", data), "#inspection-reports", h)}
+        ${metric("Reklamationen", count("complaints", data, (item) => item.status !== "abgeschlossen"), "#complaints", h)}
+        ${metric("Erstteile", count("firstArticleApprovals", data), "#first-article", h)}
+      </div>
+    `;
+  }
+
+  function renderMap(data, h) {
+    const points = data.mapPoints || [];
+    return `
+      <div class="map-mini">
+        <div>
+          <strong>${h.escapeHtml(points.length)}</strong>
+          <span>Kartenpunkte vorbereitet</span>
+        </div>
+        <a class="button button--quiet" href="#maps">Karte öffnen</a>
+      </div>
+    `;
+  }
+
+  function renderAudit(data, h) {
+    const rows = (data.auditLogs || []).slice(0, 5);
+    return `
+      <div class="list">
+        ${rows.length ? rows.map((row) => `
+          <a class="list-item list-item--link" href="#audit-log">
+            <span class="list-item__title">${h.escapeHtml(row.summary || row.action || "Änderung")}</span>
+            <span class="list-item__meta">${h.escapeHtml(row.user || "-")} · ${h.escapeHtml(row.collection || "-")} · ${h.escapeHtml(row.timestamp ? new Date(row.timestamp).toLocaleString("de-DE") : "-")}</span>
+          </a>
+        `).join("") : `<div class="empty">Noch keine Änderungshistorie.</div>`}
+      </div>
+    `;
+  }
+
+  function renderQuickLinks(data, h) {
+    const links = [
+      ["#customers", "Kunden"],
+      ["#tasks", "Aufgaben"],
+      ["#employees", "Personal"],
+      ["#purchase-orders", "Bestellungen"],
+      ["#inspection-reports", "Messprotokolle"],
+      ["#finance-postings", "Finanzen"],
+      ["#settings", "Einstellungen"]
+    ];
+    return `
+      <div class="quick-link-grid">
+        ${links.map(([href, label]) => `<a href="${h.escapeHtml(href)}">${h.escapeHtml(label)}</a>`).join("")}
+      </div>
+    `;
+  }
+
+  function saveLayout(data, summary) {
+    window.OSM.state.save(data, { summary: summary || "Dashboard angepasst" });
+    window.OSM.render();
+  }
+
+  function changeWidget(data, widgetId, action) {
+    const layout = normalizeLayout(data);
+    const index = layout.findIndex((item) => item.id === widgetId);
+    if (index < 0) return;
+    if (action === "hide") layout[index].visible = false;
+    if (action === "show") layout[index].visible = true;
+    if (action === "up" && index > 0) {
+      const item = layout.splice(index, 1)[0];
+      layout.splice(index - 1, 0, item);
+    }
+    if (action === "down" && index < layout.length - 1) {
+      const item = layout.splice(index, 1)[0];
+      layout.splice(index + 1, 0, item);
+    }
+    saveLayout(data);
+  }
+
+  function resetLayout(data) {
+    const currentUserId = userId(data);
+    data.meta.dashboardLayouts[currentUserId] = (defaultLayouts[currentUserId] || defaultLayouts.usr_abdelaziz)
+      .map((id) => ({ id, visible: true }));
+    saveLayout(data, "Dashboard-Layout zurückgesetzt");
+  }
+
+  function bindDashboardActions() {
+    if (window.OSM_DASHBOARD_V2_BOUND) return;
+    window.OSM_DASHBOARD_V2_BOUND = true;
 
     document.addEventListener("click", (event) => {
-      const personalButton = event.target.closest("[data-action='personal-add'], [data-action='personal-remove']");
-      if (personalButton && window.OSM && window.OSM.data) {
-        event.preventDefault();
-        const user = personalButton.dataset.user;
-        const shortcutId = normalizeShortcutId(personalButton.dataset.shortcut || personalButton.dataset.module);
-        const personal = ensurePersonal(window.OSM.data);
-        personal[user] = personal[user] || [];
-
-        if (personalButton.dataset.action === "personal-add" && !personal[user].includes(shortcutId)) {
-          personal[user].push(shortcutId);
-        }
-        if (personalButton.dataset.action === "personal-remove") {
-          personal[user] = personal[user].filter((id) => normalizeShortcutId(id) !== shortcutId);
-        }
-
-        window.OSM.state.save(window.OSM.data, { summary: "Persönlichen Workspace angepasst" });
-        window.OSM.render();
-        return;
-      }
-
-      const shortcutButton = event.target.closest("[data-action='workspace-shortcut']");
-      if (!shortcutButton || !window.OSM || !window.OSM.data) return;
-      event.preventDefault();
-      const shortcut = shortcutById(shortcutButton.dataset.shortcut, window.OSM.helpers);
-      if (!shortcut) return;
-
-      if (shortcut.action === "customer-import") {
-        sessionStorage.setItem("osmCustomerImportFocus", "1");
-        location.hash = "#customers";
-        return;
-      }
-
-      if (shortcut.action && shortcut.action.startsWith("add:") && typeof window.OSM.openForm === "function") {
-        window.OSM.openForm(shortcut.action.slice(4));
-      }
-    });
-
-    document.addEventListener("input", (event) => {
-      if (event.target.dataset.action !== "workspace-filter") return;
-      workspaceFilter = event.target.value;
-      window.OSM.render();
-      const input = document.querySelector("[data-action='workspace-filter']");
-      if (input) input.focus();
+      const button = event.target.closest("[data-action='widget-hide'], [data-action='widget-show'], [data-action='widget-up'], [data-action='widget-down'], [data-action='dashboard-reset'], [data-action='dashboard-save']");
+      if (!button || !window.OSM || !window.OSM.data) return;
+      const action = button.dataset.action;
+      if (action === "dashboard-reset") resetLayout(window.OSM.data);
+      if (action === "dashboard-save") window.OSM.state.saveCheckpoint(window.OSM.data, "Startseite gespeichert").then(() => window.OSM.render());
+      if (action === "widget-hide") changeWidget(window.OSM.data, button.dataset.widget, "hide");
+      if (action === "widget-show") changeWidget(window.OSM.data, button.dataset.widget, "show");
+      if (action === "widget-up") changeWidget(window.OSM.data, button.dataset.widget, "up");
+      if (action === "widget-down") changeWidget(window.OSM.data, button.dataset.widget, "down");
     });
   }
 
-  bindWorkspaceActions();
+  bindDashboardActions();
 
   window.OSM.registerModule({
     id: "dashboard",
     group: "Start",
-    icon: "H",
-    title: "Hauptseite",
-    description: "App-Workspace für OS.MECHPLAST.",
+    icon: "S",
+    title: "Start",
+    description: "Persönliches Dashboard des aktuell ausgewählten Benutzers.",
     render(data, h) {
-      ensurePersonal(data);
-      const areas = window.OSM_AREAS || [];
-      const shortcuts = allShortcuts(h).filter(shortcutMatches);
-      const recommended = [
-        "app:customers", "action:customer-import", "app:rfqs", "app:offer-calculator",
-        "action:new-task", "app:capacity", "area:production", "area:procurement"
-      ].map((id) => shortcutById(id, h)).filter(Boolean);
+      const layout = normalizeLayout(data);
+      const widgets = widgetDefinitions();
+      const visible = layout
+        .filter((item) => item.visible)
+        .map((item) => widgets.find((widget) => widget.id === item.id))
+        .filter(Boolean);
+      const hidden = layout
+        .filter((item) => !item.visible)
+        .map((item) => widgets.find((widget) => widget.id === item.id))
+        .filter(Boolean);
+      const user = window.OSM.state.currentUserRecord(data);
+      const permissions = window.OSM.state.permissionsForCurrentUser(data);
 
       return `
-        <section class="launchpad">
-          <div class="launchpad-head">
+        <section class="user-dashboard">
+          <div class="dashboard-hero">
             <div>
-              <span class="kicker">ONCC ERP</span>
-              <h1>App Workspace</h1>
-              <p>Die Hauptseite bleibt ruhig: persönliche Apps oben, wichtige Zahlen daneben, alle großen Bereiche als Ordner darunter.</p>
+              <span class="kicker">Persönliche Startseite</span>
+              <h1>${h.escapeHtml(user.name)} Dashboard</h1>
+              <p>Eigene Oberfläche für ${h.escapeHtml(user.name)}. Rechte bleiben vollständig: lesen, schreiben, anlegen, ändern, löschen und Aufgaben zuweisen.</p>
             </div>
-            ${renderFocusStrip(data, h)}
+            <div class="permission-card">
+              <strong>${h.escapeHtml(user.roleName || "Super Admin")}</strong>
+              <span>Alle Module sichtbar und bearbeitbar</span>
+              <code>read/write/create/update/delete: ${permissions.delete ? "true" : "false"}</code>
+            </div>
           </div>
 
-          <div class="workspace-search">
-            <input data-action="workspace-filter" value="${h.escapeHtml(workspaceFilter)}" placeholder="App, Bereich oder Funktion suchen..." />
+          <div class="dashboard-toolbar">
+            <button class="button" type="button" data-action="dashboard-save">Startseite speichern</button>
+            <button class="button button--quiet" type="button" data-action="dashboard-reset">Layout zurücksetzen</button>
+            <a class="button button--quiet" href="#roles">Rollen ansehen</a>
           </div>
 
-          <div class="personal-workspaces">
-            ${personalPanel("owner", "Mein Bereich", "Deine Apps, Aufgaben, Kunden und Entscheidungen.", data, h)}
-            ${personalPanel("mohammed", "Mohammed", "Fertigung, Kapazität, Aufgaben und Lieferstatus.", data, h)}
+          <div class="dashboard-grid">
+            ${visible.map((widget, index) => widgetShell(widget, index, visible.length, widget.render(data, h), h)).join("")}
           </div>
 
-          <section class="workspace-section">
+          <section class="panel panel--pad widget-library">
             <div class="section-head">
               <div>
-                <span class="kicker">Empfohlen</span>
-                <h2>Häufig gebraucht</h2>
+                <span class="kicker">Widgets</span>
+                <h2>Ausgeblendete Widgets</h2>
               </div>
             </div>
-            <div class="shortcut-grid">
-              ${recommended.map((shortcut) => shortcutTile(shortcut, h)).join("")}
-            </div>
-          </section>
-
-          <section class="workspace-section">
-            <div class="section-head">
-              <div>
-                <span class="kicker">Bereiche</span>
-                <h2>ERP als App-Ordner</h2>
+            ${hidden.length ? `
+              <div class="quick-link-grid">
+                ${hidden.map((widget) => `<button type="button" data-action="widget-show" data-widget="${h.escapeHtml(widget.id)}">${h.escapeHtml(widget.title)} einblenden</button>`).join("")}
               </div>
-              <span class="section-note">Ein Bereich öffnet ein eigenes Dashboard mit passenden Untermenüs.</span>
-            </div>
-            <div class="area-folder-grid">
-              ${areas.map((area) => areaFolder(area, data, h)).join("")}
-            </div>
+            ` : `<p class="muted">Alle Widgets sind eingeblendet.</p>`}
           </section>
-
-          <details class="app-library" ${workspaceFilter ? "open" : ""}>
-            <summary>
-              <span>
-                <span class="kicker">Anpassen</span>
-                <strong>App-Bibliothek öffnen</strong>
-              </span>
-              <small>Apps und Funktionen zu „Mein Bereich“ oder „Mohammed“ hinzufügen</small>
-            </summary>
-            <div class="library-grid">
-              ${shortcuts.map((shortcut) => libraryItem(shortcut, h)).join("")}
-            </div>
-          </details>
         </section>
       `;
     }

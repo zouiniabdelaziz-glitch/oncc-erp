@@ -12,7 +12,57 @@
     updatedBy: ""
   };
 
+  const superAdminPermissions = {
+    read: true,
+    write: true,
+    create: true,
+    update: true,
+    delete: true,
+    assign_tasks: true,
+    view_all_modules: true,
+    edit_all_modules: true
+  };
+
+  const defaultUsers = [
+    {
+      id: "usr_abdelaziz",
+      name: "Abdelaziz",
+      roleId: "rol_super_admin",
+      roleName: "Super Admin",
+      status: "aktiv",
+      permissions: superAdminPermissions
+    },
+    {
+      id: "usr_mohammed",
+      name: "Mohammed",
+      roleId: "rol_super_admin",
+      roleName: "Super Admin",
+      status: "aktiv",
+      permissions: superAdminPermissions
+    }
+  ];
+
+  const defaultDashboardLayouts = {
+    usr_abdelaziz: [
+      { id: "overview", visible: true },
+      { id: "tasks", visible: true },
+      { id: "sales", visible: true },
+      { id: "capacity", visible: true },
+      { id: "audit", visible: true },
+      { id: "quickLinks", visible: true }
+    ],
+    usr_mohammed: [
+      { id: "overview", visible: true },
+      { id: "tasks", visible: true },
+      { id: "production", visible: true },
+      { id: "quality", visible: true },
+      { id: "map", visible: true },
+      { id: "quickLinks", visible: true }
+    ]
+  };
+
   const seedData = {
+    users: clone(defaultUsers),
     customers: [
       {
         id: "cus_muster_at",
@@ -61,23 +111,37 @@
       {
         id: "tsk_rules",
         title: "Kapazitätsregeln mit echten Erfahrungswerten prüfen",
+        description: "Rüstzeit, Materialrisiko und realistische Lieferzeit je Teilefamilie ergänzen.",
         projectId: "pro_erp_v1",
-        area: "MRP",
-        status: "offen",
+        area: "Fertigung",
+        status: "neu",
         priority: "hoch",
-        owner: "Leitung",
+        owner: "Abdelaziz",
+        assignedTo: "usr_abdelaziz",
+        createdBy: "usr_abdelaziz",
         dueDate: "2026-06-24",
+        customerId: "",
+        orderId: "",
+        comments: "Startnotiz: Erfahrungswerte aus echten Angeboten nachtragen.",
+        history: "2026-06-25 System: Aufgabe angelegt.",
         notes: "Rüstzeit, Materialrisiko und realistische Lieferzeit je Teilefamilie ergaenzen."
       },
       {
         id: "tsk_rfq_template",
         title: "RFQ-Pflichtfelder finalisieren",
+        description: "Pflichtfelder für Anfrage und Angebot prüfen.",
         projectId: "pro_erp_v1",
         area: "Sales",
         status: "in arbeit",
         priority: "mittel",
-        owner: "Vertrieb",
+        owner: "Mohammed",
+        assignedTo: "usr_mohammed",
+        createdBy: "usr_abdelaziz",
         dueDate: "2026-06-20",
+        customerId: "cus_muster_at",
+        orderId: "",
+        comments: "Bitte technische Pflichtfelder mit Fertigung abstimmen.",
+        history: "2026-06-25 System: Aufgabe angelegt.",
         notes: "Material, Menge, Zeichnung, Terminwunsch, Toleranz und Besonderheiten."
       }
     ],
@@ -206,6 +270,15 @@
       }
     ],
     roles: [
+      {
+        id: "rol_super_admin",
+        name: "Super Admin",
+        area: "Alle Bereiche",
+        accessLevel: "voll",
+        status: "aktiv",
+        permissions: superAdminPermissions,
+        notes: "Abdelaziz und Mohammed haben Vollzugriff auf alle ERP-Module. Workspaces trennen nur die Oberfläche, nicht die Rechte."
+      },
       {
         id: "rol_admin",
         name: "Admin",
@@ -338,6 +411,47 @@
         status: "potenziell",
         contact: "",
         notes: "Platzhalter für echte Lieferantendaten und Preisverlauf."
+      }
+    ],
+    mapPoints: [
+      {
+        id: "map_customer_at",
+        type: "customer",
+        linkedCollection: "customers",
+        linkedId: "cus_muster_at",
+        name: "Muster Maschinenbau GmbH",
+        country: "AT",
+        city: "Linz",
+        status: "aktiv",
+        lat: 48.3069,
+        lng: 14.2858,
+        notes: "Dummy-Koordinate für Kundenkarte."
+      },
+      {
+        id: "map_osmp",
+        type: "customer",
+        linkedCollection: "customers",
+        linkedId: "cus_internal",
+        name: "OS.MECHPLAST SRLS",
+        country: "IT",
+        city: "Ala, Trento",
+        status: "intern",
+        lat: 45.7606,
+        lng: 11.0055,
+        notes: "Interner Standort."
+      },
+      {
+        id: "map_supplier_it",
+        type: "supplier",
+        linkedCollection: "suppliers",
+        linkedId: "sup_material_it",
+        name: "Materiallieferant Italien",
+        country: "IT",
+        city: "Norditalien",
+        status: "potenziell",
+        lat: 45.4642,
+        lng: 9.19,
+        notes: "Dummy-Koordinate für Lieferantenkarte."
       }
     ],
     purchaseRequests: [
@@ -540,6 +654,84 @@
     return JSON.parse(JSON.stringify(value));
   }
 
+  function ensureUserModel(data) {
+    data.users = Array.isArray(data.users) ? data.users : [];
+    defaultUsers.forEach((user) => {
+      const existing = data.users.find((item) => item.id === user.id);
+      if (existing) {
+        existing.name = user.name;
+        existing.roleId = "rol_super_admin";
+        existing.roleName = "Super Admin";
+        existing.status = "aktiv";
+        existing.permissions = clone(superAdminPermissions);
+      } else {
+        data.users.push(clone(user));
+      }
+    });
+
+    data.roles = Array.isArray(data.roles) ? data.roles : [];
+    const superRole = data.roles.find((role) => role.id === "rol_super_admin");
+    if (superRole) {
+      superRole.name = "Super Admin";
+      superRole.accessLevel = "voll";
+      superRole.status = "aktiv";
+      superRole.permissions = clone(superAdminPermissions);
+    } else {
+      data.roles.unshift({
+        id: "rol_super_admin",
+        name: "Super Admin",
+        area: "Alle Bereiche",
+        accessLevel: "voll",
+        status: "aktiv",
+        permissions: clone(superAdminPermissions),
+        notes: "Abdelaziz und Mohammed haben Vollzugriff auf alle ERP-Module."
+      });
+    }
+
+    const meta = ensureMeta(data);
+    if (!data.users.some((user) => user.id === meta.currentUser)) {
+      meta.currentUser = "usr_abdelaziz";
+    }
+    meta.dashboardLayouts = meta.dashboardLayouts || {};
+    Object.keys(defaultDashboardLayouts).forEach((userId) => {
+      if (!Array.isArray(meta.dashboardLayouts[userId])) {
+        meta.dashboardLayouts[userId] = clone(defaultDashboardLayouts[userId]);
+      }
+    });
+    meta.sidebarCollapsed = meta.sidebarCollapsed || {};
+  }
+
+  function ensureTaskModel(data) {
+    data.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+    data.tasks.forEach((task) => {
+      if (task.status === "offen") task.status = "neu";
+      if (!task.description) task.description = task.notes || "";
+      if (!task.assignedTo) {
+        const owner = String(task.owner || "").toLowerCase();
+        task.assignedTo = owner.includes("mohammed") ? "usr_mohammed" : "usr_abdelaziz";
+      }
+      if (!task.createdBy) task.createdBy = "usr_abdelaziz";
+      if (!task.comments) task.comments = "";
+      if (!task.history) task.history = "";
+    });
+  }
+
+  function ensureMapModel(data) {
+    data.mapPoints = Array.isArray(data.mapPoints) ? data.mapPoints : [];
+    const existing = new Set(data.mapPoints.map((point) => point.id));
+    (seedData.mapPoints || []).forEach((point) => {
+      if (!existing.has(point.id)) data.mapPoints.push(clone(point));
+    });
+  }
+
+  function ensureSystem(data) {
+    data.meta = data.meta || {};
+    ensureUserModel(data);
+    ensureTaskModel(data);
+    ensureMapModel(data);
+    return data;
+  }
+
   function setSyncStatus(next) {
     syncStatus = Object.assign({}, syncStatus, next);
     if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
@@ -595,13 +787,13 @@
 
   function loadLocal() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return applyCustomerImports(clone(seedData));
+    if (!raw) return ensureSystem(applyCustomerImports(clone(seedData)));
     try {
       const parsed = JSON.parse(raw);
-      return applyCustomerImports(Object.assign(clone(seedData), parsed));
+      return ensureSystem(applyCustomerImports(Object.assign(clone(seedData), parsed)));
     } catch (error) {
       console.warn("Could not parse local ERP data", error);
-      return applyCustomerImports(clone(seedData));
+      return ensureSystem(applyCustomerImports(clone(seedData)));
     }
   }
 
@@ -616,7 +808,7 @@
       setSyncStatus({ status: "syncing", lastError: "" });
       const payload = await requestJson(API_STATE_URL, { method: "GET" });
       if (payload.found && payload.data) {
-        const remoteData = applyCustomerImports(Object.assign(clone(seedData), payload.data));
+        const remoteData = ensureSystem(applyCustomerImports(Object.assign(clone(seedData), payload.data)));
         markCloudMeta(remoteData, payload);
         saveLocalOnly(remoteData);
         setSyncStatus({
@@ -678,7 +870,30 @@
   }
 
   function currentUser(data) {
-    return data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST";
+    const user = currentUserRecord(data);
+    return user ? user.name : "Abdelaziz";
+  }
+
+  function currentUserId(data) {
+    return data.meta && data.meta.currentUser ? data.meta.currentUser : "usr_abdelaziz";
+  }
+
+  function currentUserRecord(data) {
+    const userId = currentUserId(data);
+    return (data.users || []).find((user) => user.id === userId) || (data.users || [])[0] || defaultUsers[0];
+  }
+
+  function setCurrentUser(data, userId) {
+    const user = (data.users || []).find((item) => item.id === userId);
+    if (!user) return false;
+    ensureMeta(data).currentUser = user.id;
+    save(data, { summary: `Benutzer gewechselt: ${user.name}` });
+    return true;
+  }
+
+  function permissionsForCurrentUser(data) {
+    const user = currentUserRecord(data);
+    return Object.assign({}, superAdminPermissions, user && user.permissions ? user.permissions : {});
   }
 
   function ensureMeta(data) {
@@ -778,7 +993,7 @@
 
   function reset() {
     localStorage.removeItem(STORAGE_KEY);
-    return applyCustomerImports(clone(seedData));
+    return ensureSystem(applyCustomerImports(clone(seedData)));
   }
 
   function uid(prefix) {
@@ -794,20 +1009,42 @@
       record.orderNo || record.quoteNo || record.documentNo || record.code || record.id;
   }
 
-  function logAudit(data, collection, record, action) {
+  function changedFields(before, after) {
+    if (!before) return ["Datensatz neu angelegt"];
+    const ignore = new Set(["updatedAt", "updatedBy", "createdAt", "createdBy", "history"]);
+    return Object.keys(after || {})
+      .filter((key) => !ignore.has(key) && JSON.stringify(before[key] ?? "") !== JSON.stringify(after[key] ?? ""))
+      .map((key) => `${key}: "${before[key] ?? ""}" → "${after[key] ?? ""}"`)
+      .slice(0, 8);
+  }
+
+  function logAudit(data, collection, record, action, before) {
     if (collection === "auditLogs") return;
     const now = new Date().toISOString();
+    const changes = changedFields(before, record);
     data.auditLogs = data.auditLogs || [];
     data.auditLogs.unshift({
       id: uid("aud"),
       timestamp: now,
-      user: data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST",
+      user: currentUser(data),
       collection,
       recordId: record.id,
       action,
-      summary: `${collection}: ${recordLabel(record)} ${action}`
+      changedFields: changes,
+      summary: `${collection}: ${recordLabel(record)} ${action}${changes.length ? ` · ${changes.join("; ")}` : ""}`
     });
     data.auditLogs = data.auditLogs.slice(0, 250);
+  }
+
+  function appendTaskHistory(data, task, action, before) {
+    if (!task || !task.id) return task;
+    const now = new Date().toISOString();
+    const changes = changedFields(before, task);
+    const line = `${new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "short" }).format(new Date(now))} ${currentUser(data)}: ${action}${changes.length ? ` · ${changes.join("; ")}` : ""}`;
+    task.history = [line, task.history || ""].filter(Boolean).join("\n");
+    if (!task.createdBy) task.createdBy = currentUserId(data);
+    if (!task.assignedTo) task.assignedTo = currentUserId(data);
+    return task;
   }
 
   function upsert(data, collection, record) {
@@ -815,26 +1052,29 @@
     const index = items.findIndex((item) => item.id === record.id);
     const now = new Date().toISOString();
     const existing = index >= 0 ? items[index] : null;
-    const nextRecord = Object.assign({}, existing || {}, record, {
+    let nextRecord = Object.assign({}, existing || {}, record, {
       createdAt: existing && existing.createdAt ? existing.createdAt : record.createdAt || now,
-      createdBy: existing && existing.createdBy ? existing.createdBy : record.createdBy || "OS.MECHPLAST",
+      createdBy: existing && existing.createdBy ? existing.createdBy : record.createdBy || currentUser(data),
       updatedAt: now,
-      updatedBy: data.meta && data.meta.currentUser ? data.meta.currentUser : "OS.MECHPLAST"
+      updatedBy: currentUser(data)
     });
+    if (collection === "tasks") {
+      nextRecord = appendTaskHistory(data, nextRecord, index >= 0 ? "aktualisiert" : "angelegt", existing);
+    }
     if (index >= 0) {
       items[index] = nextRecord;
     } else {
       items.push(nextRecord);
     }
     data[collection] = items;
-    logAudit(data, collection, nextRecord, index >= 0 ? "aktualisiert" : "angelegt");
+    logAudit(data, collection, nextRecord, index >= 0 ? "aktualisiert" : "angelegt", existing);
     save(data);
   }
 
   function remove(data, collection, id) {
     const existing = findById(data, collection, id);
     data[collection] = (data[collection] || []).filter((item) => item.id !== id);
-    if (existing) logAudit(data, collection, existing, "geloescht");
+    if (existing) logAudit(data, collection, existing, "gelöscht", existing);
     save(data);
   }
 
@@ -945,6 +1185,11 @@
       reset,
       uid,
       findById,
+      currentUser,
+      currentUserId,
+      currentUserRecord,
+      setCurrentUser,
+      permissionsForCurrentUser,
       upsert,
       remove,
       capacityDecision

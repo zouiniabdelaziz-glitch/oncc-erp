@@ -53,6 +53,32 @@
   });
 
   window.OSM.registerModule({
+    id: "users",
+    group: "System & Rechte",
+    icon: "U",
+    title: "Benutzerprofile",
+    description: "Benutzerprofile und Rollen. Abdelaziz und Mohammed sind aktuell Super Admins mit Vollzugriff.",
+    collection: "users",
+    prefix: "usr",
+    fields: [
+      { key: "name", label: "Name", required: true },
+      { key: "roleId", label: "Rolle", type: "select", options: (data, h) => h.options("roles") },
+      { key: "roleName", label: "Rollenname", default: "Super Admin" },
+      { key: "status", label: "Status", type: "select", options: statusOptions, default: "aktiv" },
+      { key: "notes", label: "Notizen", type: "textarea", wide: true }
+    ],
+    columns: [
+      { key: "name", label: "Benutzer" },
+      { key: "roleName", label: "Rolle" },
+      { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
+      { key: "permissions", label: "Rechte", render: (row, data, h) => {
+        const permissions = row.permissions || {};
+        return h.escapeHtml(permissions.edit_all_modules ? "Vollzugriff auf alle Module" : "eingeschränkt");
+      } }
+    ]
+  });
+
+  window.OSM.registerModule({
     id: "number-ranges",
     group: "System & Rechte",
     icon: "N",
