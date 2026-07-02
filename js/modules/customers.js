@@ -14,7 +14,7 @@
     country: ["land", "country", "staat", "paese", "nazione"],
     industry: ["branche", "industry", "sektor", "sector", "settore", "bereich"],
     status: ["status", "zustand", "phase"],
-    notes: ["notiz", "notizen", "notes", "bemerkung", "bemerkungen", "kommentar", "beschreibung", "description"]
+    notes: ["notiz", "notizen", "notes", "bemerkung", "bemerkungen", "kommentar", "beschreibung", "description", "website", "webseite", "email", "e-mail", "mail", "telefon", "phone", "ansprechpartner"]
   };
 
   function normalizeHeader(value) {
@@ -252,16 +252,41 @@
     window.OSM.render();
   }
 
+  async function processImportFile(file) {
+    if (!file) return;
+    try {
+      importMessage = `Import läuft: ${file.name}`;
+      window.OSM.render();
+      const rows = await readRows(file);
+      importCustomers(rowsToCustomers(rows, file.name));
+    } catch (error) {
+      importMessage = error.message || "Import nicht möglich.";
+      window.OSM.render();
+    }
+  }
+
   function renderImportPanel(h) {
     return `
       <section class="customer-import-panel">
-        <div>
+        <div class="customer-import-panel__text">
           <span class="kicker">Import</span>
           <h2>Kunden aus Excel oder CSV importieren</h2>
-          <p>Erkannte Spalten: Firmenname, Kunde, Company, Land, Branche, Status, Notizen. XLSX, CSV und TSV werden unterstützt.</p>
+          <p>Ziehe eine Datei hierher oder wähle sie aus. Unterstützt werden XLSX, CSV, TSV und TXT. Alte XLS-Dateien bitte vorher in Excel als XLSX speichern.</p>
+          <div class="import-chips">
+            <span>Firma</span>
+            <span>Firmenname</span>
+            <span>Kunde</span>
+            <span>Company</span>
+            <span>Land</span>
+            <span>Branche</span>
+            <span>Status</span>
+            <span>Notizen</span>
+          </div>
           ${importMessage ? `<div class="notice">${h.escapeHtml(importMessage)}</div>` : ""}
         </div>
-        <div class="customer-import-panel__actions">
+        <div class="customer-dropzone" data-action="customer-drop-zone">
+          <strong>Datei ablegen</strong>
+          <span>oder auswählen</span>
           <input class="hidden" type="file" accept=".csv,.tsv,.txt,.xlsx" data-action="customer-import-file" />
           <button class="button" type="button" data-action="customer-import">Datei wählen</button>
         </div>
@@ -320,16 +345,30 @@
     document.addEventListener("change", async (event) => {
       if (event.target.dataset.action !== "customer-import-file") return;
       const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      try {
-        const rows = await readRows(file);
-        importCustomers(rowsToCustomers(rows, file.name));
-      } catch (error) {
-        importMessage = error.message || "Import nicht möglich.";
-        window.OSM.render();
-      } finally {
-        event.target.value = "";
-      }
+      await processImportFile(file);
+      event.target.value = "";
+    });
+
+    document.addEventListener("dragover", (event) => {
+      const zone = event.target.closest("[data-action='customer-drop-zone']");
+      if (!zone) return;
+      event.preventDefault();
+      zone.classList.add("is-dragover");
+    });
+
+    document.addEventListener("dragleave", (event) => {
+      const zone = event.target.closest("[data-action='customer-drop-zone']");
+      if (!zone) return;
+      zone.classList.remove("is-dragover");
+    });
+
+    document.addEventListener("drop", async (event) => {
+      const zone = event.target.closest("[data-action='customer-drop-zone']");
+      if (!zone) return;
+      event.preventDefault();
+      zone.classList.remove("is-dragover");
+      const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      await processImportFile(file);
     });
 
     document.addEventListener("input", (event) => {
@@ -369,6 +408,16 @@
       const rows = (data.customers || []).filter((row) =>
         JSON.stringify(row).toLowerCase().includes(customerSearch.toLowerCase())
       );
+      if (sessionStorage.getItem("osmCustomerImportFocus") === "1") {
+        sessionStorage.removeItem("osmCustomerImportFocus");
+        setTimeout(() => {
+          const panel = document.querySelector(".customer-import-panel");
+          if (!panel) return;
+          panel.classList.add("is-highlighted");
+          panel.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => panel.classList.remove("is-highlighted"), 1800);
+        }, 0);
+      }
       return `
         <div class="topbar">
           <div>

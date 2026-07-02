@@ -506,5 +506,6 @@
 
   OSM.start = start;
   OSM.render = render;
+  OSM.openForm = openForm;
   OSM.helpers = helpers;
 })();
