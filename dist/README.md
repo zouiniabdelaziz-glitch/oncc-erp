@@ -2,6 +2,16 @@
 
 Lokaler Prototyp für ein kleines, modulares ERP/MRP mit PDM-Kern für eine CNC-Lohnfertigung.
 
+## Cloud- und Windows-App
+
+Das ERP ist ab jetzt als Cloud-App gedacht:
+
+- Cloudflare Pages liefert immer den aktuellen ERP-Code aus.
+- GitHub bleibt der Code-Speicher; nach `git push` baut Cloudflare die neue Version.
+- Die Windows-App ist nur der lokale Zugang zu `https://oncc-erp.pages.dev`.
+- Normale ERP-Updates brauchen auf Abdelaziz' oder Mohammeds PC keine Neuinstallation.
+- Der Installationsordner kann über Google Drive verteilt werden; die Rechte und Daten liegen später in Cloudflare, nicht im Drive-Ordner.
+
 ## Starten
 
 `index.html` im Browser öffnen.
@@ -49,9 +59,10 @@ Speichern und Löschen erzeugt automatisch Historieneintraege mit Zeit, Benutzer
 
 ## Nächster technischer Schritt
 
-Wenn die Logik und Screens passen, wird diese App in eine Desktop-Struktur überführt:
+Wenn die Logik und Screens passen, wird diese App weiter zur echten Mehrbenutzer-Cloud-App ausgebaut:
 
-- Tauri als Windows-App
-- SQLite statt Browser-Speicher
-- echter lokaler Dateiordner für Zeichnungen
-- später `.exe` / Installer
+- Cloudflare Access für Login und Schutz
+- Cloudflare D1 als zentrale SQL-Datenbank
+- Rollen- und Rechtesystem pro Benutzer
+- Cloudflare R2 oder Google Drive für Zeichnungen und Dateien
+- Windows-Installer bleibt als einfacher Zugang zur Cloud-App
