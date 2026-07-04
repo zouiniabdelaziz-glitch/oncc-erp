@@ -2241,8 +2241,7 @@ tr:last-child td {
 }
 
 .sales-paths-head h3,
-.sales-path-card h4,
-.sales-path-map h3 {
+.sales-path-card h4 {
   color: #14324a;
   margin: 0;
 }
@@ -2350,67 +2349,185 @@ tr:last-child td {
   padding: 18px;
 }
 
-.sales-path-map {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+.sales-paths-panel--notion {
+  gap: 14px;
+}
+
+.sales-paths-head--notion {
+  border-bottom: 0;
+}
+
+.sales-path-viewbar {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.sales-path-viewbar__item {
+  align-items: center;
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-weight: 700;
+  gap: 6px;
+  padding: 7px 12px;
+}
+
+.sales-path-viewbar__item.is-active {
+  background: #f0efec;
+  color: #1f2933;
+}
+
+.sales-path-board {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.sales-path-column {
+  background: #f8f7f5;
+  border: 0;
+  border-radius: 14px;
   display: grid;
   gap: 12px;
-  margin-top: 4px;
+  min-height: 160px;
+  padding: 12px;
+}
+
+.sales-path-column--blue {
+  background: #f2f8fd;
+}
+
+.sales-path-column--green {
+  background: #f3f8f5;
+}
+
+.sales-path-column__title {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.sales-path-column__title span {
+  background: #9b9891;
+  border-radius: 999px;
+  height: 10px;
+  width: 10px;
+}
+
+.sales-path-column--blue .sales-path-column__title span {
+  background: #3182ce;
+}
+
+.sales-path-column--green .sales-path-column__title span {
+  background: #38a169;
+}
+
+.sales-path-column__title strong {
+  color: #2b2f33;
+  font-size: 14px;
+}
+
+.sales-path-column__title em {
+  color: var(--muted);
+  font-style: normal;
+  margin-left: auto;
+}
+
+.sales-path-column__cards {
+  display: grid;
+  gap: 10px;
+}
+
+.sales-path-column__empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 2px;
+}
+
+.sales-path-card--notion {
+  border-color: #dedbd6;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 31, 46, 0.06);
+  gap: 10px;
   padding: 14px;
 }
 
-.sales-path-map__list {
-  display: grid;
-  gap: 12px;
+.sales-path-card--notion h4 {
+  color: #1f2933;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.25;
 }
 
-.sales-path-map-row {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
-}
-
-.sales-path-map-row__label {
-  display: grid;
-  gap: 2px;
-}
-
-.sales-path-map-row__label span {
+.sales-path-type {
   color: var(--muted);
+  display: block;
   font-size: 12px;
+  margin-top: 3px;
 }
 
-.sales-path-map-steps {
-  align-items: stretch;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.sales-path-card--notion .sales-path-meta {
+  display: grid;
+  gap: 5px;
 }
 
-.sales-path-map-steps span {
-  background: #edf1f5;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+.sales-path-card--notion .sales-path-meta span {
+  color: #5f666d;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.sales-path-card--notion .sales-decision-card {
+  background: #fbfbfa;
+  border-color: #e6e2dc;
+  border-radius: 10px;
+}
+
+.sales-path-card--notion .sales-decision-card__title {
+  color: #2b2f33;
+  font-size: 14px;
+}
+
+.sales-path-card--notion .sales-decision-buttons .button {
+  border-radius: 8px;
+  font-size: 13px;
+  min-height: 30px;
+  padding: 5px 9px;
+}
+
+.sales-path-card--notion .sales-path-card__actions .icon-button {
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sales-path-card--notion .sales-path-history {
+  border-top-color: #edeae5;
+}
+
+.sales-path-card--notion .sales-path-history summary {
+  color: #8a130f;
+  font-size: 13px;
+}
+
+.sales-path-add-inline {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
   color: var(--muted);
-  font-size: 11px;
-  max-width: 180px;
-  overflow: hidden;
-  padding: 5px 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  cursor: pointer;
+  font-size: 14px;
+  min-height: 38px;
+  text-align: left;
 }
 
-.sales-path-map-steps span.is-done {
-  background: var(--green-soft);
-  color: var(--green);
-}
-
-.sales-path-map-steps span.is-active {
-  background: #e7f0ff;
-  border-color: var(--blue);
+.sales-path-add-inline:hover {
+  background: #ffffff;
+  border-color: var(--line);
   color: var(--blue-dark);
-  font-weight: 800;
 }
 
 .customer-sales-modal-backdrop {
@@ -2485,6 +2602,10 @@ tr:last-child td {
   .customer-list-panel {
     position: static;
   }
+
+  .sales-path-board {
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -2502,8 +2623,7 @@ tr:last-child td {
   .customer-value-grid,
   .customer-form-grid,
   .customer-contact-form,
-  .customer-contact-grid,
-  .sales-path-map-row {
+  .customer-contact-grid {
     grid-template-columns: 1fr;
   }
 }

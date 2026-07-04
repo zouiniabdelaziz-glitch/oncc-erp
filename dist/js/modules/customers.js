@@ -244,13 +244,6 @@
     }
   };
 
-  const salesPathStepMaps = {
-    linkedin: ["linkedin_send_request", "linkedin_check_acceptance", "linkedin_send_message", "linkedin_check_reply", "linkedin_followup", "linkedin_check_reply_after_followup", "linkedin_interest_check", "linkedin_meeting", "linkedin_request_received", "linkedin_next_action", "linkedin_followup_planned", "linkedin_close"],
-    phone: ["phone_call", "phone_result", "phone_close"],
-    email: ["email_send", "email_check_reply", "email_followup", "email_close"],
-    direct_contact: ["direct_contact_source", "direct_contact_result", "direct_contact_close"]
-  };
-
   const aliases = {
     name: ["name", "firma", "firmenname", "unternehmen", "kunde", "customer", "company", "companyname", "azienda", "ragionesociale"],
     country: ["land", "country", "staat", "paese", "nazione"],
@@ -312,11 +305,6 @@
   function contactLabel(data, contactId) {
     const contact = (data.contacts || []).find((item) => item.id === contactId);
     return contact ? contact.name || contact.email || contact.phone || "Kontakt ohne Namen" : "Kontakt offen";
-  }
-
-  function cardTitle(cardId) {
-    const card = salesPathCards[cardId] || salesPathCards.closed;
-    return card ? card.title : cardId || "-";
   }
 
   function dueForResult(result, customDue) {
@@ -697,7 +685,10 @@
           ${valueRow("Website", customer.website, h)}
         </div>
         <section class="customer-section">
-          <h3>Kontakte</h3>
+          <div class="customer-section__head">
+            <h3>Kontakte</h3>
+            <button class="icon-button" type="button" data-action="customer-edit-contacts">+ Kontakt hinzufügen</button>
+          </div>
           ${renderContactCards(customer, contacts, false, h)}
         </section>
         <section class="customer-section">
@@ -888,13 +879,17 @@
     const completedPaths = paths.filter((path) => path.is_active === false);
 
     return `
-      <div class="sales-paths-panel">
-        <div class="sales-paths-head">
+      <div class="sales-paths-panel sales-paths-panel--notion">
+        <div class="sales-paths-head sales-paths-head--notion">
           <div>
             <span class="kicker">Vertriebswege</span>
             <h3>Wo stehen wir bei diesem Kunden?</h3>
           </div>
           <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
+        </div>
+        <div class="sales-path-viewbar">
+          <span class="sales-path-viewbar__item is-active">Board</span>
+          <span class="sales-path-viewbar__item">Alle Wege</span>
         </div>
         <div class="sales-path-stats">
           <span><strong>${activePaths.length}</strong> aktiv</span>
@@ -903,12 +898,7 @@
           <span><strong>${paths.filter((path) => path.path_type === "phone").length}</strong> Telefon</span>
           <span><strong>${paths.filter((path) => path.path_type === "email").length}</strong> E-Mail</span>
         </div>
-        ${paths.length ? `
-          <div class="sales-path-card-list">
-            ${paths.map((path) => renderSalesPathCard(path, data, h)).join("")}
-          </div>
-          ${renderSalesPathMap(paths, data, h)}
-        ` : `
+        ${paths.length ? renderSalesPathBoard(paths, data, h) : `
           <div class="sales-path-empty">
             <strong>Noch kein Vertriebsweg gestartet</strong>
             <span>Starte zum Beispiel LinkedIn, Telefon, E-Mail oder Direktkontakt für einen vorhandenen Kontakt.</span>
@@ -916,6 +906,41 @@
           </div>
         `}
         ${renderSalesPathModal(customer, contacts, h)}
+      </div>
+    `;
+  }
+
+  function salesPathBoardColumn(path) {
+    if (path.is_active === false) return "done";
+    const type = salesPathTypes.find((item) => item.value === path.path_type);
+    if (!path.status || path.status === "gestartet" || (type && path.active_card === type.startCard)) return "not_started";
+    return "in_progress";
+  }
+
+  function renderSalesPathBoard(paths, data, h) {
+    const columns = [
+      { id: "not_started", label: "Nicht begonnen", tone: "neutral" },
+      { id: "in_progress", label: "In Bearbeitung", tone: "blue" },
+      { id: "done", label: "Fertig", tone: "green" }
+    ];
+    return `
+      <div class="sales-path-board">
+        ${columns.map((column) => {
+          const rows = paths.filter((path) => salesPathBoardColumn(path) === column.id);
+          return `
+            <section class="sales-path-column sales-path-column--${h.escapeHtml(column.tone)}">
+              <div class="sales-path-column__title">
+                <span></span>
+                <strong>${h.escapeHtml(column.label)}</strong>
+                <em>${rows.length}</em>
+              </div>
+              <div class="sales-path-column__cards">
+                ${rows.length ? rows.map((path) => renderSalesPathCard(path, data, h)).join("") : `<div class="sales-path-column__empty">Keine Wege</div>`}
+                <button class="sales-path-add-inline" type="button" data-action="sales-path-open-modal">+ Neuer Weg</button>
+              </div>
+            </section>
+          `;
+        }).join("")}
       </div>
     `;
   }
@@ -963,11 +988,11 @@
     const card = salesPathCards[path.active_card] || salesPathCards.closed;
     const events = salesEventsForPath(data, path.id);
     return `
-      <article class="sales-path-card" data-sales-path-card data-path-id="${h.escapeHtml(path.id)}">
+      <article class="sales-path-card sales-path-card--notion" data-sales-path-card data-path-id="${h.escapeHtml(path.id)}">
         <div class="sales-path-card__head">
           <div>
-            <span class="kicker">${h.escapeHtml(pathTypeLabel(path.path_type))}</span>
             <h4>${h.escapeHtml(contactLabel(data, path.contact_id))}</h4>
+            <span class="sales-path-type">${h.escapeHtml(pathTypeLabel(path.path_type))}</span>
           </div>
           ${h.badge(path.is_active === false ? "abgeschlossen" : path.status || "aktiv", path.is_active === false ? "muted" : h.toneForStatus(path.status || "aktiv"))}
         </div>
@@ -1013,7 +1038,7 @@
 
   function renderSalesPathEvents(events, data, h) {
     return `
-      <details class="sales-path-history" ${events.length ? "open" : ""}>
+      <details class="sales-path-history">
         <summary>Verlauf (${events.length})</summary>
         <div class="sales-path-history__list">
           ${events.length ? events.map((event) => `
@@ -1027,42 +1052,6 @@
           `).join("") : `<div class="empty">Noch kein Verlauf.</div>`}
         </div>
       </details>
-    `;
-  }
-
-  function renderSalesPathMap(paths, data, h) {
-    return `
-      <section class="sales-path-map">
-        <div>
-          <span class="kicker">Map</span>
-          <h3>Aktueller Stand je Weg</h3>
-        </div>
-        <div class="sales-path-map__list">
-          ${paths.map((path) => {
-            const steps = salesPathStepMaps[path.path_type] || [path.active_card || "closed"];
-            const activeIndex = steps.indexOf(path.active_card);
-            return `
-              <div class="sales-path-map-row">
-                <div class="sales-path-map-row__label">
-                  <strong>${h.escapeHtml(pathTypeLabel(path.path_type))}</strong>
-                  <span>${h.escapeHtml(contactLabel(data, path.contact_id))}</span>
-                </div>
-                <div class="sales-path-map-steps">
-                  ${steps.map((step, index) => {
-                    const done = path.is_active === false || (activeIndex >= 0 && index < activeIndex);
-                    const active = path.active_card === step && path.is_active !== false;
-                    return `
-                      <span class="${done ? "is-done" : ""} ${active ? "is-active" : ""}" title="${h.escapeHtml(cardTitle(step))}">
-                        ${h.escapeHtml(cardTitle(step))}
-                      </span>
-                    `;
-                  }).join("")}
-                </div>
-              </div>
-            `;
-          }).join("")}
-        </div>
-      </section>
     `;
   }
 
@@ -1379,6 +1368,14 @@
       if (event.target.closest("[data-action='customer-edit']")) {
         if (selectedCustomerId) editingCustomerId = selectedCustomerId;
         customerDetailTab = "profile";
+        window.OSM.render();
+        return;
+      }
+
+      if (event.target.closest("[data-action='customer-edit-contacts']")) {
+        if (selectedCustomerId) editingCustomerId = selectedCustomerId;
+        customerDetailTab = "profile";
+        salesPathModalOpen = false;
         window.OSM.render();
         return;
       }
