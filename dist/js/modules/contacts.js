@@ -13,6 +13,7 @@
       { key: "role", label: "Rolle" },
       { key: "email", label: "E-Mail", type: "email" },
       { key: "phone", label: "Telefon" },
+      { key: "linkedin", label: "LinkedIn", type: "url" },
       { key: "language", label: "Sprache" },
       { key: "consent", label: "Kontaktstatus" },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
@@ -23,6 +24,7 @@
       { key: "role", label: "Rolle" },
       { key: "email", label: "E-Mail" },
       { key: "phone", label: "Telefon" },
+      { key: "linkedin", label: "LinkedIn" },
       { key: "language", label: "Sprache" }
     ]
   });

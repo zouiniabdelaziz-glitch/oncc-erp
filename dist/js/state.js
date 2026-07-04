@@ -69,6 +69,9 @@
         name: "Muster Maschinenbau GmbH",
         country: "AT",
         industry: "Sondermaschinenbau",
+        importance: "hoch",
+        phone: "+43 000 000000",
+        website: "https://example.com",
         status: "aktiv",
         notes: "Guter Zielkunde für wiederkehrende Drehteile."
       },
@@ -77,6 +80,9 @@
         name: "OS.MECHPLAST intern",
         country: "IT",
         industry: "CNC-Lohnfertigung",
+        importance: "normal",
+        phone: "",
+        website: "",
         status: "intern",
         notes: "Interne Projekte, Aufgaben und Prozessverbesserungen."
       }
@@ -89,6 +95,7 @@
         role: "Einkauf",
         email: "anna.einkauf@example.com",
         phone: "",
+        linkedin: "",
         language: "DE",
         consent: "Kontakt vorhanden",
         notes: "Reagiert auf Termintreue und schnelle Rückmeldung."
