@@ -101,6 +101,8 @@
         notes: "Reagiert auf Termintreue und schnelle Rückmeldung."
       }
     ],
+    sales_paths: [],
+    sales_path_events: [],
     projects: [
       {
         id: "pro_erp_v1",
@@ -731,11 +733,17 @@
     });
   }
 
+  function ensureSalesPathModel(data) {
+    data.sales_paths = Array.isArray(data.sales_paths) ? data.sales_paths : [];
+    data.sales_path_events = Array.isArray(data.sales_path_events) ? data.sales_path_events : [];
+  }
+
   function ensureSystem(data) {
     data.meta = data.meta || {};
     ensureUserModel(data);
     ensureTaskModel(data);
     ensureMapModel(data);
+    ensureSalesPathModel(data);
     return data;
   }
 

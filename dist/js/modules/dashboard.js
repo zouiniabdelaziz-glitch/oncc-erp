@@ -1,7 +1,7 @@
 (function () {
   const defaultLayouts = {
-    usr_abdelaziz: ["overview", "tasks", "sales", "capacity", "audit", "quickLinks"],
-    usr_mohammed: ["overview", "tasks", "production", "quality", "map", "quickLinks"]
+    usr_abdelaziz: ["overview", "salesFunnel", "tasks", "sales", "capacity", "audit", "quickLinks"],
+    usr_mohammed: ["overview", "salesFunnel", "tasks", "production", "quality", "map", "quickLinks"]
   };
 
   function count(collection, data, filter) {
@@ -50,6 +50,7 @@
   function widgetDefinitions() {
     return [
       { id: "overview", title: "Überblick", render: renderOverview },
+      { id: "salesFunnel", title: "Vertriebswege", render: renderSalesFunnel },
       { id: "tasks", title: "Aufgaben", render: renderTasks },
       { id: "sales", title: "Vertrieb", render: renderSales },
       { id: "capacity", title: "Kapazität", render: renderCapacity },
@@ -83,6 +84,77 @@
         </div>
         ${content}
       </section>
+    `;
+  }
+
+  function salesPathStats(data) {
+    const paths = data.sales_paths || [];
+    const events = data.sales_path_events || [];
+    const today = new Date().toISOString().slice(0, 10);
+    const active = paths.filter((path) => path.is_active !== false);
+    const completed = paths.filter((path) => path.is_active === false);
+    const eventCount = (pathType, labels) => events.filter((event) =>
+      (!pathType || event.path_type === pathType) && labels.includes(event.selected_result)
+    ).length;
+    const statusCount = (pathType, statuses) => paths.filter((path) =>
+      (!pathType || path.path_type === pathType) && statuses.includes(path.status)
+    ).length;
+
+    return {
+      active: active.length,
+      linkedin: active.filter((path) => path.path_type === "linkedin").length,
+      phone: active.filter((path) => path.path_type === "phone").length,
+      email: active.filter((path) => path.path_type === "email").length,
+      direct: active.filter((path) => path.path_type === "direct_contact").length,
+      dueToday: active.filter((path) => path.next_action_due === today).length,
+      overdue: active.filter((path) => path.next_action_due && path.next_action_due < today).length,
+      requests: statusCount(null, ["Anfrage erhalten"]) + eventCount(null, ["Anfrage erhalten", "RFQ / Anfrage anlegen"]),
+      meetings: statusCount(null, ["Termin geplant", "Termin gewünscht"]) + eventCount(null, ["Termin geplant", "Termin gewünscht"]),
+      completed: completed.length,
+      bars: [
+        { label: "LinkedIn Anfrage gesendet", value: eventCount("linkedin", ["Kontaktanfrage gesendet"]) + statusCount("linkedin", ["Anfrage gesendet"]) },
+        { label: "LinkedIn vernetzt", value: eventCount("linkedin", ["Ja, angenommen"]) + statusCount("linkedin", ["LinkedIn verbunden"]) },
+        { label: "LinkedIn kontaktiert", value: eventCount("linkedin", ["Nachricht gesendet"]) + statusCount("linkedin", ["Nachricht gesendet"]) },
+        { label: "Antwort erhalten", value: eventCount(null, ["Antwort erhalten"]) + statusCount(null, ["Antwort erhalten"]) },
+        { label: "Telefonwege", value: active.filter((path) => path.path_type === "phone").length },
+        { label: "Direktkontakt", value: active.filter((path) => path.path_type === "direct_contact").length }
+      ]
+    };
+  }
+
+  function renderSalesFunnel(data, h) {
+    const stats = salesPathStats(data);
+    const max = Math.max(1, ...stats.bars.map((bar) => bar.value));
+    return `
+      <div class="dashboard-metrics">
+        ${metric("Aktive Wege", stats.active, "#customers", h)}
+        ${metric("Heute fällig", stats.dueToday, "#customers", h, stats.dueToday ? "warn" : "")}
+        ${metric("Überfällig", stats.overdue, "#customers", h, stats.overdue ? "danger" : "")}
+        ${metric("Anfragen erhalten", stats.requests, "#customers", h)}
+      </div>
+      <div class="sales-funnel-widget">
+        <div class="sales-funnel-bars">
+          ${stats.bars.map((bar) => `
+            <div class="sales-funnel-bar">
+              <div class="sales-funnel-bar__label">
+                <span>${h.escapeHtml(bar.label)}</span>
+                <strong>${h.escapeHtml(bar.value)}</strong>
+              </div>
+              <div class="sales-funnel-bar__track">
+                <span style="width: ${Math.max(6, Math.round((bar.value / max) * 100))}%"></span>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="sales-funnel-summary">
+          <span>${h.escapeHtml(stats.linkedin)} LinkedIn aktiv</span>
+          <span>${h.escapeHtml(stats.phone)} Telefon aktiv</span>
+          <span>${h.escapeHtml(stats.email)} E-Mail aktiv</span>
+          <span>${h.escapeHtml(stats.direct)} Direktkontakte aktiv</span>
+          <span>${h.escapeHtml(stats.meetings)} Termine geplant/gewünscht</span>
+          <span>${h.escapeHtml(stats.completed)} Wege abgeschlossen</span>
+        </div>
+      </div>
     `;
   }
 

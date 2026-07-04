@@ -3,6 +3,8 @@
   let importMessage = "";
   let selectedCustomerId = "";
   let editingCustomerId = "";
+  let customerDetailTab = "profile";
+  let salesPathModalOpen = false;
   const extraContactSlots = {};
 
   const statusOptions = [
@@ -28,6 +30,226 @@
     { value: "Logistik", label: "Logistik" },
     { value: "Geschäftsführung", label: "Geschäftsführung" }
   ];
+
+  const salesPathTypes = [
+    { value: "linkedin", label: "LinkedIn-Weg", startCard: "linkedin_send_request", firstAction: "Kontaktanfrage senden" },
+    { value: "phone", label: "Telefon-Weg", startCard: "phone_call", firstAction: "Anrufen" },
+    { value: "email", label: "E-Mail-Weg", startCard: "email_send", firstAction: "E-Mail senden" },
+    { value: "direct_contact", label: "Direktkontakt-Weg", startCard: "direct_contact_source", firstAction: "Kontaktquelle dokumentieren" }
+  ];
+
+  const salesPathCards = {
+    linkedin_send_request: {
+      title: "LinkedIn Kontaktanfrage",
+      buttons: [
+        { key: "sent", label: "Kontaktanfrage gesendet", status: "Anfrage gesendet", nextCard: "linkedin_check_acceptance", nextAction: "Anfrage prüfen", dueDays: 7 },
+        { key: "not_possible", label: "Anfrage nicht möglich", status: "Anfrage nicht möglich", nextCard: "linkedin_alternative", nextAction: "anderen Weg wählen", dueDays: 1 },
+        { key: "cancel", label: "Weg abbrechen", status: "abgebrochen", complete: true }
+      ]
+    },
+    linkedin_check_acceptance: {
+      title: "Wurde die Anfrage angenommen?",
+      buttons: [
+        { key: "accepted", label: "Ja, angenommen", status: "LinkedIn verbunden", nextCard: "linkedin_send_message", nextAction: "erste Nachricht senden", dueDays: 1 },
+        { key: "rejected", label: "Nein, nicht angenommen", status: "nicht angenommen", nextCard: "linkedin_alternative", nextAction: "anderen Weg wählen", dueDays: 1 },
+        { key: "pending", label: "Noch nicht", status: "Anfrage noch offen", nextCard: "linkedin_check_acceptance", nextAction: "erneut prüfen", dueDays: 7 }
+      ]
+    },
+    linkedin_send_message: {
+      title: "Erste LinkedIn-Nachricht",
+      buttons: [
+        { key: "message_sent", label: "Nachricht gesendet", status: "Nachricht gesendet", nextCard: "linkedin_check_reply", nextAction: "Antwort prüfen", dueDays: 3 },
+        { key: "message_open", label: "Nachricht nicht gesendet", status: "Nachricht offen", nextCard: "linkedin_send_message", nextAction: "Nachricht senden", dueDays: 1 }
+      ]
+    },
+    linkedin_check_reply: {
+      title: "Hat der Kontakt geantwortet?",
+      buttons: [
+        { key: "reply", label: "Antwort erhalten", status: "Antwort erhalten", nextCard: "linkedin_interest_check", nextAction: "Interesse bewerten", dueDays: 1 },
+        { key: "no_reply", label: "Keine Antwort", status: "keine Antwort", nextCard: "linkedin_followup", nextAction: "Follow-up senden", dueDays: 5 },
+        { key: "no_interest", label: "Kein Interesse", status: "kein Interesse", nextCard: "linkedin_close", nextAction: "Weg abschließen", dueDays: 0 }
+      ]
+    },
+    linkedin_followup: {
+      title: "LinkedIn Follow-up",
+      buttons: [
+        { key: "followup_sent", label: "Follow-up gesendet", status: "Follow-up gesendet", nextCard: "linkedin_check_reply_after_followup", nextAction: "Antwort erneut prüfen", dueDays: 7 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "linkedin_followup", nextAction: "Follow-up", customDue: true, dueDays: 7 },
+        { key: "stop", label: "Nicht weiter verfolgen", status: "beendet", complete: true }
+      ]
+    },
+    linkedin_check_reply_after_followup: {
+      title: "Antwort nach Follow-up?",
+      buttons: [
+        { key: "reply", label: "Antwort erhalten", status: "Antwort erhalten", nextCard: "linkedin_interest_check", nextAction: "Interesse bewerten", dueDays: 1 },
+        { key: "no_reply", label: "Keine Antwort", status: "keine Antwort", nextCard: "linkedin_close", nextAction: "Weg abschließen", dueDays: 0 },
+        { key: "no_interest", label: "Kein Interesse", status: "kein Interesse", nextCard: "linkedin_close", nextAction: "Weg abschließen", dueDays: 0 }
+      ]
+    },
+    linkedin_interest_check: {
+      title: "Interesse bewerten",
+      buttons: [
+        { key: "interest", label: "Interesse vorhanden", status: "Interesse vorhanden", nextCard: "linkedin_next_action", nextAction: "nächste Aktion planen", dueDays: 2 },
+        { key: "meeting", label: "Termin gewünscht", status: "Termin gewünscht", nextCard: "linkedin_meeting", nextAction: "Termin planen", dueDays: 1 },
+        { key: "request", label: "Anfrage erhalten", status: "Anfrage erhalten", nextCard: "linkedin_request_received", nextAction: "Anfrage weiterbearbeiten", dueDays: 1 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "linkedin_followup_planned", nextAction: "Follow-up", customDue: true, dueDays: 7 },
+        { key: "no_need", label: "Kein Bedarf", status: "kein Bedarf", nextCard: "linkedin_close", nextAction: "Weg abschließen", dueDays: 0 }
+      ]
+    },
+    linkedin_next_action: {
+      title: "Nächste Aktion",
+      buttons: [
+        { key: "start_phone", label: "Telefonweg starten", status: "Telefonweg empfohlen", nextCard: "linkedin_next_action", nextAction: "Telefonweg bearbeiten", dueDays: 0, startPathType: "phone" },
+        { key: "start_email", label: "E-Mail-Weg starten", status: "E-Mail-Weg empfohlen", nextCard: "linkedin_next_action", nextAction: "E-Mail-Weg bearbeiten", dueDays: 0, startPathType: "email" },
+        { key: "meeting_planned", label: "Termin geplant", status: "Termin geplant", nextCard: "linkedin_close", nextAction: "Termin durchführen", customDue: true, dueDays: 1 },
+        { key: "followup_planned", label: "Follow-up geplant", status: "Follow-up geplant", nextCard: "linkedin_followup_planned", nextAction: "Follow-up", customDue: true, dueDays: 7 },
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true }
+      ]
+    },
+    linkedin_alternative: {
+      title: "Alternativen Weg wählen",
+      buttons: [
+        { key: "start_phone", label: "Telefonweg starten", status: "Telefonweg empfohlen", nextCard: "linkedin_alternative", nextAction: "Telefonweg bearbeiten", dueDays: 0, startPathType: "phone" },
+        { key: "start_email", label: "E-Mail-Weg starten", status: "E-Mail-Weg empfohlen", nextCard: "linkedin_alternative", nextAction: "E-Mail-Weg bearbeiten", dueDays: 0, startPathType: "email" },
+        { key: "check_later", label: "Später nochmal LinkedIn prüfen", status: "LinkedIn später prüfen", nextCard: "linkedin_check_acceptance", nextAction: "LinkedIn erneut prüfen", customDue: true, dueDays: 7 },
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true }
+      ]
+    },
+    linkedin_followup_planned: {
+      title: "Geplantes LinkedIn Follow-up",
+      buttons: [
+        { key: "followup_sent", label: "Follow-up gesendet", status: "Follow-up gesendet", nextCard: "linkedin_check_reply_after_followup", nextAction: "Antwort erneut prüfen", dueDays: 7 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "linkedin_followup_planned", nextAction: "Follow-up", customDue: true, dueDays: 7 },
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true }
+      ]
+    },
+    linkedin_meeting: {
+      title: "Termin planen",
+      buttons: [
+        { key: "planned", label: "Termin geplant", status: "Termin geplant", nextCard: "linkedin_close", nextAction: "Termin durchführen", customDue: true, dueDays: 1 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "linkedin_followup_planned", nextAction: "Follow-up", customDue: true, dueDays: 7 }
+      ]
+    },
+    linkedin_request_received: {
+      title: "Anfrage erhalten",
+      buttons: [
+        { key: "rfq", label: "RFQ / Anfrage anlegen", status: "Anfrage erhalten", nextCard: "linkedin_close", nextAction: "RFQ weiterbearbeiten", dueDays: 1 },
+        { key: "close", label: "Weg abschließen", status: "Anfrage erhalten", complete: true }
+      ]
+    },
+    linkedin_close: {
+      title: "LinkedIn-Weg abschließen",
+      buttons: [
+        { key: "interested", label: "Kunde interessiert", status: "Kunde interessiert", complete: true },
+        { key: "meeting", label: "Termin geplant", status: "Termin geplant", complete: true },
+        { key: "request", label: "Anfrage erhalten", status: "Anfrage erhalten", complete: true },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "linkedin_followup_planned", nextAction: "Follow-up", customDue: true, dueDays: 14 },
+        { key: "no_need", label: "Kein Bedarf", status: "kein Bedarf", complete: true },
+        { key: "lost", label: "Verloren", status: "verloren", complete: true },
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true }
+      ]
+    },
+    phone_call: {
+      title: "Telefonkontakt",
+      buttons: [
+        { key: "called", label: "Angerufen", status: "angerufen", nextCard: "phone_result", nextAction: "Gesprächsergebnis dokumentieren", dueDays: 0 },
+        { key: "not_reached", label: "Nicht erreicht", status: "nicht erreicht", nextCard: "phone_call", nextAction: "erneut anrufen", dueDays: 3 },
+        { key: "callback", label: "Rückruf gewünscht", status: "Rückruf gewünscht", nextCard: "phone_call", nextAction: "Rückruf planen", customDue: true, dueDays: 1 },
+        { key: "wrong_contact", label: "Falscher Kontakt", status: "falscher Kontakt", nextCard: "phone_close", nextAction: "anderen Kontakt wählen", dueDays: 1 }
+      ]
+    },
+    phone_result: {
+      title: "Gesprächsergebnis",
+      buttons: [
+        { key: "interest", label: "Interesse vorhanden", status: "Interesse vorhanden", nextCard: "phone_close", nextAction: "nächste Aktion planen", dueDays: 2 },
+        { key: "meeting", label: "Termin gewünscht", status: "Termin gewünscht", nextCard: "phone_close", nextAction: "Termin planen", customDue: true, dueDays: 1 },
+        { key: "email", label: "E-Mail gewünscht", status: "E-Mail gewünscht", nextCard: "phone_close", nextAction: "E-Mail senden", dueDays: 1, startPathType: "email" },
+        { key: "request", label: "Anfrage erhalten", status: "Anfrage erhalten", nextCard: "phone_close", nextAction: "Anfrage weiterbearbeiten", dueDays: 1 },
+        { key: "no_need", label: "Kein Bedarf", status: "kein Bedarf", complete: true },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "phone_call", nextAction: "erneut anrufen", customDue: true, dueDays: 14 }
+      ]
+    },
+    phone_close: {
+      title: "Telefon-Weg abschließen",
+      buttons: [
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "phone_call", nextAction: "erneut anrufen", customDue: true, dueDays: 14 }
+      ]
+    },
+    email_send: {
+      title: "E-Mail senden",
+      buttons: [
+        { key: "sent", label: "E-Mail gesendet", status: "E-Mail gesendet", nextCard: "email_check_reply", nextAction: "Antwort prüfen", dueDays: 5 },
+        { key: "not_sent", label: "E-Mail nicht gesendet", status: "E-Mail offen", nextCard: "email_send", nextAction: "E-Mail senden", dueDays: 1 }
+      ]
+    },
+    email_check_reply: {
+      title: "Antwort erhalten?",
+      buttons: [
+        { key: "reply", label: "Antwort erhalten", status: "Antwort erhalten", nextCard: "email_close", nextAction: "Interesse bewerten", dueDays: 1 },
+        { key: "no_reply", label: "Keine Antwort", status: "keine Antwort", nextCard: "email_followup", nextAction: "Follow-up senden", dueDays: 7 },
+        { key: "no_interest", label: "Kein Interesse", status: "kein Interesse", complete: true },
+        { key: "auto", label: "Automatische Antwort", status: "automatische Antwort", nextCard: "email_check_reply", nextAction: "Antwort erneut prüfen", dueDays: 5 }
+      ]
+    },
+    email_followup: {
+      title: "E-Mail Follow-up",
+      buttons: [
+        { key: "sent", label: "Follow-up gesendet", status: "Follow-up gesendet", nextCard: "email_check_reply", nextAction: "Antwort prüfen", dueDays: 7 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "email_followup", nextAction: "Follow-up senden", customDue: true, dueDays: 7 },
+        { key: "stop", label: "Nicht weiter verfolgen", status: "beendet", complete: true }
+      ]
+    },
+    email_close: {
+      title: "E-Mail-Weg abschließen",
+      buttons: [
+        { key: "interest", label: "Interesse vorhanden", status: "Interesse vorhanden", complete: true },
+        { key: "meeting", label: "Termin geplant", status: "Termin geplant", complete: true },
+        { key: "request", label: "Anfrage erhalten", status: "Anfrage erhalten", complete: true },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "email_followup", nextAction: "Follow-up senden", customDue: true, dueDays: 14 },
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true }
+      ]
+    },
+    direct_contact_source: {
+      title: "Kontaktquelle",
+      buttons: [
+        { key: "website", label: "Website", status: "Quelle Website", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 },
+        { key: "recommendation", label: "Empfehlung", status: "Quelle Empfehlung", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 },
+        { key: "call", label: "Direktanruf", status: "Quelle Direktanruf", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 },
+        { key: "mail", label: "Direkt-E-Mail", status: "Quelle Direkt-E-Mail", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 },
+        { key: "existing", label: "bestehender Kontakt", status: "Quelle bestehender Kontakt", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 },
+        { key: "other", label: "Sonstige", status: "Quelle Sonstige", nextCard: "direct_contact_result", nextAction: "Kontakt bewerten", dueDays: 1 }
+      ]
+    },
+    direct_contact_result: {
+      title: "Kontakt bewerten",
+      buttons: [
+        { key: "interest", label: "Interesse vorhanden", status: "Interesse vorhanden", nextCard: "direct_contact_close", nextAction: "nächste Aktion planen", dueDays: 2 },
+        { key: "meeting", label: "Termin gewünscht", status: "Termin gewünscht", nextCard: "direct_contact_close", nextAction: "Termin planen", customDue: true, dueDays: 1 },
+        { key: "request", label: "Anfrage erhalten", status: "Anfrage erhalten", nextCard: "direct_contact_close", nextAction: "Anfrage weiterbearbeiten", dueDays: 1 },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "direct_contact_result", nextAction: "Follow-up", customDue: true, dueDays: 14 },
+        { key: "no_need", label: "Kein Bedarf", status: "kein Bedarf", complete: true }
+      ]
+    },
+    direct_contact_close: {
+      title: "Direktkontakt abschließen",
+      buttons: [
+        { key: "close", label: "Weg abschließen", status: "beendet", complete: true },
+        { key: "later", label: "Später nachfassen", status: "später nachfassen", nextCard: "direct_contact_result", nextAction: "Follow-up", customDue: true, dueDays: 14 }
+      ]
+    },
+    closed: {
+      title: "Weg abgeschlossen",
+      buttons: []
+    }
+  };
+
+  const salesPathStepMaps = {
+    linkedin: ["linkedin_send_request", "linkedin_check_acceptance", "linkedin_send_message", "linkedin_check_reply", "linkedin_followup", "linkedin_check_reply_after_followup", "linkedin_interest_check", "linkedin_meeting", "linkedin_request_received", "linkedin_next_action", "linkedin_followup_planned", "linkedin_close"],
+    phone: ["phone_call", "phone_result", "phone_close"],
+    email: ["email_send", "email_check_reply", "email_followup", "email_close"],
+    direct_contact: ["direct_contact_source", "direct_contact_result", "direct_contact_close"]
+  };
 
   const aliases = {
     name: ["name", "firma", "firmenname", "unternehmen", "kunde", "customer", "company", "companyname", "azienda", "ragionesociale"],
@@ -55,6 +277,52 @@
 
   function clean(value) {
     return String(value ?? "").trim();
+  }
+
+  function ensureSalesCollections(data) {
+    data.sales_paths = Array.isArray(data.sales_paths) ? data.sales_paths : [];
+    data.sales_path_events = Array.isArray(data.sales_path_events) ? data.sales_path_events : [];
+  }
+
+  function todayIso() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function addDays(days) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + Number(days || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function formatDate(value) {
+    if (!value) return "-";
+    try {
+      return new Intl.DateTimeFormat("de-DE").format(new Date(`${value}T00:00:00`));
+    } catch (error) {
+      return value;
+    }
+  }
+
+  function pathTypeLabel(pathType) {
+    const item = salesPathTypes.find((type) => type.value === pathType);
+    return item ? item.label : pathType || "-";
+  }
+
+  function contactLabel(data, contactId) {
+    const contact = (data.contacts || []).find((item) => item.id === contactId);
+    return contact ? contact.name || contact.email || contact.phone || "Kontakt ohne Namen" : "Kontakt offen";
+  }
+
+  function cardTitle(cardId) {
+    const card = salesPathCards[cardId] || salesPathCards.closed;
+    return card ? card.title : cardId || "-";
+  }
+
+  function dueForResult(result, customDue) {
+    if (result.complete) return "";
+    if (result.customDue && clean(customDue)) return clean(customDue);
+    return addDays(result.dueDays ?? 0);
   }
 
   function parseDelimited(text) {
@@ -583,6 +851,330 @@
     `;
   }
 
+  function salesPathsForCustomer(data, customerId) {
+    ensureSalesCollections(data);
+    return (data.sales_paths || [])
+      .filter((path) => path.customer_id === customerId)
+      .sort((a, b) => String(b.updated_at || b.created_at || "").localeCompare(String(a.updated_at || a.created_at || "")));
+  }
+
+  function salesEventsForPath(data, pathId) {
+    ensureSalesCollections(data);
+    return (data.sales_path_events || [])
+      .filter((event) => event.sales_path_id === pathId)
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+  }
+
+  function renderCustomerTabs(customer, data, h) {
+    const pathCount = salesPathsForCustomer(data, customer.id).length;
+    const tabs = [
+      { id: "profile", label: "Profil" },
+      { id: "salesPaths", label: `Vertriebswege (${pathCount})` }
+    ];
+    return `
+      <div class="customer-tabs">
+        ${tabs.map((tab) => `
+          <button class="${customerDetailTab === tab.id ? "is-active" : ""}" type="button" data-action="customer-tab" data-tab="${h.escapeHtml(tab.id)}">
+            ${h.escapeHtml(tab.label)}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderSalesPaths(customer, contacts, data, h) {
+    const paths = salesPathsForCustomer(data, customer.id);
+    const activePaths = paths.filter((path) => path.is_active !== false);
+    const completedPaths = paths.filter((path) => path.is_active === false);
+
+    return `
+      <div class="sales-paths-panel">
+        <div class="sales-paths-head">
+          <div>
+            <span class="kicker">Vertriebswege</span>
+            <h3>Wo stehen wir bei diesem Kunden?</h3>
+          </div>
+          <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
+        </div>
+        <div class="sales-path-stats">
+          <span><strong>${activePaths.length}</strong> aktiv</span>
+          <span><strong>${completedPaths.length}</strong> abgeschlossen</span>
+          <span><strong>${paths.filter((path) => path.path_type === "linkedin").length}</strong> LinkedIn</span>
+          <span><strong>${paths.filter((path) => path.path_type === "phone").length}</strong> Telefon</span>
+          <span><strong>${paths.filter((path) => path.path_type === "email").length}</strong> E-Mail</span>
+        </div>
+        ${paths.length ? `
+          <div class="sales-path-card-list">
+            ${paths.map((path) => renderSalesPathCard(path, data, h)).join("")}
+          </div>
+          ${renderSalesPathMap(paths, data, h)}
+        ` : `
+          <div class="sales-path-empty">
+            <strong>Noch kein Vertriebsweg gestartet</strong>
+            <span>Starte zum Beispiel LinkedIn, Telefon, E-Mail oder Direktkontakt für einen vorhandenen Kontakt.</span>
+            <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
+          </div>
+        `}
+        ${renderSalesPathModal(customer, contacts, h)}
+      </div>
+    `;
+  }
+
+  function renderSalesPathModal(customer, contacts, h) {
+    if (!salesPathModalOpen) return "";
+    const usableContacts = contacts.filter((contact) => contact.id && !String(contact.id).startsWith("draft_"));
+    return `
+      <div class="customer-sales-modal-backdrop" data-sales-path-modal>
+        <div class="customer-sales-modal">
+          <div class="modal__head">
+            <div>
+              <span class="kicker">Vertriebsweg</span>
+              <div class="modal__title">Vertriebsweg hinzufügen</div>
+            </div>
+            <button class="icon-button" type="button" data-action="sales-path-close-modal">Schließen</button>
+          </div>
+          <div class="customer-form-grid">
+            <label>
+              <span>Weg</span>
+              <select data-action="sales-path-type">
+                ${optionTags(salesPathTypes, "linkedin", h)}
+              </select>
+            </label>
+            <label>
+              <span>Kontakt</span>
+              <select data-action="sales-path-contact" ${usableContacts.length ? "" : "disabled"}>
+                ${usableContacts.map((contact) => `
+                  <option value="${h.escapeHtml(contact.id)}">${h.escapeHtml(contact.name || contact.email || contact.phone || "Kontakt ohne Namen")}</option>
+                `).join("")}
+              </select>
+            </label>
+          </div>
+          ${usableContacts.length ? "" : `<div class="notice notice--plain">Bitte zuerst im Profil mindestens einen Kontakt speichern.</div>`}
+          <div class="form-actions">
+            <button class="button button--quiet" type="button" data-action="sales-path-close-modal">Abbrechen</button>
+            <button class="button" type="button" data-action="sales-path-start" data-customer-id="${h.escapeHtml(customer.id)}" ${usableContacts.length ? "" : "disabled"}>Weg starten</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSalesPathCard(path, data, h) {
+    const card = salesPathCards[path.active_card] || salesPathCards.closed;
+    const events = salesEventsForPath(data, path.id);
+    return `
+      <article class="sales-path-card" data-sales-path-card data-path-id="${h.escapeHtml(path.id)}">
+        <div class="sales-path-card__head">
+          <div>
+            <span class="kicker">${h.escapeHtml(pathTypeLabel(path.path_type))}</span>
+            <h4>${h.escapeHtml(contactLabel(data, path.contact_id))}</h4>
+          </div>
+          ${h.badge(path.is_active === false ? "abgeschlossen" : path.status || "aktiv", path.is_active === false ? "muted" : h.toneForStatus(path.status || "aktiv"))}
+        </div>
+        <div class="sales-path-meta">
+          <span><strong>Aktuelles Kästchen:</strong> ${h.escapeHtml(card.title)}</span>
+          <span><strong>Nächste Aufgabe:</strong> ${h.escapeHtml(path.next_action || "-")}</span>
+          <span><strong>Fällig:</strong> ${h.escapeHtml(formatDate(path.next_action_due))}</span>
+        </div>
+        ${path.is_active === false ? `
+          <div class="notice notice--plain">Dieser Weg ist abgeschlossen.</div>
+        ` : renderDecisionCard(path, card, h)}
+        <div class="sales-path-card__actions">
+          <button class="icon-button" type="button" data-action="sales-path-note" data-path-id="${h.escapeHtml(path.id)}">Notiz hinzufügen</button>
+          <button class="icon-button icon-button--danger" type="button" data-action="sales-path-complete" data-path-id="${h.escapeHtml(path.id)}">Weg abschließen</button>
+        </div>
+        ${renderSalesPathEvents(events, data, h)}
+      </article>
+    `;
+  }
+
+  function renderDecisionCard(path, card, h) {
+    const needsDate = (card.buttons || []).some((button) => button.customDue);
+    return `
+      <section class="sales-decision-card">
+        <div class="sales-decision-card__title">${h.escapeHtml(card.title)}</div>
+        ${needsDate ? `
+          <label class="sales-decision-date">
+            <span>Fälligkeit für geplante Schritte</span>
+            <input type="date" data-action="sales-path-custom-due" value="${h.escapeHtml(path.next_action_due || addDays(7))}" />
+          </label>
+        ` : ""}
+        <div class="sales-decision-buttons">
+          ${(card.buttons || []).map((button) => `
+            <button class="button button--quiet" type="button" data-action="sales-path-result" data-path-id="${h.escapeHtml(path.id)}" data-result-key="${h.escapeHtml(button.key)}">
+              ${h.escapeHtml(button.label)}
+            </button>
+          `).join("")}
+          <button class="button button--quiet" type="button" data-action="sales-path-note" data-path-id="${h.escapeHtml(path.id)}">Notiz</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderSalesPathEvents(events, data, h) {
+    return `
+      <details class="sales-path-history" ${events.length ? "open" : ""}>
+        <summary>Verlauf (${events.length})</summary>
+        <div class="sales-path-history__list">
+          ${events.length ? events.map((event) => `
+            <div class="sales-path-event">
+              <strong>${h.escapeHtml(event.selected_result || event.card_title || "Eintrag")}</strong>
+              <span>${h.escapeHtml(event.created_at ? new Date(event.created_at).toLocaleString("de-DE") : "-")} · ${h.escapeHtml(event.created_by || "-")} · ${h.escapeHtml(pathTypeLabel(event.path_type))} · ${h.escapeHtml(contactLabel(data, event.contact_id))}</span>
+              <span>Kästchen: ${h.escapeHtml(event.card_title || "-")}</span>
+              ${event.next_action ? `<span>Nächste Aufgabe: ${h.escapeHtml(event.next_action)} · Fällig: ${h.escapeHtml(formatDate(event.next_action_due))}</span>` : ""}
+              ${event.note ? `<p>${h.escapeHtml(event.note).replace(/\n/g, "<br>")}</p>` : ""}
+            </div>
+          `).join("") : `<div class="empty">Noch kein Verlauf.</div>`}
+        </div>
+      </details>
+    `;
+  }
+
+  function renderSalesPathMap(paths, data, h) {
+    return `
+      <section class="sales-path-map">
+        <div>
+          <span class="kicker">Map</span>
+          <h3>Aktueller Stand je Weg</h3>
+        </div>
+        <div class="sales-path-map__list">
+          ${paths.map((path) => {
+            const steps = salesPathStepMaps[path.path_type] || [path.active_card || "closed"];
+            const activeIndex = steps.indexOf(path.active_card);
+            return `
+              <div class="sales-path-map-row">
+                <div class="sales-path-map-row__label">
+                  <strong>${h.escapeHtml(pathTypeLabel(path.path_type))}</strong>
+                  <span>${h.escapeHtml(contactLabel(data, path.contact_id))}</span>
+                </div>
+                <div class="sales-path-map-steps">
+                  ${steps.map((step, index) => {
+                    const done = path.is_active === false || (activeIndex >= 0 && index < activeIndex);
+                    const active = path.active_card === step && path.is_active !== false;
+                    return `
+                      <span class="${done ? "is-done" : ""} ${active ? "is-active" : ""}" title="${h.escapeHtml(cardTitle(step))}">
+                        ${h.escapeHtml(cardTitle(step))}
+                      </span>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function createSalesPath(data, customerId, contactId, pathType, summary) {
+    ensureSalesCollections(data);
+    const type = salesPathTypes.find((item) => item.value === pathType) || salesPathTypes[0];
+    const now = new Date().toISOString();
+    const path = {
+      id: window.OSM.state.uid("sp"),
+      customer_id: customerId,
+      contact_id: contactId,
+      path_type: type.value,
+      status: "gestartet",
+      active_card: type.startCard,
+      next_action: type.firstAction,
+      next_action_due: todayIso(),
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+      completed_at: ""
+    };
+    window.OSM.state.upsert(data, "sales_paths", path);
+    addSalesPathEvent(data, path, "Vertriebsweg gestartet", "", type.firstAction, todayIso(), summary || "Weg gestartet");
+    return path;
+  }
+
+  function addSalesPathEvent(data, path, result, note, nextAction, nextDue, cardTitleOverride) {
+    ensureSalesCollections(data);
+    const card = salesPathCards[path.active_card] || salesPathCards.closed;
+    const event = {
+      id: window.OSM.state.uid("spe"),
+      sales_path_id: path.id,
+      customer_id: path.customer_id,
+      contact_id: path.contact_id,
+      path_type: path.path_type,
+      card_title: cardTitleOverride || card.title,
+      selected_result: result,
+      note: note || "",
+      next_action: nextAction || "",
+      next_action_due: nextDue || "",
+      created_by: window.OSM.state.currentUser(data),
+      created_at: new Date().toISOString()
+    };
+    window.OSM.state.upsert(data, "sales_path_events", event);
+  }
+
+  function applySalesPathResult(pathId, resultKey, customDue) {
+    const data = window.OSM.data;
+    ensureSalesCollections(data);
+    const path = (data.sales_paths || []).find((item) => item.id === pathId);
+    if (!path) return;
+    const card = salesPathCards[path.active_card] || salesPathCards.closed;
+    const result = (card.buttons || []).find((button) => button.key === resultKey);
+    if (!result) return;
+
+    const beforeCardTitle = card.title;
+    const nextDue = dueForResult(result, customDue);
+    const nextPath = Object.assign({}, path, {
+      status: result.status || path.status,
+      active_card: result.complete ? "closed" : result.nextCard || path.active_card,
+      next_action: result.complete ? "" : result.nextAction || path.next_action,
+      next_action_due: nextDue,
+      is_active: result.complete ? false : true,
+      completed_at: result.complete ? new Date().toISOString() : path.completed_at || "",
+      updated_at: new Date().toISOString()
+    });
+
+    window.OSM.state.upsert(data, "sales_paths", nextPath);
+    addSalesPathEvent(data, Object.assign({}, path, { active_card: path.active_card }), result.label, "", nextPath.next_action, nextPath.next_action_due, beforeCardTitle);
+
+    if (result.startPathType) {
+      createSalesPath(data, path.customer_id, path.contact_id, result.startPathType, `${pathTypeLabel(result.startPathType)} aus ${pathTypeLabel(path.path_type)} gestartet`);
+    }
+
+    customerDetailTab = "salesPaths";
+    window.OSM.render();
+  }
+
+  function addSalesPathNote(pathId) {
+    const data = window.OSM.data;
+    ensureSalesCollections(data);
+    const path = (data.sales_paths || []).find((item) => item.id === pathId);
+    if (!path) return;
+    const note = prompt("Notiz zum aktuellen Vertriebsweg:");
+    if (note === null) return;
+    addSalesPathEvent(data, path, "Notiz", clean(note), path.next_action, path.next_action_due);
+    path.updated_at = new Date().toISOString();
+    window.OSM.state.upsert(data, "sales_paths", path);
+    customerDetailTab = "salesPaths";
+    window.OSM.render();
+  }
+
+  function completeSalesPath(pathId) {
+    const data = window.OSM.data;
+    ensureSalesCollections(data);
+    const path = (data.sales_paths || []).find((item) => item.id === pathId);
+    if (!path) return;
+    const nextPath = Object.assign({}, path, {
+      status: "beendet",
+      active_card: "closed",
+      next_action: "",
+      next_action_due: "",
+      is_active: false,
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+    window.OSM.state.upsert(data, "sales_paths", nextPath);
+    addSalesPathEvent(data, path, "Weg abgeschlossen", "", "", "");
+    customerDetailTab = "salesPaths";
+    window.OSM.render();
+  }
+
   function relatedCount(data, collection, customerId) {
     return (data[collection] || []).filter((item) => item.customerId === customerId).length;
   }
@@ -597,6 +1189,7 @@
     }
 
     const contacts = (data.contacts || []).filter((contact) => contact.customerId === customer.id);
+    const paths = salesPathsForCustomer(data, customer.id);
     const editing = editingCustomerId === customer.id;
     return `
       <section class="customer-detail-panel">
@@ -614,10 +1207,14 @@
         </div>
         <div class="customer-mini-stats">
           <span>${contacts.length} Kontakte</span>
+          <span>${paths.filter((path) => path.is_active !== false).length} aktive Vertriebswege</span>
           <span>${relatedCount(data, "rfqs", customer.id)} RFQs</span>
           <span>${relatedCount(data, "orders", customer.id)} Aufträge</span>
         </div>
-        ${editing ? renderCustomerEditor(customer, contacts, h) : renderCustomerReadonly(customer, contacts, h)}
+        ${renderCustomerTabs(customer, data, h)}
+        ${customerDetailTab === "salesPaths"
+          ? renderSalesPaths(customer, contacts, data, h)
+          : editing ? renderCustomerEditor(customer, contacts, h) : renderCustomerReadonly(customer, contacts, h)}
       </section>
     `;
   }
@@ -716,12 +1313,72 @@
       if (selectButton) {
         selectedCustomerId = selectButton.dataset.id;
         editingCustomerId = "";
+        salesPathModalOpen = false;
         window.OSM.render();
+        return;
+      }
+
+      const tabButton = event.target.closest("[data-action='customer-tab']");
+      if (tabButton) {
+        customerDetailTab = tabButton.dataset.tab || "profile";
+        salesPathModalOpen = false;
+        window.OSM.render();
+        return;
+      }
+
+      if (event.target.closest("[data-action='sales-path-open-modal']")) {
+        customerDetailTab = "salesPaths";
+        salesPathModalOpen = true;
+        window.OSM.render();
+        return;
+      }
+
+      if (event.target.closest("[data-action='sales-path-close-modal']")) {
+        salesPathModalOpen = false;
+        window.OSM.render();
+        return;
+      }
+
+      const startPathButton = event.target.closest("[data-action='sales-path-start']");
+      if (startPathButton) {
+        const modal = startPathButton.closest("[data-sales-path-modal]");
+        const pathType = modal ? modal.querySelector("[data-action='sales-path-type']").value : "linkedin";
+        const contactId = modal ? modal.querySelector("[data-action='sales-path-contact']").value : "";
+        if (!contactId) {
+          alert("Bitte zuerst einen vorhandenen Kontakt auswählen.");
+          return;
+        }
+        createSalesPath(window.OSM.data, selectedCustomerId, contactId, pathType);
+        salesPathModalOpen = false;
+        customerDetailTab = "salesPaths";
+        window.OSM.render();
+        return;
+      }
+
+      const resultButton = event.target.closest("[data-action='sales-path-result']");
+      if (resultButton) {
+        const card = resultButton.closest("[data-sales-path-card]");
+        const dueInput = card ? card.querySelector("[data-action='sales-path-custom-due']") : null;
+        applySalesPathResult(resultButton.dataset.pathId, resultButton.dataset.resultKey, dueInput ? dueInput.value : "");
+        return;
+      }
+
+      const noteButton = event.target.closest("[data-action='sales-path-note']");
+      if (noteButton) {
+        addSalesPathNote(noteButton.dataset.pathId);
+        return;
+      }
+
+      const completePathButton = event.target.closest("[data-action='sales-path-complete']");
+      if (completePathButton) {
+        if (!confirm("Diesen Vertriebsweg wirklich abschließen?")) return;
+        completeSalesPath(completePathButton.dataset.pathId);
         return;
       }
 
       if (event.target.closest("[data-action='customer-edit']")) {
         if (selectedCustomerId) editingCustomerId = selectedCustomerId;
+        customerDetailTab = "profile";
         window.OSM.render();
         return;
       }
@@ -768,6 +1425,12 @@
         (window.OSM.data.contacts || [])
           .filter((contact) => contact.customerId === selectedCustomerId)
           .forEach((contact) => window.OSM.state.remove(window.OSM.data, "contacts", contact.id));
+        (window.OSM.data.sales_paths || [])
+          .filter((path) => path.customer_id === selectedCustomerId)
+          .forEach((path) => window.OSM.state.remove(window.OSM.data, "sales_paths", path.id));
+        (window.OSM.data.sales_path_events || [])
+          .filter((eventItem) => eventItem.customer_id === selectedCustomerId)
+          .forEach((eventItem) => window.OSM.state.remove(window.OSM.data, "sales_path_events", eventItem.id));
         window.OSM.state.remove(window.OSM.data, "customers", selectedCustomerId);
         selectedCustomerId = "";
         editingCustomerId = "";
