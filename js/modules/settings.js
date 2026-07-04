@@ -16,12 +16,16 @@
     group: "System & Rechte",
     icon: "S",
     title: "Daten & Module",
-    description: "Backup, Import und Modulübersicht.",
+    description: "Backup, Import, Updates und Modulübersicht.",
     render(data, h) {
       const modules = window.OSM.modules.filter((module) => module.id !== "settings");
       const meta = data.meta || {};
       const sync = window.OSM.state.syncInfo ? window.OSM.state.syncInfo() : {};
       const appInfo = window.OSM_APP_VERSION || {};
+      const updateStatus = window.OSM_UPDATE && window.OSM_UPDATE.status
+        ? window.OSM_UPDATE.status()
+        : { state: "idle", message: "Noch nicht geprüft.", latest: null, checkedAt: "" };
+      const latestInfo = updateStatus.latest || {};
       const saveHistory = (meta.saveHistory || []).slice(0, 8);
       const storageMode = sync.mode === "cloud" ? "Cloudflare D1" : "Lokaler Fallback";
       const storageText = sync.mode === "cloud"
@@ -38,7 +42,7 @@
               <a href="#area-system">System & Rechte</a>
             </div>
             <h1 class="topbar__title">Daten & Module</h1>
-            <p class="topbar__text">Lokale Daten sichern, Speicherpunkte prüfen und Modulstruktur ansehen.</p>
+            <p class="topbar__text">Lokale Daten sichern, Speicherpunkte prüfen, Updates laden und Modulstruktur ansehen.</p>
           </div>
           <div class="page-actions">
             <a class="button button--quiet" href="#area-system">Zurück</a>
@@ -87,15 +91,27 @@
 
           <div class="panel panel--pad">
             <h2>Programm & Updates</h2>
-            <p class="muted">Die Windows-App ist nur der Zugang zum ERP. Der aktuelle Programmcode wird aus Cloudflare geladen, dadurch sehen Abdelaziz und Mohammed nach einem Deployment automatisch die neue Version.</p>
+            <p class="muted">Die Windows-App ist nur der Zugang zum ERP. Updates werden im Programm geprüft und direkt aus Cloudflare geladen. Keine Neuinstallation für normale ERP-Änderungen.</p>
+            <div class="page-actions">
+              <button class="button" data-action="check-update">Update prüfen</button>
+              <button class="button button--quiet" data-action="apply-update">Jetzt aktualisieren / neu laden</button>
+            </div>
             <div class="list">
               <div class="list-item">
                 <div class="list-item__title">Aktuelle Version</div>
                 <div class="list-item__meta">${h.escapeHtml(appInfo.version || "Cloud-Version")} ${appInfo.releaseDate ? `· ${h.escapeHtml(appInfo.releaseDate)}` : ""}</div>
               </div>
               <div class="list-item">
+                <div class="list-item__title">Online gefundene Version</div>
+                <div class="list-item__meta">${h.escapeHtml(latestInfo.version || "Noch nicht geprüft")} ${latestInfo.releaseDate ? `· ${h.escapeHtml(latestInfo.releaseDate)}` : ""}</div>
+              </div>
+              <div class="list-item">
+                <div class="list-item__title">Update-Status</div>
+                <div class="list-item__meta">${h.escapeHtml(updateStatus.message || "Noch nicht geprüft.")} ${updateStatus.checkedAt ? `· ${h.escapeHtml(formatDate(updateStatus.checkedAt))}` : ""}</div>
+              </div>
+              <div class="list-item">
                 <div class="list-item__title">Update-Modus</div>
-                <div class="list-item__meta">${h.escapeHtml(appInfo.updateMode || "Automatisch über Cloudflare Pages")}</div>
+                <div class="list-item__meta">Im Programm prüfen, danach direkt aus Cloudflare neu laden.</div>
               </div>
               <div class="list-item">
                 <div class="list-item__title">Installationsart</div>

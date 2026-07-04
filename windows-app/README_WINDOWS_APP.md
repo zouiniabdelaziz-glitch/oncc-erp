@@ -5,6 +5,7 @@ Diese Windows-App ist eine installierte App-Verknüpfung auf die Cloudflare-Vers
 `https://oncc-erp.pages.dev`
 
 Sie öffnet das ERP in einem eigenen Fenster über Microsoft Edge oder Google Chrome.
+Die Verknüpfung nutzt das OSMP-App-Icon, nicht das Browser-Icon.
 
 ## Updates
 

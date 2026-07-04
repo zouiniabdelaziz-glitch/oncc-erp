@@ -1,0 +1,30 @@
+{
+  "name": "ONCC ERP / OS.MECHPLAST Workspace",
+  "short_name": "ONCC ERP",
+  "description": "Internes ERP/MRP-System für OS.MECHPLAST SRLS.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e9eef1",
+  "theme_color": "#061722",
+  "icons": [
+    {
+      "src": "/assets/icons/osmp-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/osmp-app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icons/osmp-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

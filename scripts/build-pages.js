@@ -6,7 +6,10 @@ const dist = path.join(root, "dist");
 const entries = [
   "index.html",
   "styles.css",
+  "favicon.ico",
+  "manifest.webmanifest",
   "version.json",
+  "assets",
   "README.md",
   "docs",
   "js"

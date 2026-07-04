@@ -267,9 +267,11 @@
       <div class="app-shell app-shell--erp">
         <aside class="sidebar">
           <a class="sidebar__brand" href="#dashboard">
-            <span class="sidebar__mark">ON</span>
+            <span class="sidebar__mark">
+              <img src="assets/icons/osmp-app-icon.svg" alt="" />
+            </span>
             <span>
-              <strong>ONCC ERP</strong>
+              <strong>OSMP ERP</strong>
               <small>OS.MECHPLAST Workspace</small>
             </span>
           </a>
@@ -290,6 +292,8 @@
               </label>
               <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
               <span class="save-status" data-save-status>Lokal</span>
+              <button class="shellbar__tool" type="button" data-action="check-update">Update</button>
+              <span class="update-status" data-update-status>Update</span>
               <a class="shellbar__tool" href="#settings">System</a>
             </div>
           </header>
@@ -306,6 +310,7 @@
     document.addEventListener("input", handleInput);
     document.addEventListener("change", handleChange);
     window.addEventListener("osm-sync-status", () => updateSaveStatus());
+    window.addEventListener("osm-update-status", () => updateUpdateStatus());
     render();
   }
 
@@ -394,6 +399,7 @@
     document.title = `${module.title} - OS.MECHPLAST ERP`;
     renderUserSelect();
     updateSaveStatus();
+    updateUpdateStatus();
   }
 
   function renderGeneric(module) {
@@ -511,10 +517,47 @@
     if (action === "close-modal") closeModal();
     if (action === "manual-save") manualSave();
     if (action === "refresh-cloud") refreshCloud();
+    if (action === "check-update") checkUpdate();
+    if (action === "apply-update") applyUpdate();
     if (action === "export-data") exportData();
     if (action === "import-data") document.getElementById("import-file").click();
     if (action === "reset-demo") resetDemoData();
     if (action === "toggle-sidebar-section") toggleSidebarSection(target.dataset.section);
+  }
+
+  async function checkUpdate() {
+    if (!window.OSM_UPDATE || !window.OSM_UPDATE.check) {
+      alert("Update-Funktion ist nicht geladen.");
+      return;
+    }
+    await window.OSM_UPDATE.check();
+    if (currentModule().id === "settings") render();
+  }
+
+  function applyUpdate() {
+    if (!window.OSM_UPDATE || !window.OSM_UPDATE.apply) {
+      alert("Update-Funktion ist nicht geladen.");
+      return;
+    }
+    window.OSM_UPDATE.apply();
+  }
+
+  function updateUpdateStatus() {
+    const element = document.querySelector("[data-update-status]");
+    if (!element) return;
+    const updater = window.OSM_UPDATE;
+    const info = updater && updater.status ? updater.status() : { state: "idle", message: "Update" };
+    element.className = `update-status update-status--${escapeHtml(info.state || "idle")}`;
+    if (info.state === "available") {
+      element.textContent = "Update verfügbar";
+    } else if (info.state === "checking") {
+      element.textContent = "Prüfe...";
+    } else if (info.state === "error") {
+      element.textContent = "Update Fehler";
+    } else {
+      element.textContent = "Aktuell";
+    }
+    element.title = info.message || "";
   }
 
   function handleInput(event) {

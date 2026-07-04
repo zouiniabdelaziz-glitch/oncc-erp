@@ -4,6 +4,7 @@ $AppName = "ONCC ERP"
 $AppUrl = "https://oncc-erp.pages.dev"
 $LaunchUrl = "$AppUrl/?desktop=windows"
 $Description = "ONCC ERP / OS.MECHPLAST Workspace"
+$IconPath = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "assets\icons\osmp-app-icon.ico"
 
 function Find-Browser {
   $candidates = @(
@@ -38,7 +39,7 @@ function New-AppShortcut {
   $shortcut.TargetPath = $BrowserPath
   $shortcut.Arguments = "--app=$LaunchUrl"
   $shortcut.WorkingDirectory = Split-Path -Parent $BrowserPath
-  $shortcut.IconLocation = "$BrowserPath,0"
+  $shortcut.IconLocation = if (Test-Path -LiteralPath $IconPath) { "$IconPath,0" } else { "$BrowserPath,0" }
   $shortcut.Description = $Description
   $shortcut.Save()
 }

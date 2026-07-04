@@ -1,25 +1,31 @@
 :root {
   color-scheme: light;
-  --page: #edf3f8;
-  --shell: #d7e8f6;
-  --shell-line: #8fb5d6;
+  --page: #e9eef1;
+  --shell: #ffffff;
+  --shell-line: #d9e0e5;
   --surface: #ffffff;
-  --surface-soft: #f6f8fb;
-  --surface-blue: #eaf3fb;
-  --line: #cfd9e2;
-  --line-strong: #aebdca;
-  --ink: #1f2d3a;
-  --muted: #5d6b78;
-  --blue: #0a6ed1;
-  --blue-dark: #0854a0;
-  --blue-soft: #e5f0fa;
-  --green: #107e3e;
-  --green-soft: #e4f5ea;
+  --surface-soft: #f7f9fa;
+  --surface-blue: #f7f9fa;
+  --line: #d9e0e5;
+  --line-strong: #aeb7bf;
+  --ink: #1d252d;
+  --muted: #767676;
+  --blue: #e3000b;
+  --blue-dark: #b80008;
+  --blue-soft: #fff0f1;
+  --green: #155724;
+  --green-soft: #eaf5ed;
   --warn: #b05f00;
   --warn-soft: #fff3d9;
-  --danger: #bb0000;
-  --danger-soft: #ffebeb;
-  --radius: 4px;
+  --danger: #721c24;
+  --danger-soft: #f9e8ea;
+  --osmp-navy: #1d252d;
+  --osmp-deep: #061722;
+  --osmp-red: #e3000b;
+  --osmp-red-dark: #b80008;
+  --font-body: "Afacad", "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --radius: 0;
 }
 
 * {
@@ -33,7 +39,7 @@ html {
 body {
   background: var(--page);
   color: var(--ink);
-  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   margin: 0;
   min-height: 100vh;
@@ -143,12 +149,40 @@ body[data-view="dashboard"] .main {
 .save-status {
   background: rgba(255, 255, 255, 0.66);
   border: 1px solid rgba(143, 181, 214, 0.75);
-  border-radius: 999px;
-  color: #17496f;
+  border-radius: 0;
+  color: var(--osmp-navy);
   font-size: 12px;
   line-height: 1;
   padding: 7px 9px;
   white-space: nowrap;
+}
+
+.update-status {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 9px;
+  white-space: nowrap;
+}
+
+.update-status--available {
+  border-color: var(--osmp-red);
+  color: var(--osmp-red);
+  font-weight: 800;
+}
+
+.update-status--checking,
+.update-status--updating {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.update-status--error {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .shellbar__brand {
@@ -2025,7 +2059,7 @@ tr:last-child td {
 
 /* ERP shell: sidebar, user dashboard and maps */
 body[data-sidebar="erp"] {
-  background: #eef3f7;
+  background: var(--page);
 }
 
 .app-shell--erp {
@@ -2035,7 +2069,7 @@ body[data-sidebar="erp"] {
 }
 
 .sidebar {
-  background: #102d4a;
+  background: var(--osmp-deep);
   color: #dbe8f3;
   display: flex;
   flex-direction: column;
@@ -2052,8 +2086,8 @@ body[data-sidebar="erp"] {
   color: #ffffff;
   display: flex;
   gap: 10px;
-  min-height: 64px;
-  padding: 14px 16px;
+  min-height: 72px;
+  padding: 16px;
   text-decoration: none;
 }
 
@@ -2070,14 +2104,23 @@ body[data-sidebar="erp"] {
 
 .sidebar__mark {
   align-items: center;
-  background: #0a6ed1;
-  border-radius: 4px;
+  background: var(--osmp-deep);
+  border: 1px solid var(--osmp-red);
+  border-radius: 0;
   color: #ffffff;
   display: inline-flex;
   font-weight: 800;
-  height: 34px;
+  height: 42px;
   justify-content: center;
   min-width: 42px;
+  padding: 5px;
+}
+
+.sidebar__mark img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
 }
 
 .sidebar__user {
@@ -2087,7 +2130,7 @@ body[data-sidebar="erp"] {
 .sidebar-user-card {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 0;
   display: grid;
   gap: 8px;
   padding: 10px;
@@ -2137,7 +2180,7 @@ body[data-sidebar="erp"] {
 
 .sidebar-link {
   align-items: center;
-  border-radius: 6px;
+  border-radius: 0;
   color: #dbe8f3;
   display: grid;
   font-size: 13px;
@@ -2151,7 +2194,7 @@ body[data-sidebar="erp"] {
 .sidebar-link span {
   align-items: center;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 0;
   color: #ffffff;
   display: inline-flex;
   font-size: 11px;
@@ -2167,12 +2210,13 @@ body[data-sidebar="erp"] {
 
 .sidebar-link.is-active {
   background: #ffffff;
-  color: #102d4a;
+  box-shadow: inset 4px 0 0 var(--osmp-red);
+  color: var(--osmp-deep);
   font-weight: 700;
 }
 
 .sidebar-link.is-active span {
-  background: #0a6ed1;
+  background: var(--osmp-red);
 }
 
 .workspace {
@@ -2182,7 +2226,7 @@ body[data-sidebar="erp"] {
 .top-shellbar {
   align-items: center;
   background: #ffffff;
-  border-bottom: 1px solid #d8e1e9;
+  border-bottom: 1px solid var(--line);
   display: flex;
   gap: 14px;
   justify-content: space-between;
@@ -2207,9 +2251,9 @@ body[data-sidebar="erp"] {
 
 .top-shellbar__button {
   background: #f5f8fb;
-  border: 1px solid #d8e1e9;
-  border-radius: 6px;
-  color: #1f2d3a;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink);
   cursor: pointer;
   min-height: 32px;
   padding: 6px 10px;
@@ -2251,7 +2295,7 @@ body[data-sidebar="erp"] .main {
   align-items: center;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1fr) 320px;

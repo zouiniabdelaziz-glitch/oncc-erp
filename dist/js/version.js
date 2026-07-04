@@ -1,8 +1,8 @@
 (function () {
   window.OSM_APP_VERSION = {
     name: "ONCC ERP / OS.MECHPLAST Workspace",
-    version: "2026.07.03-cloud.1",
-    releaseDate: "2026-07-03",
+    version: "2026.07.04-update.1",
+    releaseDate: "2026-07-04",
     appUrl: "https://oncc-erp.pages.dev",
     deployment: "Cloudflare Pages",
     installMode: "Windows Cloud-App",
