@@ -4,6 +4,8 @@
   let selectedCustomerId = "";
   let editingCustomerId = "";
   let customerDetailTab = "profile";
+  let customerSelectionMode = false;
+  const selectedCustomerIds = new Set();
   let salesPathModalOpen = false;
   const extraContactSlots = {};
 
@@ -826,14 +828,33 @@
     return "ok";
   }
 
+  function removeCustomerCascade(data, customerId) {
+    ensureSalesCollections(data);
+    (data.contacts || [])
+      .filter((contact) => contact.customerId === customerId)
+      .forEach((contact) => window.OSM.state.remove(data, "contacts", contact.id));
+    (data.sales_paths || [])
+      .filter((path) => path.customer_id === customerId)
+      .forEach((path) => window.OSM.state.remove(data, "sales_paths", path.id));
+    (data.sales_path_events || [])
+      .filter((eventItem) => eventItem.customer_id === customerId)
+      .forEach((eventItem) => window.OSM.state.remove(data, "sales_path_events", eventItem.id));
+    window.OSM.state.remove(data, "customers", customerId);
+  }
+
   function renderCustomerList(rows, selected, h) {
     if (!rows.length) return `<div class="empty">Keine Kunden gefunden.</div>`;
     return `
-      <div class="customer-list">
+      <div class="customer-list ${customerSelectionMode ? "customer-list--selecting" : ""}">
         ${rows.map((customer) => {
           const active = selected && selected.id === customer.id ? " is-active" : "";
+          const checked = selectedCustomerIds.has(customer.id);
+          const action = customerSelectionMode ? "toggle-customer-selection" : "select-customer";
           return `
-            <button class="customer-list-item${active}" type="button" data-action="select-customer" data-id="${h.escapeHtml(customer.id)}">
+            <button class="customer-list-item${active} ${checked ? "is-selected" : ""}" type="button" data-action="${action}" data-id="${h.escapeHtml(customer.id)}">
+              ${customerSelectionMode ? `
+                <span class="customer-select-check" aria-hidden="true">${checked ? "✓" : ""}</span>
+              ` : ""}
               <span class="customer-list-item__name">${h.escapeHtml(customer.name || "Ohne Namen")}</span>
               <span class="customer-list-item__meta">${h.escapeHtml(customer.industry || "Branche offen")}</span>
               <span class="customer-list-item__footer">
@@ -843,6 +864,28 @@
             </button>
           `;
         }).join("")}
+      </div>
+    `;
+  }
+
+  function renderCustomerSelectionBar(rows, h) {
+    const visibleIds = rows.map((customer) => customer.id);
+    const selectedVisible = visibleIds.filter((id) => selectedCustomerIds.has(id)).length;
+    const allVisibleSelected = rows.length > 0 && selectedVisible === rows.length;
+    return `
+      <div class="customer-selection-bar ${customerSelectionMode ? "is-active" : ""}">
+        <button class="icon-button" type="button" data-action="customer-selection-toggle">
+          ${customerSelectionMode ? "Abbrechen" : "Auswählen"}
+        </button>
+        ${customerSelectionMode ? `
+          <button class="icon-button" type="button" data-action="customer-selection-all" ${rows.length ? "" : "disabled"}>
+            ${allVisibleSelected ? "Alle abwählen" : "Alle sichtbaren auswählen"}
+          </button>
+          <button class="icon-button icon-button--danger" type="button" data-action="customer-selection-delete" ${selectedCustomerIds.size ? "" : "disabled"}>
+            ${selectedCustomerIds.size} löschen
+          </button>
+        ` : ""}
+        <span class="small muted">${customerSelectionMode ? `${selectedCustomerIds.size} ausgewählt` : "Galerie-Modus für mehrere Kunden"}</span>
       </div>
     `;
   }
@@ -1683,12 +1726,59 @@
 
       const newButton = event.target.closest("[data-action='customer-new']");
       if (newButton) {
+        customerSelectionMode = false;
+        selectedCustomerIds.clear();
         createCustomer();
+        return;
+      }
+
+      if (event.target.closest("[data-action='customer-selection-toggle']")) {
+        customerSelectionMode = !customerSelectionMode;
+        selectedCustomerIds.clear();
+        window.OSM.render();
+        return;
+      }
+
+      const selectAllButton = event.target.closest("[data-action='customer-selection-all']");
+      if (selectAllButton) {
+        const rows = (window.OSM.data.customers || [])
+          .filter((row) => JSON.stringify(row).toLowerCase().includes(customerSearch.toLowerCase()))
+          .sort((a, b) => importanceRank(a.importance) - importanceRank(b.importance) || clean(a.name).localeCompare(clean(b.name), "de"));
+        const allVisibleSelected = rows.length > 0 && rows.every((customer) => selectedCustomerIds.has(customer.id));
+        rows.forEach((customer) => {
+          if (allVisibleSelected) selectedCustomerIds.delete(customer.id);
+          else selectedCustomerIds.add(customer.id);
+        });
+        window.OSM.render();
+        return;
+      }
+
+      if (event.target.closest("[data-action='customer-selection-delete']")) {
+        const ids = [...selectedCustomerIds].filter((id) => window.OSM.state.findById(window.OSM.data, "customers", id));
+        if (!ids.length) return;
+        const label = ids.length === 1 ? "1 Kunde" : `${ids.length} Kunden`;
+        if (!confirm(`${label} wirklich löschen? Kontakte, Vertriebswege und Verlauf werden ebenfalls gelöscht.`)) return;
+        ids.forEach((id) => removeCustomerCascade(window.OSM.data, id));
+        selectedCustomerIds.clear();
+        customerSelectionMode = false;
+        selectedCustomerId = "";
+        editingCustomerId = "";
+        window.OSM.render();
+        return;
+      }
+
+      const selectionButton = event.target.closest("[data-action='toggle-customer-selection']");
+      if (selectionButton) {
+        const id = selectionButton.dataset.id;
+        if (selectedCustomerIds.has(id)) selectedCustomerIds.delete(id);
+        else selectedCustomerIds.add(id);
+        window.OSM.render();
         return;
       }
 
       const selectButton = event.target.closest("[data-action='select-customer']");
       if (selectButton) {
+        if (customerSelectionMode) return;
         selectedCustomerId = selectButton.dataset.id;
         editingCustomerId = "";
         salesPathModalOpen = false;
@@ -1828,16 +1918,8 @@
         const customer = window.OSM.state.findById(window.OSM.data, "customers", selectedCustomerId);
         if (!customer) return;
         if (!confirm(`Kunde "${customer.name}" wirklich löschen? Kontakte, Vertriebswege und Verlauf werden ebenfalls gelöscht.`)) return;
-        (window.OSM.data.contacts || [])
-          .filter((contact) => contact.customerId === selectedCustomerId)
-          .forEach((contact) => window.OSM.state.remove(window.OSM.data, "contacts", contact.id));
-        (window.OSM.data.sales_paths || [])
-          .filter((path) => path.customer_id === selectedCustomerId)
-          .forEach((path) => window.OSM.state.remove(window.OSM.data, "sales_paths", path.id));
-        (window.OSM.data.sales_path_events || [])
-          .filter((eventItem) => eventItem.customer_id === selectedCustomerId)
-          .forEach((eventItem) => window.OSM.state.remove(window.OSM.data, "sales_path_events", eventItem.id));
-        window.OSM.state.remove(window.OSM.data, "customers", selectedCustomerId);
+        removeCustomerCascade(window.OSM.data, selectedCustomerId);
+        selectedCustomerIds.delete(selectedCustomerId);
         selectedCustomerId = "";
         editingCustomerId = "";
         window.OSM.render();
@@ -1945,6 +2027,9 @@
         .filter((row) => JSON.stringify(row).toLowerCase().includes(customerSearch.toLowerCase()))
         .sort((a, b) => importanceRank(a.importance) - importanceRank(b.importance) || clean(a.name).localeCompare(clean(b.name), "de"));
       const allCustomers = data.customers || [];
+      selectedCustomerIds.forEach((id) => {
+        if (!allCustomers.some((customer) => customer.id === id)) selectedCustomerIds.delete(id);
+      });
       if (!selectedCustomerId || !allCustomers.some((customer) => customer.id === selectedCustomerId)) {
         selectedCustomerId = rows[0] ? rows[0].id : "";
       }
@@ -1987,6 +2072,7 @@
               </div>
               <span class="small muted">${rows.length} Einträge</span>
             </div>
+            ${renderCustomerSelectionBar(rows, h)}
             <input class="search customer-search" data-action="customer-search" value="${h.escapeHtml(customerSearch)}" placeholder="Kunden suchen..." />
             ${renderCustomerList(rows, selected, h)}
           </section>
