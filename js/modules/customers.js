@@ -994,7 +994,10 @@
             <h4>${h.escapeHtml(contactLabel(data, path.contact_id))}</h4>
             <span class="sales-path-type">${h.escapeHtml(pathTypeLabel(path.path_type))}</span>
           </div>
-          ${h.badge(path.is_active === false ? "abgeschlossen" : path.status || "aktiv", path.is_active === false ? "muted" : h.toneForStatus(path.status || "aktiv"))}
+          <div class="sales-path-card__head-actions">
+            ${h.badge(path.is_active === false ? "abgeschlossen" : path.status || "aktiv", path.is_active === false ? "muted" : h.toneForStatus(path.status || "aktiv"))}
+            <button class="sales-path-delete-x" type="button" title="Diesen Vertriebsweg löschen" aria-label="Diesen Vertriebsweg löschen" data-action="sales-path-delete" data-path-id="${h.escapeHtml(path.id)}">&times;</button>
+          </div>
         </div>
         <div class="sales-path-meta">
           <span><strong>Aktuelles Kästchen:</strong> ${h.escapeHtml(card.title)}</span>
@@ -1193,6 +1196,19 @@
     window.OSM.render();
   }
 
+  function deleteSalesPath(pathId) {
+    const data = window.OSM.data;
+    ensureSalesCollections(data);
+    const path = (data.sales_paths || []).find((item) => item.id === pathId);
+    if (!path) return;
+    (data.sales_path_events || [])
+      .filter((eventItem) => eventItem.sales_path_id === pathId)
+      .forEach((eventItem) => window.OSM.state.remove(data, "sales_path_events", eventItem.id));
+    window.OSM.state.remove(data, "sales_paths", pathId);
+    customerDetailTab = "salesPaths";
+    window.OSM.render();
+  }
+
   function relatedCount(data, collection, customerId) {
     return (data[collection] || []).filter((item) => item.customerId === customerId).length;
   }
@@ -1220,7 +1236,7 @@
             <button class="button" type="button" data-action="customer-save" ${editing ? "" : "disabled"}>Speichern</button>
             <button class="button button--quiet" type="button" data-action="customer-edit">Bearbeiten</button>
             <button class="button button--quiet" type="button" data-action="customer-archive">Archivieren</button>
-            <button class="button button--danger" type="button" data-action="customer-delete">Löschen</button>
+            <button class="button button--danger" type="button" data-action="customer-delete">Kunde löschen</button>
           </div>
         </div>
         <div class="customer-mini-stats">
@@ -1407,6 +1423,13 @@
         return;
       }
 
+      const deletePathButton = event.target.closest("[data-action='sales-path-delete']");
+      if (deletePathButton) {
+        if (!confirm("Diesen Vertriebsweg wirklich löschen? Der Verlauf dieses Weges wird ebenfalls gelöscht.")) return;
+        deleteSalesPath(deletePathButton.dataset.pathId);
+        return;
+      }
+
       if (event.target.closest("[data-action='customer-edit']")) {
         if (selectedCustomerId) editingCustomerId = selectedCustomerId;
         customerDetailTab = "profile";
@@ -1460,7 +1483,7 @@
       if (event.target.closest("[data-action='customer-delete']")) {
         const customer = window.OSM.state.findById(window.OSM.data, "customers", selectedCustomerId);
         if (!customer) return;
-        if (!confirm(`Kunde "${customer.name}" und seine Kontakte wirklich löschen?`)) return;
+        if (!confirm(`Kunde "${customer.name}" wirklich löschen? Kontakte, Vertriebswege und Verlauf werden ebenfalls gelöscht.`)) return;
         (window.OSM.data.contacts || [])
           .filter((contact) => contact.customerId === selectedCustomerId)
           .forEach((contact) => window.OSM.state.remove(window.OSM.data, "contacts", contact.id));

@@ -2516,6 +2516,35 @@ tr:last-child td {
   line-height: 1.25;
 }
 
+.sales-path-card__head-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.sales-path-delete-x {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 700;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
+.sales-path-delete-x:hover,
+.sales-path-delete-x:focus-visible {
+  background: #fff1f1;
+  border-color: #f2b8b5;
+  color: var(--danger);
+}
+
 .sales-path-type {
   color: var(--muted);
   display: block;
