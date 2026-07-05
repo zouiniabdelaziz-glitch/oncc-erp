@@ -2166,6 +2166,15 @@ tr:last-child td {
   overflow-wrap: anywhere;
 }
 
+.customer-value-grid--lead {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.customer-value-grid--lead .customer-value strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .customer-form-grid label,
 .customer-contact-form label {
   display: grid;
@@ -2175,6 +2184,10 @@ tr:last-child td {
 .customer-form-grid__wide,
 .customer-contact-form__wide {
   grid-column: 1 / -1;
+}
+
+.customer-form-grid--lead textarea {
+  min-height: 68px;
 }
 
 .customer-section {

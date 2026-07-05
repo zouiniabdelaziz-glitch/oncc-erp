@@ -246,14 +246,42 @@
 
   const aliases = {
     name: ["name", "firma", "firmenname", "unternehmen", "kunde", "customer", "company", "companyname", "azienda", "ragionesociale"],
+    segment: ["segment", "leadsegment", "crmsegment"],
+    leadScore: ["reifegradscore", "leadscore", "score", "bewertung"],
+    legacyLeadScore: ["leadscorealt", "altscore"],
+    priorityClass: ["prioalt", "prio", "prioritaetsklasse", "prioritatsklasse"],
     country: ["land", "country", "staat", "paese", "nazione"],
     industry: ["branche", "industry", "sektor", "sector", "settore", "bereich"],
+    productsSystems: ["produktesysteme", "produkte", "systeme", "leistungen"],
+    services: ["dienstleistungen", "services"],
+    targetMarkets: ["zielmaerkte", "zielmarkte", "zielmarkt", "maerkte", "markte"],
     importance: ["wichtigkeit", "prioritaet", "prioritat", "priorita", "importance", "priority", "klasse", "abc", "a", "b", "c"],
+    address: ["adresse", "anschrift", "strasse", "straße", "address"],
     phone: ["telefon", "telefonnummer", "tel", "phone", "rufnummer", "telefono", "telefonoazienda"],
+    phoneStatus: ["telefonstatus", "telefonpruefung", "telefonprufung"],
     website: ["website", "webseite", "homepage", "url", "sito", "site"],
+    websiteStatus: ["websitestatus", "websitezustand", "websitecheck"],
+    websiteEvidence: ["websiteevidenz", "websiteevidence"],
     logoUrl: ["logo", "logourl", "logo_url", "bild", "image"],
     status: ["status", "zustand", "phase"],
-    notes: ["notiz", "notizen", "notes", "bemerkung", "bemerkungen", "kommentar", "beschreibung", "description", "email", "e-mail", "mail", "ansprechpartner"]
+    contactName: ["ansprechpartner", "kontaktperson", "kontakt", "contact", "person"],
+    contactRole: ["position", "rolle", "funktion", "titel", "role"],
+    email: ["email", "e-mail", "mail"],
+    generalEmail: ["allgemeineemail", "allgemeinee-mail", "infoemail"],
+    contactLinkedin: ["linkedin", "linkedinprofil", "linkedinurl"],
+    mainReason: ["hauptgrund", "grund", "fitgrund", "begruendung", "begrundung", "waruminteressant", "warum"],
+    blockerRisk: ["blockerrisiko", "blocker", "risiko"],
+    recommendedAction: ["empfohleneaktion", "aktion", "naechsteaktion", "nachsteaktion"],
+    conversationStarter: ["gespraechseinstieg", "gesprachseinstieg", "pitch", "einstieg"],
+    highRequirement: ["hoheanforderungerkannt", "hoheanforderung"],
+    mediumRequirement: ["mittlereanforderungerkannt", "mittlereanforderung"],
+    competitorSignal: ["wettbewerbereigenfertigungerkannt", "wettbewerber", "eigenfertigung"],
+    likelyParts: ["wahrscheinlicheteile", "teilebedarf", "drehteile", "teile"],
+    dataQuality: ["datenqualitaet", "datenqualitat", "dataquality"],
+    contactSource: ["kontaktquelle", "kontaktweg"],
+    sources: ["quellen", "sources", "source"],
+    originalRow: ["originalzeile", "zeile", "row"],
+    notes: ["notiz", "notizen", "notes", "bemerkung", "bemerkungen", "kommentar", "beschreibung", "description"]
   };
 
   function normalizeHeader(value) {
@@ -270,6 +298,13 @@
 
   function clean(value) {
     return String(value ?? "").trim();
+  }
+
+  function cleanFound(value) {
+    const text = clean(value);
+    const normalized = normalizeHeader(text);
+    if (!text || ["nichtgefunden", "fehlt", "n/a", "na", "-"].includes(normalized)) return "";
+    return text;
   }
 
   function ensureSalesCollections(data) {
@@ -368,6 +403,24 @@
     return node ? node.textContent || "" : "";
   }
 
+  function headerScore(row) {
+    const normalized = row.map(normalizeHeader);
+    let score = 0;
+    Object.keys(aliases).forEach((key) => {
+      if (normalized.some((header) => aliases[key].includes(header))) score += key === "name" ? 100 : 8;
+    });
+    if (normalized.includes("firma")) score += 50;
+    if (normalized.includes("segment")) score += 8;
+    if (normalized.includes("reifegradscore")) score += 8;
+    return score;
+  }
+
+  function bestHeaderIndex(rows) {
+    return rows.slice(0, 25)
+      .map((row, index) => ({ index, score: headerScore(row), filled: row.filter(Boolean).length }))
+      .sort((a, b) => b.score - a.score || b.filled - a.filled)[0] || { index: 0, score: 0 };
+  }
+
   async function unzipXlsx(buffer) {
     const bytes = new Uint8Array(buffer);
     const view = new DataView(buffer);
@@ -429,27 +482,48 @@
       });
     }
 
-    const sheetName = Object.keys(entries).find((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name));
-    if (!sheetName) throw new Error("Keine Tabelle in der Excel-Datei gefunden.");
-    const sheetXml = parser.parseFromString(decoder.decode(entries[sheetName]), "application/xml");
+    function parseSheet(sheetName) {
+      const sheetXml = parser.parseFromString(decoder.decode(entries[sheetName]), "application/xml");
+      return [...sheetXml.querySelectorAll("sheetData row")].map((row) => {
+        const values = [];
+        [...row.querySelectorAll("c")].forEach((cell) => {
+          const index = columnIndex(cell.getAttribute("r"));
+          const type = cell.getAttribute("t");
+          let value = "";
+          if (type === "s") {
+            value = shared[Number(textFromXml(cell, "v"))] || "";
+          } else if (type === "inlineStr") {
+            value = [...cell.querySelectorAll("t")].map((node) => node.textContent || "").join("");
+          } else {
+            value = textFromXml(cell, "v");
+          }
+          values[index] = clean(value);
+        });
+        return values;
+      }).filter((row) => row.some(Boolean));
+    }
 
-    return [...sheetXml.querySelectorAll("sheetData row")].map((row) => {
-      const values = [];
-      [...row.querySelectorAll("c")].forEach((cell) => {
-        const index = columnIndex(cell.getAttribute("r"));
-        const type = cell.getAttribute("t");
-        let value = "";
-        if (type === "s") {
-          value = shared[Number(textFromXml(cell, "v"))] || "";
-        } else if (type === "inlineStr") {
-          value = [...cell.querySelectorAll("t")].map((node) => node.textContent || "").join("");
-        } else {
-          value = textFromXml(cell, "v");
-        }
-        values[index] = clean(value);
-      });
-      return values;
-    }).filter((row) => row.some(Boolean));
+    const sheets = Object.keys(entries)
+      .filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name))
+      .map((name) => {
+        const rows = parseSheet(name);
+        const header = bestHeaderIndex(rows);
+        return {
+          name,
+          rows,
+          headerIndex: header.index,
+          score: header.score,
+          dataRows: Math.max(0, rows.length - header.index - 1)
+        };
+      })
+      .filter((sheet) => sheet.rows.length);
+
+    if (!sheets.length) throw new Error("Keine Tabelle in der Excel-Datei gefunden.");
+    const selected = sheets.sort((a, b) => b.score - a.score || b.dataRows - a.dataRows)[0];
+    if (!selected.score) {
+      throw new Error("Keine passende Kundentabelle gefunden. Bitte ein Blatt mit der Spalte Firma/Kunde verwenden.");
+    }
+    return selected.rows.slice(selected.headerIndex);
   }
 
   async function readRows(file) {
@@ -479,7 +553,13 @@
     const normalized = normalizeHeader(value);
     if (["hoch", "high", "wichtig", "top", "a", "1"].includes(normalized)) return "hoch";
     if (["mittel", "medium", "b", "2"].includes(normalized)) return "mittel";
-    if (["niedrig", "low", "c", "3"].includes(normalized)) return "niedrig";
+    if (["niedrig", "low", "c", "d", "3", "4"].includes(normalized)) return "niedrig";
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      if (numeric >= 90) return "hoch";
+      if (numeric >= 60) return "mittel";
+      if (numeric > 0) return "niedrig";
+    }
     return "normal";
   }
 
@@ -488,13 +568,41 @@
     const headers = rows[0].map(clean);
     const indexes = {
       name: findColumn(headers, "name"),
+      segment: findColumn(headers, "segment"),
+      leadScore: findColumn(headers, "leadScore"),
+      legacyLeadScore: findColumn(headers, "legacyLeadScore"),
+      priorityClass: findColumn(headers, "priorityClass"),
       country: findColumn(headers, "country"),
       industry: findColumn(headers, "industry"),
+      productsSystems: findColumn(headers, "productsSystems"),
+      services: findColumn(headers, "services"),
+      targetMarkets: findColumn(headers, "targetMarkets"),
       importance: findColumn(headers, "importance"),
+      address: findColumn(headers, "address"),
       phone: findColumn(headers, "phone"),
+      phoneStatus: findColumn(headers, "phoneStatus"),
       website: findColumn(headers, "website"),
+      websiteStatus: findColumn(headers, "websiteStatus"),
+      websiteEvidence: findColumn(headers, "websiteEvidence"),
       logoUrl: findColumn(headers, "logoUrl"),
       status: findColumn(headers, "status"),
+      contactName: findColumn(headers, "contactName"),
+      contactRole: findColumn(headers, "contactRole"),
+      email: findColumn(headers, "email"),
+      generalEmail: findColumn(headers, "generalEmail"),
+      contactLinkedin: findColumn(headers, "contactLinkedin"),
+      mainReason: findColumn(headers, "mainReason"),
+      blockerRisk: findColumn(headers, "blockerRisk"),
+      recommendedAction: findColumn(headers, "recommendedAction"),
+      conversationStarter: findColumn(headers, "conversationStarter"),
+      highRequirement: findColumn(headers, "highRequirement"),
+      mediumRequirement: findColumn(headers, "mediumRequirement"),
+      competitorSignal: findColumn(headers, "competitorSignal"),
+      likelyParts: findColumn(headers, "likelyParts"),
+      dataQuality: findColumn(headers, "dataQuality"),
+      contactSource: findColumn(headers, "contactSource"),
+      sources: findColumn(headers, "sources"),
+      originalRow: findColumn(headers, "originalRow"),
       notes: findColumn(headers, "notes")
     };
 
@@ -502,26 +610,68 @@
       throw new Error("Keine Spalte für Firmenname gefunden. Nutze z.B. Firma, Firmenname, Kunde oder Company.");
     }
 
+    const fileHintsAustria = ["oesterreich", "osterreich", "austria"].some((hint) => normalizeHeader(fileName).includes(hint));
+
     return rows.slice(1).map((row) => {
       const unknownNotes = headers
-        .map((header, index) => ({ header, value: clean(row[index]) }))
+        .map((header, index) => ({ header, value: cleanFound(row[index]) }))
         .filter((item, index) => item.value && !Object.values(indexes).includes(index))
         .map((item) => `${item.header}: ${item.value}`);
+      const leadScore = indexes.leadScore >= 0 ? cleanFound(row[indexes.leadScore]) : "";
+      const priorityClass = indexes.priorityClass >= 0 ? cleanFound(row[indexes.priorityClass]) : "";
       const notes = [
-        indexes.notes >= 0 ? clean(row[indexes.notes]) : "",
+        indexes.notes >= 0 ? cleanFound(row[indexes.notes]) : "",
         unknownNotes.join(" | "),
         `Import: ${fileName}`
       ].filter(Boolean).join("\n");
+      const email = indexes.email >= 0 ? cleanFound(row[indexes.email]) : indexes.generalEmail >= 0 ? cleanFound(row[indexes.generalEmail]) : "";
+      const fallbackEmail = !email && indexes.generalEmail >= 0 ? cleanFound(row[indexes.generalEmail]) : "";
+      const contactName = indexes.contactName >= 0 ? cleanFound(row[indexes.contactName]) : "";
+      const contactRole = indexes.contactRole >= 0 ? cleanFound(row[indexes.contactRole]) : "";
+      const contactLinkedin = indexes.contactLinkedin >= 0 ? cleanFound(row[indexes.contactLinkedin]) : "";
 
       return {
-        name: clean(row[indexes.name]),
-        country: indexes.country >= 0 ? clean(row[indexes.country]) : "",
-        industry: indexes.industry >= 0 ? clean(row[indexes.industry]) : "",
-        importance: indexes.importance >= 0 ? normalizeImportance(row[indexes.importance]) : "normal",
-        phone: indexes.phone >= 0 ? clean(row[indexes.phone]) : "",
-        website: indexes.website >= 0 ? clean(row[indexes.website]) : "",
-        logoUrl: indexes.logoUrl >= 0 ? clean(row[indexes.logoUrl]) : "",
+        name: cleanFound(row[indexes.name]),
+        country: indexes.country >= 0 ? cleanFound(row[indexes.country]) : fileHintsAustria ? "AT" : "",
+        industry: indexes.industry >= 0 ? cleanFound(row[indexes.industry]) : "",
+        importance: indexes.importance >= 0
+          ? normalizeImportance(row[indexes.importance])
+          : priorityClass ? normalizeImportance(priorityClass) : normalizeImportance(leadScore),
+        phone: indexes.phone >= 0 ? cleanFound(row[indexes.phone]) : "",
+        phoneStatus: indexes.phoneStatus >= 0 ? cleanFound(row[indexes.phoneStatus]) : "",
+        website: indexes.website >= 0 ? cleanFound(row[indexes.website]) : "",
+        logoUrl: indexes.logoUrl >= 0 ? cleanFound(row[indexes.logoUrl]) : "",
         status: indexes.status >= 0 ? normalizeStatus(row[indexes.status]) : "lead",
+        address: indexes.address >= 0 ? cleanFound(row[indexes.address]) : "",
+        leadSegment: indexes.segment >= 0 ? cleanFound(row[indexes.segment]) : "",
+        leadScore,
+        legacyLeadScore: indexes.legacyLeadScore >= 0 ? cleanFound(row[indexes.legacyLeadScore]) : "",
+        priorityClass,
+        productsSystems: indexes.productsSystems >= 0 ? cleanFound(row[indexes.productsSystems]) : "",
+        services: indexes.services >= 0 ? cleanFound(row[indexes.services]) : "",
+        targetMarkets: indexes.targetMarkets >= 0 ? cleanFound(row[indexes.targetMarkets]) : "",
+        websiteStatus: indexes.websiteStatus >= 0 ? cleanFound(row[indexes.websiteStatus]) : "",
+        websiteEvidence: indexes.websiteEvidence >= 0 ? cleanFound(row[indexes.websiteEvidence]) : "",
+        mainReason: indexes.mainReason >= 0 ? cleanFound(row[indexes.mainReason]) : "",
+        blockerRisk: indexes.blockerRisk >= 0 ? cleanFound(row[indexes.blockerRisk]) : "",
+        recommendedAction: indexes.recommendedAction >= 0 ? cleanFound(row[indexes.recommendedAction]) : "",
+        conversationStarter: indexes.conversationStarter >= 0 ? cleanFound(row[indexes.conversationStarter]) : "",
+        highRequirement: indexes.highRequirement >= 0 ? cleanFound(row[indexes.highRequirement]) : "",
+        mediumRequirement: indexes.mediumRequirement >= 0 ? cleanFound(row[indexes.mediumRequirement]) : "",
+        competitorSignal: indexes.competitorSignal >= 0 ? cleanFound(row[indexes.competitorSignal]) : "",
+        likelyParts: indexes.likelyParts >= 0 ? cleanFound(row[indexes.likelyParts]) : "",
+        dataQuality: indexes.dataQuality >= 0 ? cleanFound(row[indexes.dataQuality]) : "",
+        contactSource: indexes.contactSource >= 0 ? cleanFound(row[indexes.contactSource]) : "",
+        sources: indexes.sources >= 0 ? cleanFound(row[indexes.sources]) : "",
+        originalRow: indexes.originalRow >= 0 ? cleanFound(row[indexes.originalRow]) : "",
+        _importContact: (email || fallbackEmail || contactName || contactLinkedin) ? {
+          name: contactName || "Allgemeiner Kontakt",
+          role: contactRole || "Allgemein",
+          email: email || fallbackEmail,
+          phone: "",
+          linkedin: contactLinkedin,
+          notes: `Import: ${fileName}`
+        } : null,
         notes
       };
     }).filter((customer) => customer.name);
@@ -530,28 +680,65 @@
   function importCustomers(customers) {
     const data = window.OSM.data;
     data.customers = data.customers || [];
+    data.contacts = data.contacts || [];
     const existingByName = new Map(data.customers.map((customer) => [normalizeName(customer.name), customer]));
     let created = 0;
     let updated = 0;
+    let contactsCreated = 0;
+    let contactsUpdated = 0;
+    const importFields = [
+      "country", "industry", "importance", "phone", "website", "logoUrl", "status", "notes",
+      "address", "leadSegment", "leadScore", "legacyLeadScore", "priorityClass", "productsSystems",
+      "services", "targetMarkets", "phoneStatus", "websiteStatus", "websiteEvidence", "mainReason",
+      "blockerRisk", "recommendedAction", "conversationStarter", "highRequirement", "mediumRequirement",
+      "competitorSignal", "likelyParts", "dataQuality", "contactSource", "sources", "originalRow"
+    ];
 
     customers.forEach((customer) => {
+      const importContact = customer._importContact;
+      const customerData = Object.assign({}, customer);
+      delete customerData._importContact;
       const existing = existingByName.get(normalizeName(customer.name));
+      let savedCustomer;
       if (existing) {
         const next = Object.assign({}, existing);
-        ["country", "industry", "importance", "phone", "website", "logoUrl", "status", "notes"].forEach((key) => {
-          if (!next[key] && customer[key]) next[key] = customer[key];
+        importFields.forEach((key) => {
+          if (!next[key] && customerData[key]) next[key] = customerData[key];
         });
         window.OSM.state.upsert(data, "customers", next);
+        savedCustomer = next;
         updated += 1;
       } else {
-        const next = Object.assign({ id: window.OSM.state.uid("cus") }, customer);
+        const next = Object.assign({ id: window.OSM.state.uid("cus") }, customerData);
         window.OSM.state.upsert(data, "customers", next);
         existingByName.set(normalizeName(next.name), next);
+        savedCustomer = next;
         created += 1;
+      }
+
+      if (importContact && savedCustomer) {
+        const contactKey = importContact.email ? importContact.email.toLowerCase() : normalizeName(importContact.name);
+        const existingContact = (data.contacts || []).find((contact) => contact.customerId === savedCustomer.id && (
+          (importContact.email && String(contact.email || "").toLowerCase() === contactKey) ||
+          (!importContact.email && normalizeName(contact.name) === contactKey)
+        ));
+        const nextContact = Object.assign({}, existingContact || {}, {
+          id: existingContact ? existingContact.id : window.OSM.state.uid("con"),
+          customerId: savedCustomer.id,
+          role: existingContact && existingContact.role ? existingContact.role : importContact.role,
+          name: existingContact && existingContact.name ? existingContact.name : importContact.name,
+          email: existingContact && existingContact.email ? existingContact.email : importContact.email,
+          phone: existingContact && existingContact.phone ? existingContact.phone : importContact.phone,
+          linkedin: existingContact && existingContact.linkedin ? existingContact.linkedin : importContact.linkedin,
+          notes: existingContact && existingContact.notes ? existingContact.notes : importContact.notes
+        });
+        window.OSM.state.upsert(data, "contacts", nextContact);
+        if (existingContact) contactsUpdated += 1;
+        else contactsCreated += 1;
       }
     });
 
-    importMessage = `${created} neue Kunden importiert, ${updated} vorhandene Kunden geprüft.`;
+    importMessage = `${created} neue Kunden importiert, ${updated} vorhandene Kunden geprüft. ${contactsCreated} Kontakte angelegt, ${contactsUpdated} Kontakte geprüft.`;
     window.OSM.render();
   }
 
@@ -574,14 +761,18 @@
         <div class="customer-import-panel__text">
           <span class="kicker">Import</span>
           <h2>Kunden aus Excel oder CSV importieren</h2>
-          <p>Unterstützt werden XLSX, CSV, TSV und TXT. Erkannt werden u.a. Kundenname, Branche, Wichtigkeit, Telefon, Website, Status und Notizen.</p>
+          <p>Unterstützt werden XLSX, CSV, TSV und TXT. Erkannt werden u.a. Kundenname, Branche, Telefon, Website, Ansprechpartner, E-Mail, LinkedIn, Lead Score, Segment, Aktion, Gesprächseinstieg und Quellen.</p>
           <div class="import-chips">
             <span>Firma</span>
             <span>Branche</span>
             <span>Wichtigkeit</span>
             <span>Telefon</span>
+            <span>Ansprechpartner</span>
+            <span>LinkedIn</span>
+            <span>Lead Score</span>
+            <span>Segment</span>
+            <span>Quellen</span>
             <span>Status</span>
-            <span>Notizen</span>
           </div>
           ${importMessage ? `<div class="notice">${h.escapeHtml(importMessage)}</div>` : ""}
         </div>
@@ -665,6 +856,44 @@
     `;
   }
 
+  function renderLeadIntel(customer, h) {
+    const hasLeadIntel = [
+      "leadSegment", "leadScore", "priorityClass", "productsSystems", "services", "targetMarkets",
+      "address", "phoneStatus", "websiteStatus", "websiteEvidence", "mainReason", "blockerRisk", "recommendedAction",
+      "conversationStarter", "highRequirement", "mediumRequirement", "competitorSignal",
+      "likelyParts", "dataQuality", "contactSource", "sources"
+    ].some((key) => customer[key]);
+    if (!hasLeadIntel) return "";
+    return `
+      <section class="customer-section">
+        <h3>Lead-Qualifizierung</h3>
+        <div class="customer-value-grid customer-value-grid--lead">
+          ${valueRow("Segment", customer.leadSegment, h)}
+          ${valueRow("Lead Score", customer.leadScore, h)}
+          ${valueRow("Prio", customer.priorityClass, h)}
+          ${valueRow("Produkte / Systeme", customer.productsSystems, h)}
+          ${valueRow("Dienstleistungen", customer.services, h)}
+          ${valueRow("Zielmärkte", customer.targetMarkets, h)}
+          ${valueRow("Adresse", customer.address, h)}
+          ${valueRow("Telefon-Status", customer.phoneStatus, h)}
+          ${valueRow("Website-Status", customer.websiteStatus, h)}
+          ${valueRow("Website-Evidenz", customer.websiteEvidence, h)}
+          ${valueRow("Hauptgrund", customer.mainReason, h)}
+          ${valueRow("Blocker / Risiko", customer.blockerRisk, h)}
+          ${valueRow("Empfohlene Aktion", customer.recommendedAction, h)}
+          ${valueRow("Gesprächseinstieg", customer.conversationStarter, h)}
+          ${valueRow("Hohe Anforderung", customer.highRequirement, h)}
+          ${valueRow("Mittlere Anforderung", customer.mediumRequirement, h)}
+          ${valueRow("Wettbewerber/Eigenfertigung", customer.competitorSignal, h)}
+          ${valueRow("Wahrscheinliche Teile", customer.likelyParts, h)}
+          ${valueRow("DatenqualitÃ¤t", customer.dataQuality, h)}
+          ${valueRow("Kontaktquelle", customer.contactSource, h)}
+          ${valueRow("Quellen", customer.sources, h)}
+        </div>
+      </section>
+    `;
+  }
+
   function renderCustomerReadonly(customer, contacts, h) {
     return `
       <div class="customer-detail-read">
@@ -684,6 +913,7 @@
           ${valueRow("Land", customer.country, h)}
           ${valueRow("Website", customer.website, h)}
         </div>
+        ${renderLeadIntel(customer, h)}
         <section class="customer-section">
           <div class="customer-section__head">
             <h3>Kontakte</h3>
@@ -746,6 +976,99 @@
             <textarea name="notes" rows="4">${h.escapeHtml(customer.notes || "")}</textarea>
           </label>
         </div>
+        <section class="customer-section">
+          <h3>Lead-Qualifizierung / Importdaten</h3>
+          <div class="customer-form-grid customer-form-grid--lead">
+            <label>
+              <span>Segment</span>
+              <input name="leadSegment" value="${h.escapeHtml(customer.leadSegment || "")}" />
+            </label>
+            <label>
+              <span>Lead Score</span>
+              <input name="leadScore" value="${h.escapeHtml(customer.leadScore || "")}" />
+            </label>
+            <label>
+              <span>Prio</span>
+              <input name="priorityClass" value="${h.escapeHtml(customer.priorityClass || "")}" />
+            </label>
+            <label>
+              <span>Datenqualität</span>
+              <input name="dataQuality" value="${h.escapeHtml(customer.dataQuality || "")}" />
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Adresse</span>
+              <input name="address" value="${h.escapeHtml(customer.address || "")}" />
+            </label>
+            <label>
+              <span>Telefon-Status</span>
+              <input name="phoneStatus" value="${h.escapeHtml(customer.phoneStatus || "")}" />
+            </label>
+            <label>
+              <span>Website-Status</span>
+              <input name="websiteStatus" value="${h.escapeHtml(customer.websiteStatus || "")}" />
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Produkte / Systeme</span>
+              <textarea name="productsSystems" rows="2">${h.escapeHtml(customer.productsSystems || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Dienstleistungen</span>
+              <textarea name="services" rows="2">${h.escapeHtml(customer.services || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Zielmärkte</span>
+              <textarea name="targetMarkets" rows="2">${h.escapeHtml(customer.targetMarkets || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Wahrscheinliche Teile</span>
+              <textarea name="likelyParts" rows="2">${h.escapeHtml(customer.likelyParts || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Hauptgrund / Begründung</span>
+              <textarea name="mainReason" rows="2">${h.escapeHtml(customer.mainReason || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Blocker / Risiko</span>
+              <textarea name="blockerRisk" rows="2">${h.escapeHtml(customer.blockerRisk || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Empfohlene Aktion</span>
+              <textarea name="recommendedAction" rows="2">${h.escapeHtml(customer.recommendedAction || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Gesprächseinstieg</span>
+              <textarea name="conversationStarter" rows="2">${h.escapeHtml(customer.conversationStarter || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Hohe Anforderung erkannt</span>
+              <textarea name="highRequirement" rows="2">${h.escapeHtml(customer.highRequirement || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Mittlere Anforderung erkannt</span>
+              <textarea name="mediumRequirement" rows="2">${h.escapeHtml(customer.mediumRequirement || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Wettbewerber / Eigenfertigung</span>
+              <textarea name="competitorSignal" rows="2">${h.escapeHtml(customer.competitorSignal || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Website-Evidenz</span>
+              <textarea name="websiteEvidence" rows="2">${h.escapeHtml(customer.websiteEvidence || "")}</textarea>
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Kontaktquelle</span>
+              <input name="contactSource" value="${h.escapeHtml(customer.contactSource || "")}" />
+            </label>
+            <label class="customer-form-grid__wide">
+              <span>Quellen</span>
+              <textarea name="sources" rows="2">${h.escapeHtml(customer.sources || "")}</textarea>
+            </label>
+            <label>
+              <span>Original-Zeile</span>
+              <input name="originalRow" value="${h.escapeHtml(customer.originalRow || "")}" />
+            </label>
+          </div>
+        </section>
         <section class="customer-section">
           <div class="customer-section__head">
             <h3>Kontakte</h3>
@@ -902,7 +1225,6 @@
           <div class="sales-path-empty">
             <strong>Noch kein Vertriebsweg gestartet</strong>
             <span>Starte zum Beispiel LinkedIn, Telefon, E-Mail oder Direktkontakt für einen vorhandenen Kontakt.</span>
-            <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
           </div>
         `}
         ${renderSalesPathModal(customer, contacts, h)}
@@ -936,7 +1258,6 @@
               </div>
               <div class="sales-path-column__cards">
                 ${rows.length ? rows.map((path) => renderSalesPathCard(path, data, h)).join("") : `<div class="sales-path-column__empty">Keine Wege</div>`}
-                ${column.id === "not_started" ? `<button class="sales-path-add-inline" type="button" data-action="sales-path-open-modal">+ Neuer Weg</button>` : ""}
               </div>
             </section>
           `;
@@ -1259,16 +1580,39 @@
     const data = window.OSM.data;
     const id = form.dataset.customerId;
     const existing = window.OSM.state.findById(data, "customers", id) || { id };
+    const formValue = (name) => clean(form.elements[name] ? form.elements[name].value : "");
     const next = Object.assign({}, existing, {
-      name: clean(form.elements.name.value),
-      industry: clean(form.elements.industry.value),
-      importance: clean(form.elements.importance.value) || "normal",
-      status: clean(form.elements.status.value) || "lead",
-      phone: clean(form.elements.phone.value),
-      country: clean(form.elements.country.value),
-      website: clean(form.elements.website.value),
-      logoUrl: clean(form.elements.logoUrl.value),
-      notes: clean(form.elements.notes.value)
+      name: formValue("name"),
+      industry: formValue("industry"),
+      importance: formValue("importance") || "normal",
+      status: formValue("status") || "lead",
+      phone: formValue("phone"),
+      country: formValue("country"),
+      website: formValue("website"),
+      logoUrl: formValue("logoUrl"),
+      notes: formValue("notes"),
+      address: formValue("address"),
+      leadSegment: formValue("leadSegment"),
+      leadScore: formValue("leadScore"),
+      priorityClass: formValue("priorityClass"),
+      productsSystems: formValue("productsSystems"),
+      services: formValue("services"),
+      targetMarkets: formValue("targetMarkets"),
+      phoneStatus: formValue("phoneStatus"),
+      websiteStatus: formValue("websiteStatus"),
+      websiteEvidence: formValue("websiteEvidence"),
+      mainReason: formValue("mainReason"),
+      blockerRisk: formValue("blockerRisk"),
+      recommendedAction: formValue("recommendedAction"),
+      conversationStarter: formValue("conversationStarter"),
+      highRequirement: formValue("highRequirement"),
+      mediumRequirement: formValue("mediumRequirement"),
+      competitorSignal: formValue("competitorSignal"),
+      likelyParts: formValue("likelyParts"),
+      dataQuality: formValue("dataQuality"),
+      contactSource: formValue("contactSource"),
+      sources: formValue("sources"),
+      originalRow: formValue("originalRow")
     });
 
     if (!next.name) {
@@ -1580,6 +1924,13 @@
       { key: "country", label: "Land" },
       { key: "website", label: "Website" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "lead" },
+      { key: "leadSegment", label: "Lead-Segment" },
+      { key: "leadScore", label: "Lead Score" },
+      { key: "priorityClass", label: "Prio" },
+      { key: "address", label: "Adresse", wide: true },
+      { key: "productsSystems", label: "Produkte / Systeme", type: "textarea", wide: true },
+      { key: "likelyParts", label: "Wahrscheinliche Teile", type: "textarea", wide: true },
+      { key: "recommendedAction", label: "Empfohlene Aktion", type: "textarea", wide: true },
       { key: "notes", label: "Notizen", type: "textarea", wide: true }
     ],
     columns: [

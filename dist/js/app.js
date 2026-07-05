@@ -15,7 +15,7 @@
       id: "sales",
       title: "Vertrieb & CRM",
       links: [
-        ["area-sales", "Vertrieb & CRM"],
+        ["area-sales", "Übersicht"],
         ["customers", "Kunden"],
         ["rfqs", "RFQs / Anfragen"],
         ["offer-calculator", "Angebotsrechner"],
@@ -27,7 +27,7 @@
       id: "production",
       title: "Fertigung",
       links: [
-        ["area-production", "Fertigung"],
+        ["area-production", "Übersicht"],
         ["work-plans", "Arbeitsvorbereitung"],
         ["work-operations", "Arbeitsgänge"],
         ["production-orders", "Fertigungsaufträge"],
@@ -41,7 +41,7 @@
       id: "procurement",
       title: "Material / Einkauf",
       links: [
-        ["area-procurement", "Einkauf"],
+        ["area-procurement", "Übersicht"],
         ["materials", "Materialgruppen"],
         ["purchase-requests", "Materialbedarf"],
         ["suppliers", "Lieferanten"],
@@ -54,7 +54,7 @@
       id: "inventory",
       title: "Lager",
       links: [
-        ["area-inventory", "Lager"],
+        ["area-inventory", "Übersicht"],
         ["warehouse-locations", "Lagerorte"],
         ["stock-items", "Bestand"],
         ["stock-movements", "Bewegungen"],
@@ -65,7 +65,7 @@
       id: "quality",
       title: "Qualität",
       links: [
-        ["area-quality", "Qualität"],
+        ["area-quality", "Übersicht"],
         ["inspection-plans", "Prüfpläne"],
         ["first-article", "Erstteilfreigabe"],
         ["inspection-reports", "Messprotokolle"],
@@ -76,7 +76,7 @@
       id: "documents",
       title: "Dokumente / PDM",
       links: [
-        ["area-pdm", "PDM / Konstruktion"],
+        ["area-pdm", "Übersicht"],
         ["parts", "Teile"],
         ["part-revisions", "Revisionen"],
         ["files", "Dokumente"],
@@ -88,7 +88,7 @@
       id: "people",
       title: "Personal",
       links: [
-        ["area-people", "Personal"],
+        ["area-people", "Übersicht"],
         ["employees", "Mitarbeiter"],
         ["employee-skills", "Qualifikationen"],
         ["shifts", "Schichten"],
@@ -110,7 +110,7 @@
       links: [
         ["maps", "Karte / Maps"],
         ["module-map", "Berichte"],
-        ["area-logistics", "Logistik"],
+        ["area-logistics", "Übersicht"],
         ["deliveries", "Lieferstatus"]
       ]
     },
@@ -118,7 +118,7 @@
       id: "finance",
       title: "Finanzen",
       links: [
-        ["area-finance", "Finanzen"],
+        ["area-finance", "Übersicht"],
         ["cost-centers", "Kostenstellen"],
         ["invoices", "Rechnungen"],
         ["credit-notes", "Gutschriften"],
@@ -131,7 +131,7 @@
       id: "system",
       title: "System & Einstellungen",
       links: [
-        ["area-system", "System & Rechte"],
+        ["area-system", "Übersicht"],
         ["companies", "Gesellschaft"],
         ["users", "Benutzerprofile"],
         ["roles", "Rollen"],
