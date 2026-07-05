@@ -185,10 +185,13 @@
       </div>
       <div class="list">
         ${tasks.length ? tasks.map((task) => `
-          <a class="list-item list-item--link" href="#tasks">
-            <span class="list-item__title">${h.escapeHtml(h.displayText(task.title))}</span>
-            <span class="list-item__meta">${h.escapeHtml(h.label("users", task.assignedTo))} · ${h.escapeHtml(h.displayText(task.status))} · ${h.escapeHtml(task.dueDate || "kein Datum")}</span>
-          </a>
+          <div class="list-item list-item--task">
+            <a class="list-item__main" href="#tasks">
+              <span class="list-item__title">${h.escapeHtml(h.displayText(task.title))}</span>
+              <span class="list-item__meta">${h.escapeHtml(h.label("users", task.assignedTo))} · ${h.escapeHtml(h.displayText(task.status))} · ${h.escapeHtml(task.dueDate || "kein Datum")}</span>
+            </a>
+            <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
+          </div>
         `).join("") : `<div class="empty">Keine offenen Aufgaben.</div>`}
       </div>
     `;

@@ -97,17 +97,17 @@
                 <thead>
                   <tr>
                     ${this.columns.map((column) => `<th>${h.escapeHtml(column.label)}</th>`).join("")}
-                    <th></th>
+                    <th class="task-delete-col"></th>
                   </tr>
                 </thead>
                 <tbody>
                   ${rows.map((row) => `
-                    <tr>
+                    <tr class="task-row">
                       ${this.columns.map((column) => `<td>${column.render ? column.render(row, data, h) : h.escapeHtml(h.displayText(row[column.key]))}</td>`).join("")}
-                      <td>
-                        <div class="row-actions">
+                      <td class="task-row__actions">
+                        <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(row.id)}">&times;</button>
+                        <div class="row-actions task-row__edit-actions">
                           <button class="icon-button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(row.id)}">Bearbeiten</button>
-                          <button class="icon-button icon-button--danger" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(row.id)}">Löschen</button>
                         </div>
                       </td>
                     </tr>

@@ -1618,6 +1618,45 @@ tr:last-child td {
   justify-content: flex-end;
 }
 
+.task-delete-col {
+  width: 44px;
+}
+
+.task-row__actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 112px;
+}
+
+.task-row__edit-actions {
+  justify-content: flex-start;
+}
+
+.task-delete-x {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 700;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
+.task-delete-x:hover,
+.task-delete-x:focus-visible {
+  background: #fff1f1;
+  border-color: #f2b8b5;
+  color: var(--danger);
+}
+
 .icon-button {
   background: #ffffff;
   border: 1px solid var(--line-strong);
@@ -1686,6 +1725,20 @@ tr:last-child td {
 .list-item--link {
   color: inherit;
   display: block;
+  text-decoration: none;
+}
+
+.list-item--task {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.list-item__main {
+  color: inherit;
+  flex: 1;
+  min-width: 0;
   text-decoration: none;
 }
 
