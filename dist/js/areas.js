@@ -24,8 +24,8 @@
     {
       id: "sales",
       title: "Vertrieb & CRM",
-      description: "Kunden, Kontakte, RFQs, Angebotsrechner, Angebote und Aufträge.",
-      modules: ["customers", "contacts", "rfqs", "offer-calculator", "quotes", "orders"],
+      description: "Kundenakten mit integrierten Kontakten, RFQs, Angebotsrechner, Angebote und Aufträge.",
+      modules: ["customers", "rfqs", "offer-calculator", "quotes", "orders"],
       related: ["pdm", "production", "logistics", "finance"],
       metrics: [
         count("customers", "Kunden"),

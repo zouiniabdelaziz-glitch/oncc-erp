@@ -936,7 +936,7 @@
               </div>
               <div class="sales-path-column__cards">
                 ${rows.length ? rows.map((path) => renderSalesPathCard(path, data, h)).join("") : `<div class="sales-path-column__empty">Keine Wege</div>`}
-                <button class="sales-path-add-inline" type="button" data-action="sales-path-open-modal">+ Neuer Weg</button>
+                ${column.id === "not_started" ? `<button class="sales-path-add-inline" type="button" data-action="sales-path-open-modal">+ Neuer Weg</button>` : ""}
               </div>
             </section>
           `;

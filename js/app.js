@@ -17,7 +17,6 @@
       links: [
         ["area-sales", "Vertrieb & CRM"],
         ["customers", "Kunden"],
-        ["contacts", "Kontakte"],
         ["rfqs", "RFQs / Anfragen"],
         ["offer-calculator", "Angebotsrechner"],
         ["quotes", "Angebote"],
@@ -362,7 +361,7 @@
           <div class="sidebar-group__links" ${isCollapsed ? "hidden" : ""}>
             ${links.map(([id, labelText]) => {
               const module = OSM.modules.find((item) => item.id === id);
-              const active = id === activeId || (id.startsWith("area-") && id === `area-${activeArea}`);
+              const active = id === activeId;
               return `
                 <a class="sidebar-link ${active ? "is-active" : ""}" href="#${escapeHtml(id)}">
                   <span>${escapeHtml(module && module.icon ? module.icon : labelText.slice(0, 1))}</span>
