@@ -1003,11 +1003,14 @@
         </div>
         ${path.is_active === false ? `
           <div class="notice notice--plain">Dieser Weg ist abgeschlossen.</div>
-        ` : renderDecisionCard(path, card, h)}
-        <div class="sales-path-card__actions">
-          <button class="icon-button" type="button" data-action="sales-path-note" data-path-id="${h.escapeHtml(path.id)}">Notiz hinzufügen</button>
-          <button class="icon-button icon-button--danger" type="button" data-action="sales-path-complete" data-path-id="${h.escapeHtml(path.id)}">Weg abschließen</button>
-        </div>
+        ` : renderDecisionDropdown(path, card, h)}
+        <details class="sales-card-more">
+          <summary>Mehr</summary>
+          <div class="sales-card-more__menu">
+            <button class="icon-button" type="button" data-action="sales-path-note" data-path-id="${h.escapeHtml(path.id)}">Notiz hinzufügen</button>
+            <button class="icon-button icon-button--danger" type="button" data-action="sales-path-complete" data-path-id="${h.escapeHtml(path.id)}">Weg abschließen</button>
+          </div>
+        </details>
         ${renderSalesPathEvents(events, data, h)}
       </article>
     `;
@@ -1031,6 +1034,32 @@
             </button>
           `).join("")}
           <button class="button button--quiet" type="button" data-action="sales-path-note" data-path-id="${h.escapeHtml(path.id)}">Notiz</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderDecisionDropdown(path, card, h) {
+    const buttons = card.buttons || [];
+    const needsDate = buttons.some((button) => button.customDue);
+    return `
+      <section class="sales-decision-card sales-decision-card--dropdown">
+        <div class="sales-decision-card__title">${h.escapeHtml(card.title)}</div>
+        <div class="sales-decision-row">
+          <label class="sales-decision-select">
+            <span>Ergebnis / nächster Schritt</span>
+            <select data-action="sales-path-result-select" data-path-id="${h.escapeHtml(path.id)}">
+              <option value="">Bitte auswählen...</option>
+              ${buttons.map((button) => `<option value="${h.escapeHtml(button.key)}">${h.escapeHtml(button.label)}</option>`).join("")}
+            </select>
+          </label>
+          ${needsDate ? `
+            <label class="sales-decision-date">
+              <span>Fällig</span>
+              <input type="date" data-action="sales-path-custom-due" value="${h.escapeHtml(path.next_action_due || addDays(7))}" />
+            </label>
+          ` : ""}
+          <button class="button" type="button" data-action="sales-path-apply-result" data-path-id="${h.escapeHtml(path.id)}">Übernehmen</button>
         </div>
       </section>
     `;
@@ -1349,6 +1378,19 @@
         const card = resultButton.closest("[data-sales-path-card]");
         const dueInput = card ? card.querySelector("[data-action='sales-path-custom-due']") : null;
         applySalesPathResult(resultButton.dataset.pathId, resultButton.dataset.resultKey, dueInput ? dueInput.value : "");
+        return;
+      }
+
+      const applyResultButton = event.target.closest("[data-action='sales-path-apply-result']");
+      if (applyResultButton) {
+        const card = applyResultButton.closest("[data-sales-path-card]");
+        const select = card ? card.querySelector("[data-action='sales-path-result-select']") : null;
+        const dueInput = card ? card.querySelector("[data-action='sales-path-custom-due']") : null;
+        if (!select || !select.value) {
+          alert("Bitte zuerst ein Ergebnis auswählen.");
+          return;
+        }
+        applySalesPathResult(applyResultButton.dataset.pathId, select.value, dueInput ? dueInput.value : "");
         return;
       }
 

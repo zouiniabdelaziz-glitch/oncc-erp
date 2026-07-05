@@ -2487,9 +2487,99 @@ tr:last-child td {
   border-radius: 10px;
 }
 
+.sales-path-card--notion .sales-decision-card--dropdown {
+  padding: 10px;
+}
+
 .sales-path-card--notion .sales-decision-card__title {
   color: #2b2f33;
   font-size: 14px;
+}
+
+.sales-decision-row {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sales-decision-select,
+.sales-decision-card--dropdown .sales-decision-date {
+  display: grid;
+  gap: 5px;
+}
+
+.sales-decision-select span,
+.sales-decision-card--dropdown .sales-decision-date span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sales-decision-select select,
+.sales-decision-card--dropdown input[type="date"] {
+  background: #ffffff;
+  border: 1px solid #d9d6d0;
+  border-radius: 8px;
+  min-height: 36px;
+}
+
+.sales-decision-card--dropdown .button {
+  border-radius: 8px;
+  min-height: 34px;
+  width: 100%;
+}
+
+.sales-card-more {
+  border-top: 1px solid #edeae5;
+  padding-top: 6px;
+  position: relative;
+}
+
+.sales-card-more summary {
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 650;
+  list-style: none;
+  padding: 4px 7px;
+}
+
+.sales-card-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.sales-card-more summary::after {
+  content: "...";
+  letter-spacing: 1px;
+  margin-left: 5px;
+}
+
+.sales-card-more summary:hover {
+  background: #f5f4f1;
+  color: var(--blue-dark);
+}
+
+.sales-card-more__menu {
+  background: #ffffff;
+  border: 1px solid #e1ded8;
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(15, 31, 46, 0.12);
+  display: grid;
+  gap: 4px;
+  left: 0;
+  min-width: 170px;
+  padding: 6px;
+  position: absolute;
+  top: 34px;
+  z-index: 5;
+}
+
+.sales-card-more__menu .icon-button {
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .sales-path-card--notion .sales-decision-buttons .button {
@@ -2499,9 +2589,28 @@ tr:last-child td {
   padding: 5px 9px;
 }
 
+.sales-path-card__actions--compact {
+  border-top: 1px solid #edeae5;
+  padding-top: 8px;
+}
+
 .sales-path-card--notion .sales-path-card__actions .icon-button {
+  background: transparent;
+  border-color: transparent;
   border-radius: 8px;
+  color: var(--muted);
   font-size: 13px;
+  padding: 3px 6px;
+}
+
+.sales-path-card--notion .sales-path-card__actions .icon-button:hover {
+  background: #f5f4f1;
+  border-color: #e6e2dc;
+  color: var(--blue-dark);
+}
+
+.sales-path-card--notion .sales-path-card__actions .icon-button--danger {
+  color: #8a130f;
 }
 
 .sales-path-card--notion .sales-path-history {
