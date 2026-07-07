@@ -99,6 +99,21 @@
     const statusCount = (pathType, statuses) => paths.filter((path) =>
       (!pathType || path.path_type === pathType) && statuses.includes(path.status)
     ).length;
+    const customerName = (customerId) => {
+      const customer = (data.customers || []).find((item) => item.id === customerId);
+      return customer ? customer.name : "Kunde";
+    };
+    const nextItems = active
+      .filter((path) => path.next_action)
+      .sort((a, b) => String(a.next_action_due || "9999-12-31").localeCompare(String(b.next_action_due || "9999-12-31")))
+      .slice(0, 6)
+      .map((path) => ({
+        id: path.id,
+        customer: customerName(path.customer_id),
+        action: path.next_action,
+        due: path.next_action_due || "kein Datum",
+        type: path.path_type
+      }));
 
     return {
       active: active.length,
@@ -111,6 +126,7 @@
       requests: statusCount(null, ["Anfrage erhalten"]) + eventCount(null, ["Anfrage erhalten", "RFQ / Anfrage anlegen"]),
       meetings: statusCount(null, ["Termin geplant", "Termin gewünscht"]) + eventCount(null, ["Termin geplant", "Termin gewünscht"]),
       completed: completed.length,
+      nextItems,
       bars: [
         { label: "LinkedIn Anfrage gesendet", value: eventCount("linkedin", ["Kontaktanfrage gesendet"]) + statusCount("linkedin", ["Anfrage gesendet"]) },
         { label: "LinkedIn vernetzt", value: eventCount("linkedin", ["Ja, angenommen"]) + statusCount("linkedin", ["LinkedIn verbunden"]) },
@@ -153,6 +169,19 @@
           <span>${h.escapeHtml(stats.direct)} Direktkontakte aktiv</span>
           <span>${h.escapeHtml(stats.meetings)} Termine geplant/gewünscht</span>
           <span>${h.escapeHtml(stats.completed)} Wege abgeschlossen</span>
+        </div>
+        <div class="sales-next-list">
+          <div class="widget-subtitle">Nächste Vertriebsaufgaben</div>
+          <div class="list">
+            ${stats.nextItems.length ? stats.nextItems.map((item) => `
+              <a class="list-item list-item--task" href="#customers">
+                <span class="list-item__main">
+                  <span class="list-item__title">${h.escapeHtml(item.customer)}</span>
+                  <span class="list-item__meta">${h.escapeHtml(item.action)} · ${h.escapeHtml(item.due)} · ${h.escapeHtml(item.type)}</span>
+                </span>
+              </a>
+            `).join("") : `<div class="empty">Noch keine Vertriebsaufgaben angelegt.</div>`}
+          </div>
         </div>
       </div>
     `;

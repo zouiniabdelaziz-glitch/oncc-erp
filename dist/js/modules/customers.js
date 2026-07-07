@@ -2,6 +2,7 @@
   let customerSearch = "";
   let importMessage = "";
   let selectedCustomerId = "";
+  let customerDetailOpen = false;
   let editingCustomerId = "";
   let customerDetailTab = "profile";
   let customerSelectionMode = false;
@@ -842,7 +843,7 @@
     window.OSM.state.remove(data, "customers", customerId);
   }
 
-  function renderCustomerList(rows, selected, h) {
+  function renderCustomerList(rows, selected, data, h) {
     if (!rows.length) return `<div class="empty">Keine Kunden gefunden.</div>`;
     return `
       <div class="customer-list ${customerSelectionMode ? "customer-list--selecting" : ""}">
@@ -850,6 +851,8 @@
           const active = selected && selected.id === customer.id ? " is-active" : "";
           const checked = selectedCustomerIds.has(customer.id);
           const action = customerSelectionMode ? "toggle-customer-selection" : "select-customer";
+          const paths = salesPathsForCustomer(data, customer.id);
+          const activePathCount = paths.filter((path) => path.is_active !== false).length;
           return `
             <button class="customer-list-item${active} ${checked ? "is-selected" : ""}" type="button" data-action="${action}" data-id="${h.escapeHtml(customer.id)}">
               ${customerSelectionMode ? `
@@ -860,6 +863,7 @@
               <span class="customer-list-item__footer">
                 ${h.badge(customer.importance || "normal", importanceTone(customer.importance))}
                 ${h.badge(customer.status || "lead", h.toneForStatus(customer.status))}
+                ${h.badge(activePathCount ? `${activePathCount} Vertriebswege` : "ohne Vertriebsweg", activePathCount ? "ok" : "muted")}
               </span>
             </button>
           `;
@@ -1251,7 +1255,10 @@
             <span class="kicker">Vertriebswege</span>
             <h3>Wo stehen wir bei diesem Kunden?</h3>
           </div>
-          <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
+          <div class="sales-path-head-actions">
+            <button class="button button--quiet" type="button" data-action="sales-path-create-defaults">Standardwege erstellen</button>
+            <button class="button" type="button" data-action="sales-path-open-modal">+ Weg hinzufügen</button>
+          </div>
         </div>
         <div class="sales-path-viewbar">
           <span class="sales-path-viewbar__item is-active">Board</span>
@@ -1474,6 +1481,55 @@
     return path;
   }
 
+  function ensureDefaultSalesContact(data, customer) {
+    data.contacts = data.contacts || [];
+    const existing = data.contacts.find((contact) =>
+      contact.customerId === customer.id && contact.id && !String(contact.id).startsWith("draft_")
+    );
+    if (existing) return existing;
+
+    const contact = {
+      id: window.OSM.state.uid("con"),
+      customerId: customer.id,
+      role: "Allgemein",
+      name: "Allgemeiner Kontakt",
+      email: "",
+      phone: customer.phone || "",
+      linkedin: "",
+      notes: "Automatisch angelegt, damit Vertriebsaufgaben vorbereitet werden können."
+    };
+    window.OSM.state.upsert(data, "contacts", contact);
+    return contact;
+  }
+
+  function createDefaultSalesPaths(data, customerId) {
+    ensureSalesCollections(data);
+    const customer = window.OSM.state.findById(data, "customers", customerId);
+    if (!customer) return { created: 0, skipped: 0 };
+
+    const contact = ensureDefaultSalesContact(data, customer);
+    const existingTypes = new Set(
+      (data.sales_paths || [])
+        .filter((path) => path.customer_id === customerId)
+        .map((path) => path.path_type)
+    );
+    const pathTypes = ["linkedin", "phone", contact.email ? "email" : "direct_contact"];
+    let created = 0;
+    let skipped = 0;
+
+    pathTypes.forEach((pathType) => {
+      if (existingTypes.has(pathType)) {
+        skipped += 1;
+        return;
+      }
+      createSalesPath(data, customerId, contact.id, pathType, "Automatisch vorbereiteter Vertriebsweg");
+      existingTypes.add(pathType);
+      created += 1;
+    });
+
+    return { created, skipped };
+  }
+
   function addSalesPathEvent(data, path, result, note, nextAction, nextDue, cardTitleOverride) {
     ensureSalesCollections(data);
     const card = salesPathCards[path.active_card] || salesPathCards.closed;
@@ -1577,7 +1633,7 @@
     return (data[collection] || []).filter((item) => item.customerId === customerId).length;
   }
 
-  function renderSelectedCustomer(customer, data, h) {
+  function renderSelectedCustomer(customer, data, h, fullPage = false) {
     if (!customer) {
       return `
         <section class="customer-detail-panel">
@@ -1590,13 +1646,15 @@
     const paths = salesPathsForCustomer(data, customer.id);
     const editing = editingCustomerId === customer.id;
     return `
-      <section class="customer-detail-panel">
+      <section class="customer-detail-panel${fullPage ? " customer-detail-panel--full" : ""}">
         <div class="customer-detail-toolbar">
           <div>
             <span class="kicker">Kundenakte</span>
             <h2>${h.escapeHtml(customer.name || "Neuer Kunde")}</h2>
           </div>
           <div class="customer-detail-actions">
+            <button class="button button--quiet" type="button" data-action="customer-back-list">Zurück zur Liste</button>
+            <button class="button button--quiet" type="button" data-action="sales-path-create-defaults">Vertriebsaufgaben erstellen</button>
             <button class="button" type="button" data-action="customer-save" ${editing ? "" : "disabled"}>Speichern</button>
             <button class="button button--quiet" type="button" data-action="customer-edit">Bearbeiten</button>
             <button class="button button--quiet" type="button" data-action="customer-archive">Archivieren</button>
@@ -1687,6 +1745,7 @@
     });
 
     selectedCustomerId = id;
+    customerDetailOpen = true;
     editingCustomerId = options.keepEditing ? id : "";
     if (!options.keepExtraSlots) extraContactSlots[id] = 0;
     if (options.renderAfter !== false) window.OSM.render();
@@ -1708,6 +1767,7 @@
     };
     window.OSM.state.upsert(window.OSM.data, "customers", customer);
     selectedCustomerId = id;
+    customerDetailOpen = true;
     editingCustomerId = id;
     window.OSM.render();
   }
@@ -1729,6 +1789,14 @@
         customerSelectionMode = false;
         selectedCustomerIds.clear();
         createCustomer();
+        return;
+      }
+
+      if (event.target.closest("[data-action='customer-back-list']")) {
+        customerDetailOpen = false;
+        editingCustomerId = "";
+        salesPathModalOpen = false;
+        window.OSM.render();
         return;
       }
 
@@ -1762,7 +1830,9 @@
         selectedCustomerIds.clear();
         customerSelectionMode = false;
         selectedCustomerId = "";
+        customerDetailOpen = false;
         editingCustomerId = "";
+        salesPathModalOpen = false;
         window.OSM.render();
         return;
       }
@@ -1780,7 +1850,9 @@
       if (selectButton) {
         if (customerSelectionMode) return;
         selectedCustomerId = selectButton.dataset.id;
+        customerDetailOpen = true;
         editingCustomerId = "";
+        customerDetailTab = "profile";
         salesPathModalOpen = false;
         window.OSM.render();
         return;
@@ -1790,6 +1862,19 @@
       if (tabButton) {
         customerDetailTab = tabButton.dataset.tab || "profile";
         salesPathModalOpen = false;
+        window.OSM.render();
+        return;
+      }
+
+      if (event.target.closest("[data-action='sales-path-create-defaults']")) {
+        if (!selectedCustomerId) return;
+        const result = createDefaultSalesPaths(window.OSM.data, selectedCustomerId);
+        customerDetailOpen = true;
+        customerDetailTab = "salesPaths";
+        salesPathModalOpen = false;
+        if (!result.created) {
+          alert("Für diesen Kunden sind die Standard-Vertriebswege bereits vorhanden.");
+        }
         window.OSM.render();
         return;
       }
@@ -1921,7 +2006,9 @@
         removeCustomerCascade(window.OSM.data, selectedCustomerId);
         selectedCustomerIds.delete(selectedCustomerId);
         selectedCustomerId = "";
+        customerDetailOpen = false;
         editingCustomerId = "";
+        salesPathModalOpen = false;
         window.OSM.render();
       }
     });
@@ -2030,10 +2117,12 @@
       selectedCustomerIds.forEach((id) => {
         if (!allCustomers.some((customer) => customer.id === id)) selectedCustomerIds.delete(id);
       });
-      if (!selectedCustomerId || !allCustomers.some((customer) => customer.id === selectedCustomerId)) {
-        selectedCustomerId = rows[0] ? rows[0].id : "";
+      if (selectedCustomerId && !allCustomers.some((customer) => customer.id === selectedCustomerId)) {
+        selectedCustomerId = "";
+        customerDetailOpen = false;
       }
       const selected = allCustomers.find((customer) => customer.id === selectedCustomerId);
+      const showDetail = customerDetailOpen && selected;
 
       if (sessionStorage.getItem("osmCustomerImportFocus") === "1") {
         sessionStorage.removeItem("osmCustomerImportFocus");
@@ -2046,6 +2135,31 @@
         }, 0);
       }
 
+      if (showDetail) {
+        return `
+          <div class="topbar">
+            <div>
+              <div class="breadcrumb">
+                <a href="#dashboard">Hauptseite</a>
+                <span>/</span>
+                <a href="#area-sales">Vertrieb & CRM</a>
+                <span>/</span>
+                <button class="link-button" type="button" data-action="customer-back-list">Kunden</button>
+              </div>
+              <h1 class="topbar__title">${h.escapeHtml(selected.name || "Kundenakte")}</h1>
+              <p class="topbar__text">Kundenakte mit Kontakten, Notizen, Vertriebswegen und nächster Aufgabe.</p>
+            </div>
+            <div class="page-actions">
+              <button class="button button--quiet" type="button" data-action="customer-back-list">Zurück zur Kundenliste</button>
+              <button class="button" type="button" data-action="customer-new">+ Neuer Kunde</button>
+            </div>
+          </div>
+          <div class="customer-detail-page">
+            ${renderSelectedCustomer(selected, data, h, true)}
+          </div>
+        `;
+      }
+
       return `
         <div class="topbar">
           <div>
@@ -2055,7 +2169,7 @@
               <a href="#area-sales">Vertrieb & CRM</a>
             </div>
             <h1 class="topbar__title">Kunden</h1>
-            <p class="topbar__text">Kundenliste links, vollständige Kundenakte rechts: Firma, Kontakte, Logo, Notizen und Historie über Speichern.</p>
+            <p class="topbar__text">Alle Kunden als klare Liste. Ein Klick öffnet die Kundenakte als eigene Ansicht.</p>
           </div>
           <div class="page-actions">
             <a class="button button--quiet" href="#area-sales">Zurück</a>
@@ -2063,8 +2177,8 @@
           </div>
         </div>
         ${renderImportPanel(h)}
-        <div class="customer-workspace">
-          <section class="customer-list-panel">
+        <div class="customer-list-page">
+          <section class="customer-list-panel customer-list-panel--full">
             <div class="customer-list-panel__head">
               <div>
                 <span class="kicker">Übersicht</span>
@@ -2074,9 +2188,8 @@
             </div>
             ${renderCustomerSelectionBar(rows, h)}
             <input class="search customer-search" data-action="customer-search" value="${h.escapeHtml(customerSearch)}" placeholder="Kunden suchen..." />
-            ${renderCustomerList(rows, selected, h)}
+            ${renderCustomerList(rows, null, data, h)}
           </section>
-          ${renderSelectedCustomer(selected, data, h)}
         </div>
       `;
     }
