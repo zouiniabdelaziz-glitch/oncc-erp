@@ -22,6 +22,7 @@
     "Einkauf",
     "Lager",
     "Qualität",
+    "Marketing / SEO",
     "Personal",
     "Finanzen",
     "System"
@@ -87,6 +88,199 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return new Date(`${task.dueDate}T00:00:00`) < today;
+  }
+
+  function seoImportPackage() {
+    return window.OSM_SEO_TASK_IMPORT && Array.isArray(window.OSM_SEO_TASK_IMPORT.tasks)
+      ? window.OSM_SEO_TASK_IMPORT
+      : null;
+  }
+
+  function seoImportedTasks(data) {
+    const pack = seoImportPackage();
+    if (!pack) return [];
+    return (data.tasks || []).filter((task) => task.sourcePackage === pack.id || String(task.id || "").startsWith("tsk_seo_"));
+  }
+
+  function mapSeoStatus(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (["erledigt", "done", "fertig", "abgeschlossen"].includes(normalized)) return "erledigt";
+    if (["in arbeit", "in bearbeitung", "läuft", "laufend"].includes(normalized)) return "in arbeit";
+    if (["wartet", "waiting"].includes(normalized)) return "wartet";
+    if (["blockiert", "blocked"].includes(normalized)) return "blockiert";
+    return "neu";
+  }
+
+  function mapSeoPriority(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized.includes("sehr hoch") || normalized.includes("kritisch")) return "kritisch";
+    if (normalized.includes("hoch")) return "hoch";
+    if (normalized.includes("niedrig")) return "niedrig";
+    return "mittel";
+  }
+
+  function responsibleUserId(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized.includes("mohammed")) return "usr_mohammed";
+    if (normalized.includes("abdelaziz")) return "usr_abdelaziz";
+    return currentUserId();
+  }
+
+  function joinSections(sections) {
+    return sections
+      .filter((section) => section && section.value)
+      .map((section) => `${section.label}: ${section.value}`)
+      .join("\n\n");
+  }
+
+  function ensureSeoProject(data) {
+    data.projects = data.projects || [];
+    const existing = data.projects.find((project) => project.id === "pro_seo_website_100");
+    const next = {
+      id: "pro_seo_website_100",
+      name: "SEO Website 100-%-Plan",
+      customerId: "cus_internal",
+      status: "aktiv",
+      priority: "hoch",
+      owner: "OS.MECHPLAST",
+      progress: 0,
+      notes: "Importiert aus OSMECHPLAST_SEO_100_Prozent_Plan.xlsx."
+    };
+    if (existing) {
+      Object.assign(existing, next);
+      return;
+    }
+    data.projects.push(next);
+  }
+
+  function buildSeoTask(source, existing) {
+    const description = joinSections([
+      { label: "Kategorie", value: [source.level1, source.level2, source.level3].filter(Boolean).join(" / ") },
+      { label: "Audit-Befund", value: source.auditFinding },
+      { label: "Ziel / Abnahmekriterium", value: source.acceptance },
+      { label: "Umsetzungsschritte", value: source.steps }
+    ]);
+    const notes = joinSections([
+      { label: "SEO Task-ID", value: source.sourceTaskId },
+      { label: "Prompt-ID", value: source.promptId },
+      { label: "Abhängigkeit", value: source.dependency },
+      { label: "Gewicht am Gesamtplan", value: source.weight },
+      { label: "Nachweis / Ergebnis", value: source.proof },
+      { label: "Quelle", value: "OSMECHPLAST_SEO_100_Prozent_Plan.xlsx" },
+      { label: "Notizen", value: source.notes }
+    ]);
+    const comments = source.codexPrompt
+      ? joinSections([
+        { label: "Codex-Prompt", value: source.codexPrompt },
+        { label: "Erwartete Abschlussausgabe", value: source.expectedOutput }
+      ])
+      : existing && existing.comments || "";
+
+    return Object.assign({}, existing || {}, {
+      id: source.id,
+      title: source.title,
+      description,
+      area: "Marketing / SEO",
+      priority: existing && existing.priority ? existing.priority : mapSeoPriority(source.priority),
+      status: existing && existing.status ? existing.status : mapSeoStatus(source.excelStatus),
+      assignedTo: existing && existing.assignedTo ? existing.assignedTo : responsibleUserId(source.responsible),
+      createdBy: existing && existing.createdBy ? existing.createdBy : currentUserId(),
+      projectId: "pro_seo_website_100",
+      customerId: existing && existing.customerId ? existing.customerId : "cus_internal",
+      orderId: existing && existing.orderId ? existing.orderId : "",
+      dueDate: existing && existing.dueDate ? existing.dueDate : "",
+      comments: existing && existing.comments ? existing.comments : comments,
+      notes,
+      sourcePackage: "osmechplast-seo-100-plan",
+      sourceTaskId: source.sourceTaskId,
+      sourcePromptId: source.promptId,
+      sourceLevel1: source.level1,
+      sourceLevel2: source.level2,
+      sourceLevel3: source.level3,
+      sourceWeight: source.weight
+    });
+  }
+
+  function importSeoTasks() {
+    const pack = seoImportPackage();
+    if (!pack) {
+      alert("SEO-Importpaket wurde nicht gefunden.");
+      return;
+    }
+
+    const data = window.OSM.data;
+    const now = new Date().toISOString();
+    const userName = window.OSM.state.currentUser(data);
+    let created = 0;
+    let updated = 0;
+    data.tasks = data.tasks || [];
+    ensureSeoProject(data);
+
+    pack.tasks.forEach((source) => {
+      const index = data.tasks.findIndex((task) => task.id === source.id || task.sourceTaskId === source.sourceTaskId);
+      const existing = index >= 0 ? data.tasks[index] : null;
+      const next = Object.assign(buildSeoTask(source, existing), {
+        createdAt: existing && existing.createdAt ? existing.createdAt : now,
+        updatedAt: now,
+        updatedBy: userName,
+        importedAt: existing && existing.importedAt ? existing.importedAt : now
+      });
+      if (!existing) {
+        next.history = [
+          `${new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "short" }).format(new Date(now))} ${userName}: aus SEO-Excel-Plan importiert`,
+          next.history || ""
+        ].filter(Boolean).join("\n");
+        data.tasks.push(next);
+        created += 1;
+      } else {
+        data.tasks[index] = next;
+        updated += 1;
+      }
+    });
+
+    data.auditLogs = data.auditLogs || [];
+    data.auditLogs.unshift({
+      id: window.OSM.state.uid("aud"),
+      timestamp: now,
+      user: userName,
+      collection: "tasks",
+      recordId: pack.id,
+      action: "importiert",
+      summary: `SEO-Plan importiert/aktualisiert: ${created} neu, ${updated} aktualisiert`
+    });
+    data.auditLogs = data.auditLogs.slice(0, 250);
+    window.OSM.state.save(data, { summary: `SEO-Plan importiert/aktualisiert: ${created} neu, ${updated} aktualisiert` });
+    areaFilter = "Marketing / SEO";
+    alert(`SEO-Plan importiert.\nNeu: ${created}\nAktualisiert: ${updated}`);
+  }
+
+  function renderSeoImportPanel(data, h) {
+    const pack = seoImportPackage();
+    if (!pack) return "";
+    const imported = seoImportedTasks(data);
+    const done = imported.filter((task) => task.status === "erledigt").length;
+    const open = imported.filter((task) => task.status !== "erledigt").length;
+    const progress = imported.length ? Math.round((done / imported.length) * 100) : 0;
+    const label = imported.length ? "SEO-Plan aktualisieren" : "SEO-Plan importieren";
+
+    return `
+      <section class="task-import-panel">
+        <div class="task-import-panel__main">
+          <span class="task-import-panel__eyebrow">Importpaket</span>
+          <strong>${h.escapeHtml(pack.title)}</strong>
+          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, Zuständigem, Historie und Dashboard-Zählung.</span>
+        </div>
+        <div class="task-import-panel__stats" aria-label="SEO Import Status">
+          <span><strong>${h.escapeHtml(imported.length)}</strong> im ERP</span>
+          <span><strong>${h.escapeHtml(open)}</strong> offen</span>
+          <span><strong>${h.escapeHtml(progress)}%</strong> erledigt</span>
+        </div>
+        <div class="task-import-panel__actions">
+          <button class="button" type="button" data-seo-import>${h.escapeHtml(label)}</button>
+          ${imported.length ? `<button class="button button--quiet" type="button" data-seo-filter>SEO-Aufgaben anzeigen</button>` : ""}
+        </div>
+      </section>
+    `;
   }
 
   function sortedTasks(rows) {
@@ -228,6 +422,20 @@
         const statusField = document.querySelector('[data-form-module="tasks"] [name="status"]');
         if (statusField) statusField.value = defaultStatus;
       }, 0);
+      return;
+    }
+
+    const seoImportButton = event.target.closest("[data-seo-import]");
+    if (seoImportButton) {
+      importSeoTasks();
+      refresh();
+      return;
+    }
+
+    const seoFilterButton = event.target.closest("[data-seo-filter]");
+    if (seoFilterButton) {
+      areaFilter = "Marketing / SEO";
+      refresh();
     }
   });
 
@@ -314,6 +522,8 @@
             <span><strong>${mine}</strong> für mich</span>
             <span class="${blocked ? "is-critical" : ""}"><strong>${blocked}</strong> blockiert</span>
           </div>
+
+          ${renderSeoImportPanel(data, h)}
 
           <div class="notion-task-toolbar">
             <div class="notion-view-tabs" role="tablist" aria-label="Aufgabenansicht">

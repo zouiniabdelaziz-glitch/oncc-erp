@@ -3608,6 +3608,70 @@ body[data-sidebar="erp"] .main {
   color: var(--danger);
 }
 
+.task-import-panel {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e3e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+}
+
+.task-import-panel__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.task-import-panel__main strong {
+  color: #1f2933;
+  font-size: 15px;
+}
+
+.task-import-panel__main span:last-child {
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.task-import-panel__eyebrow {
+  color: #8a8f98;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.task-import-panel__stats {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.task-import-panel__stats span {
+  background: #f5f7f9;
+  border: 1px solid #e6eaee;
+  border-radius: 999px;
+  color: #53606c;
+  font-size: 12px;
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.task-import-panel__stats strong {
+  color: #172b4d;
+}
+
+.task-import-panel__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
 .notion-task-toolbar {
   align-items: center;
   border-bottom: 1px solid #e7e6e3;
@@ -4102,9 +4166,20 @@ body[data-sidebar="erp"] .main {
   }
 
   .notion-task-titlebar,
-  .notion-task-toolbar {
+  .notion-task-toolbar,
+  .task-import-panel {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .task-import-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .task-import-panel__stats,
+  .task-import-panel__actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .notion-task-titlebar h1 {
