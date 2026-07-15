@@ -83,6 +83,219 @@
     }).format(date);
   }
 
+  function escapeHtml(value) {
+    const helpers = window.OSM && window.OSM.helpers;
+    if (helpers && helpers.escapeHtml) return helpers.escapeHtml(value);
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function displayText(value) {
+    const helpers = window.OSM && window.OSM.helpers;
+    return helpers && helpers.displayText ? helpers.displayText(value) : String(value ?? "");
+  }
+
+  function label(collection, id, field) {
+    const helpers = window.OSM && window.OSM.helpers;
+    const value = helpers && helpers.label ? helpers.label(collection, id, field) : "-";
+    return value && value !== "-" ? value : id || "-";
+  }
+
+  function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  const detailSectionLabels = [
+    "Kategorie",
+    "Audit-Befund",
+    "Ziel / Abnahmekriterium",
+    "Umsetzungsschritte",
+    "SEO Task-ID",
+    "Prompt-ID",
+    "Abhängigkeit",
+    "Gewicht am Gesamtplan",
+    "Nachweis / Ergebnis",
+    "Quelle",
+    "Notizen",
+    "Codex-Prompt",
+    "Erwartete Abschlussausgabe"
+  ];
+
+  function splitKnownSections(value) {
+    const text = String(value || "").replace(/\r\n/g, "\n").trim();
+    if (!text) return [];
+    const markers = [];
+    detailSectionLabels.forEach((labelText) => {
+      const re = new RegExp(`(?:^|\\n\\n)${escapeRegExp(labelText)}:\\s*`, "g");
+      let match = re.exec(text);
+      while (match) {
+        markers.push({
+          label: labelText,
+          index: match.index + (match[0].startsWith("\n\n") ? 2 : 0),
+          valueStart: match.index + match[0].length
+        });
+        match = re.exec(text);
+      }
+    });
+    if (!markers.length) return [{ label: "", value: text }];
+    markers.sort((left, right) => left.index - right.index);
+    return markers.map((marker, index) => ({
+      label: marker.label,
+      value: text.slice(marker.valueStart, markers[index + 1] ? markers[index + 1].index : text.length).trim()
+    })).filter((section) => section.value);
+  }
+
+  function sectionValue(sections, labelText) {
+    const section = sections.find((item) => item.label === labelText);
+    return section ? section.value : "";
+  }
+
+  function renderTextBlock(value) {
+    if (!value) return `<p class="task-detail-empty">Noch keine Information gespeichert.</p>`;
+    return `<pre class="task-detail-pre">${escapeHtml(value)}</pre>`;
+  }
+
+  function renderDetailFields(sections, fallback) {
+    if (!sections.length && !fallback) return `<p class="task-detail-empty">Noch keine Information gespeichert.</p>`;
+    if (!sections.length) return renderTextBlock(fallback);
+    return sections.map((section) => `
+      <div class="task-detail-field">
+        ${section.label ? `<span>${escapeHtml(section.label)}</span>` : ""}
+        <p>${escapeHtml(section.value)}</p>
+      </div>
+    `).join("");
+  }
+
+  function renderDetailGroup(title, content, open) {
+    return `
+      <details class="task-detail-group" ${open ? "open" : ""}>
+        <summary>${escapeHtml(title)}</summary>
+        <div class="task-detail-group__body">${content}</div>
+      </details>
+    `;
+  }
+
+  function promptForTask(task) {
+    const commentSections = splitKnownSections(task.comments);
+    return sectionValue(commentSections, "Codex-Prompt") || task.codexPrompt || task.comments || "";
+  }
+
+  function closeTaskDetail() {
+    const modal = document.querySelector("[data-task-detail-modal]");
+    if (modal) modal.remove();
+  }
+
+  function openTaskDetail(taskId) {
+    const data = window.OSM.data;
+    const task = (data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    closeTaskDetail();
+
+    const descriptionSections = splitKnownSections(task.description);
+    const noteSections = splitKnownSections(task.notes);
+    const commentSections = splitKnownSections(task.comments);
+    const taskPrompt = promptForTask(task);
+    const expectedOutput = sectionValue(commentSections, "Erwartete Abschlussausgabe");
+    const title = displayText(task.title || "Ohne Titel");
+    const assignee = label("users", task.assignedTo);
+    const creator = label("users", task.createdBy);
+    const project = task.projectId ? label("projects", task.projectId) : "";
+    const customer = task.customerId ? label("customers", task.customerId) : "";
+    const order = task.orderId ? label("orders", task.orderId, "orderNo") : "";
+
+    const meta = [
+      ["Status", statusLabel(task.status)],
+      ["Priorität", displayText(task.priority || "mittel")],
+      ["Bereich", task.area || "Management"],
+      ["Zuständig", assignee],
+      ["Fällig", formatDate(task.dueDate)],
+      ["Erstellt von", creator],
+      ["Projekt", project],
+      ["Kunde", customer],
+      ["Auftrag", order],
+      ["SEO Task-ID", task.sourceTaskId || ""],
+      ["Prompt-ID", task.sourcePromptId || ""]
+    ].filter((item) => item[1] && item[1] !== "-");
+
+    const promptContent = taskPrompt
+      ? `<pre class="task-detail-prompt">${escapeHtml(taskPrompt)}</pre>`
+      : `<p class="task-detail-empty">Für diese Aufgabe ist noch kein Prompt gespeichert.</p>`;
+
+    const html = `
+      <div class="task-detail-backdrop" data-task-detail-modal>
+        <article class="task-detail-modal" role="dialog" aria-modal="true" aria-label="Aufgabe Details">
+          <header class="task-detail-head">
+            <div>
+              <span class="task-detail-kicker">${escapeHtml(task.area || "Aufgabe")}</span>
+              <h2>${escapeHtml(title)}</h2>
+            </div>
+            <button class="icon-button" type="button" data-task-detail-close>Schließen</button>
+          </header>
+
+          <div class="task-detail-actions">
+            <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
+            <button class="button button--quiet" type="button" data-task-prompt-copy="${escapeHtml(task.id)}">Prompt kopieren</button>
+          </div>
+
+          <div class="task-detail-meta">
+            ${meta.map(([key, value]) => `
+              <div>
+                <span>${escapeHtml(key)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `).join("")}
+          </div>
+
+          ${renderDetailGroup("Arbeitsinformationen", renderDetailFields(descriptionSections, task.description), true)}
+          ${renderDetailGroup("Prompt für Codex", `
+            ${promptContent}
+            ${expectedOutput ? `<div class="task-detail-field task-detail-field--compact"><span>Erwartete Abschlussausgabe</span><p>${escapeHtml(expectedOutput)}</p></div>` : ""}
+          `, true)}
+          ${renderDetailGroup("Nachweis, Quelle und Notizen", renderDetailFields(noteSections, task.notes), false)}
+          ${renderDetailGroup("Kommentarverlauf", renderDetailFields(commentSections.filter((section) => !["Codex-Prompt", "Erwartete Abschlussausgabe"].includes(section.label)), task.comments), false)}
+          ${renderDetailGroup("Historie", renderTextBlock(task.history), false)}
+        </article>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", html);
+  }
+
+  async function copyTaskPrompt(taskId) {
+    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    const taskPrompt = promptForTask(task);
+    const text = taskPrompt || [
+      task.title,
+      task.description,
+      task.notes,
+      task.comments
+    ].filter(Boolean).join("\n\n");
+    if (!text) {
+      alert("Für diese Aufgabe ist noch kein Prompt gespeichert.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Prompt wurde kopiert.");
+    } catch (error) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+      alert("Prompt wurde kopiert.");
+    }
+  }
+
   function isOverdue(task) {
     if (!task.dueDate || task.status === "erledigt") return false;
     const today = new Date();
@@ -308,7 +521,7 @@
     return `
       <article class="notion-task-card ${isOverdue(task) ? "is-overdue" : ""}">
         <div class="notion-task-card__head">
-          <button class="notion-task-card__title" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(task.id)}">
+          <button class="notion-task-card__title" type="button" data-task-detail="${h.escapeHtml(task.id)}">
             ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
           </button>
           <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
@@ -378,7 +591,7 @@
                   return `
                     <tr>
                       <td>
-                        <button class="notion-task-title-link" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(task.id)}">
+                        <button class="notion-task-title-link" type="button" data-task-detail="${h.escapeHtml(task.id)}">
                           <span class="notion-check">${task.status === "erledigt" ? "✓" : ""}</span>
                           ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
                         </button>
@@ -401,6 +614,40 @@
   }
 
   document.addEventListener("click", (event) => {
+    const detailButton = event.target.closest("[data-task-detail]");
+    if (detailButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openTaskDetail(detailButton.dataset.taskDetail);
+      return;
+    }
+
+    const closeDetailButton = event.target.closest("[data-task-detail-close]");
+    if (closeDetailButton || event.target.matches("[data-task-detail-modal]")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeTaskDetail();
+      return;
+    }
+
+    const editDetailButton = event.target.closest("[data-task-detail-edit]");
+    if (editDetailButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const taskId = editDetailButton.dataset.taskDetailEdit;
+      closeTaskDetail();
+      if (window.OSM.openForm) window.OSM.openForm("tasks", taskId);
+      return;
+    }
+
+    const copyPromptButton = event.target.closest("[data-task-prompt-copy]");
+    if (copyPromptButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      copyTaskPrompt(copyPromptButton.dataset.taskPromptCopy);
+      return;
+    }
+
     const target = event.target.closest("[data-task-view]");
     if (target) {
       localStorage.setItem(viewStorageKey(), target.dataset.taskView);
