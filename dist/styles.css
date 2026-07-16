@@ -4146,6 +4146,12 @@ body[data-sidebar="erp"] .main {
   color: #40576a;
 }
 
+.task-property--step {
+  background: #eef4fb;
+  color: #1f5f96;
+  font-weight: 800;
+}
+
 .task-property--hoch,
 .task-property--kritisch {
   background: #f6dddd;

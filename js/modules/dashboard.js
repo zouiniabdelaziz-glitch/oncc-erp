@@ -199,11 +199,34 @@
     `;
   }
 
+  function taskPlanOrder(task) {
+    const explicit = Number(task.sourceOrder || task.sourceSequence || task.planOrder || 0);
+    if (Number.isFinite(explicit) && explicit > 0) return explicit;
+    const candidates = [task.sourceTaskId, task.sourcePromptId, task.id].filter(Boolean);
+    for (const value of candidates) {
+      const match = String(value).match(/(?:seo|prompt)[-_ ]?(\d{1,5})/i);
+      if (match) return Number(match[1]);
+    }
+    return null;
+  }
+
+  function compareTasks(left, right) {
+    const leftPlanOrder = taskPlanOrder(left);
+    const rightPlanOrder = taskPlanOrder(right);
+    if (leftPlanOrder !== null && rightPlanOrder !== null && leftPlanOrder !== rightPlanOrder) {
+      return leftPlanOrder - rightPlanOrder;
+    }
+    if (leftPlanOrder !== null && rightPlanOrder === null && !right.dueDate) return -1;
+    if (leftPlanOrder === null && rightPlanOrder !== null && !left.dueDate) return 1;
+    return String(left.dueDate || "9999-12-31").localeCompare(String(right.dueDate || "9999-12-31")) ||
+      String(left.title || "").localeCompare(String(right.title || ""), "de");
+  }
+
   function renderTasks(data, h) {
     const currentUserId = userId(data);
     const tasks = (data.tasks || [])
       .filter((task) => task.status !== "erledigt")
-      .sort((a, b) => String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")))
+      .sort(compareTasks)
       .slice(0, 6);
     const ownCount = (data.tasks || []).filter((task) => task.assignedTo === currentUserId && task.status !== "erledigt").length;
     return `

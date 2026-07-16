@@ -303,6 +303,17 @@
     return new Date(`${task.dueDate}T00:00:00`) < today;
   }
 
+  function taskPlanOrder(task) {
+    const explicit = Number(task.sourceOrder || task.sourceSequence || task.planOrder || 0);
+    if (Number.isFinite(explicit) && explicit > 0) return explicit;
+    const candidates = [task.sourceTaskId, task.sourcePromptId, task.id].filter(Boolean);
+    for (const value of candidates) {
+      const match = String(value).match(/(?:seo|prompt)[-_ ]?(\d{1,5})/i);
+      if (match) return Number(match[1]);
+    }
+    return null;
+  }
+
   function seoImportPackage() {
     return window.OSM_SEO_TASK_IMPORT && Array.isArray(window.OSM_SEO_TASK_IMPORT.tasks)
       ? window.OSM_SEO_TASK_IMPORT
@@ -410,7 +421,12 @@
       sourceLevel1: source.level1,
       sourceLevel2: source.level2,
       sourceLevel3: source.level3,
-      sourceWeight: source.weight
+      sourceWeight: source.weight,
+      sourceOrder: taskPlanOrder({
+        sourceTaskId: source.sourceTaskId,
+        sourcePromptId: source.promptId,
+        id: source.id
+      })
     });
   }
 
@@ -498,6 +514,13 @@
 
   function sortedTasks(rows) {
     return rows.slice().sort((left, right) => {
+      const leftPlanOrder = taskPlanOrder(left);
+      const rightPlanOrder = taskPlanOrder(right);
+      if (leftPlanOrder !== null && rightPlanOrder !== null && leftPlanOrder !== rightPlanOrder) {
+        return leftPlanOrder - rightPlanOrder;
+      }
+      if (leftPlanOrder !== null && rightPlanOrder === null && !right.dueDate) return -1;
+      if (leftPlanOrder === null && rightPlanOrder !== null && !left.dueDate) return 1;
       if (!left.dueDate && !right.dueDate) return String(left.title || "").localeCompare(String(right.title || ""), "de");
       if (!left.dueDate) return 1;
       if (!right.dueDate) return -1;
@@ -528,6 +551,7 @@
         </div>
         ${task.description ? `<p class="notion-task-card__description">${h.escapeHtml(task.description)}</p>` : ""}
         <div class="notion-task-card__properties">
+          ${task.sourceTaskId ? `<span class="task-property task-property--step">${h.escapeHtml(task.sourceTaskId)}</span>` : ""}
           <span class="task-property task-property--area">${h.escapeHtml(task.area || "Management")}</span>
           <span class="task-property task-property--${h.escapeHtml(task.priority || "mittel")}">${h.escapeHtml(h.displayText(task.priority || "mittel"))}</span>
           ${customer && customer !== "-" ? `<span class="task-property">${h.escapeHtml(customer)}</span>` : ""}
