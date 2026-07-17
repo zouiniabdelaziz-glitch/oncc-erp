@@ -289,11 +289,9 @@
             </div>
             <div class="top-shellbar__right">
               <div class="user-switch" data-region="current-user-control"></div>
-              <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
-              <span class="save-status" data-save-status>Lokal</span>
-              <button class="shellbar__tool" type="button" data-action="check-update">Update</button>
-              <span class="update-status" data-update-status>Update</span>
-              <a class="shellbar__tool" href="#settings">System</a>
+              <span class="save-status" data-save-status>Gespeichert</span>
+              <button class="shellbar__tool" type="button" data-action="check-update" data-update-button>Update prüfen</button>
+              <span class="update-status" data-update-status>System aktuell</span>
             </div>
           </header>
           <main class="main" data-region="content"></main>
@@ -379,12 +377,11 @@
     const region = document.querySelector('[data-region="current-user-control"]');
     if (!region) return;
     const currentId = OSM.state.currentUserId(OSM.data);
-    const meta = OSM.data && OSM.data.meta ? OSM.data.meta : {};
+    const auth = OSM.state.authenticatedUserInfo ? OSM.state.authenticatedUserInfo() : {};
     const currentUser = OSM.state.currentUserRecord(OSM.data);
-    if (meta.authenticatedSessionActive && meta.authenticatedEmail && meta.authenticatedUserId && meta.authenticatedUserMissing !== true) {
+    if (auth.active && auth.userId && auth.missing !== true) {
       region.innerHTML = `
-        <span>Benutzer</span>
-        <div class="user-switch__locked" title="${escapeHtml(meta.authenticatedEmail)}">
+        <div class="user-switch__locked" title="${escapeHtml(auth.email || "")}">
           <strong>${escapeHtml(currentUser.name)}</strong>
           <small>${escapeHtml(currentUser.roleName || "Super Admin")}</small>
         </div>
@@ -393,7 +390,6 @@
     }
 
     region.innerHTML = `
-      <span>Benutzer</span>
       <select data-action="current-user" aria-label="Aktueller Benutzer">
         ${(OSM.data.users || []).map((user) => `
           <option value="${escapeHtml(user.id)}" ${user.id === currentId ? "selected" : ""}>
@@ -421,11 +417,11 @@
   }
 
   function renderAuthNotice() {
-    const meta = OSM.data && OSM.data.meta ? OSM.data.meta : {};
-    if (!meta.authenticatedEmail || !meta.authenticatedUserMissing) return "";
+    const auth = OSM.state.authenticatedUserInfo ? OSM.state.authenticatedUserInfo() : {};
+    if (!auth.active || !auth.email || !auth.missing) return "";
     return `
       <div class="notice notice--warn auth-notice">
-        Cloudflare-Login erkannt: ${escapeHtml(meta.authenticatedEmail)}. Diese E-Mail ist noch keinem ERP-Benutzer zugeordnet.
+        Cloudflare-Login erkannt: ${escapeHtml(auth.email)}. Diese E-Mail ist noch keinem ERP-Benutzer zugeordnet.
         Bitte unter System & Einstellungen > Benutzerprofile beim passenden Benutzer in "Login-E-Mail (Cloudflare)" eintragen.
       </div>
     `;
@@ -573,18 +569,35 @@
 
   function updateUpdateStatus() {
     const element = document.querySelector("[data-update-status]");
+    const button = document.querySelector("[data-update-button]");
     if (!element) return;
     const updater = window.OSM_UPDATE;
     const info = updater && updater.status ? updater.status() : { state: "idle", message: "Update" };
     element.className = `update-status update-status--${escapeHtml(info.state || "idle")}`;
     if (info.state === "available") {
       element.textContent = "Update verfügbar";
+      if (button) {
+        button.textContent = "Update installieren";
+        button.dataset.action = "apply-update";
+      }
     } else if (info.state === "checking") {
-      element.textContent = "Prüfe...";
+      element.textContent = "Prüfe Update...";
+      if (button) {
+        button.textContent = "Prüfe...";
+        button.dataset.action = "check-update";
+      }
     } else if (info.state === "error") {
       element.textContent = "Update Fehler";
+      if (button) {
+        button.textContent = "Update erneut prüfen";
+        button.dataset.action = "check-update";
+      }
     } else {
-      element.textContent = "Aktuell";
+      element.textContent = "System aktuell";
+      if (button) {
+        button.textContent = "Update prüfen";
+        button.dataset.action = "check-update";
+      }
     }
     element.title = info.message || "";
   }

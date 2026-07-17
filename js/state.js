@@ -13,6 +13,14 @@
     version: 0,
     updatedBy: ""
   };
+  let authSession = {
+    active: false,
+    email: "",
+    userId: "",
+    userName: "",
+    roleName: "",
+    missing: false
+  };
 
   const superAdminPermissions = {
     read: true,
@@ -711,9 +719,13 @@
     }
 
     const meta = ensureMeta(data);
-    if (!data.users.some((user) => user.id === meta.currentUser)) {
-      meta.currentUser = "usr_abdelaziz";
-    }
+    delete meta.currentUser;
+    delete meta.authenticatedSessionActive;
+    delete meta.authenticatedEmail;
+    delete meta.authenticatedName;
+    delete meta.authenticatedAt;
+    delete meta.authenticatedUserMissing;
+    delete meta.authenticatedUserId;
     meta.dashboardLayouts = meta.dashboardLayouts || {};
     Object.keys(defaultDashboardLayouts).forEach((userId) => {
       if (!Array.isArray(meta.dashboardLayouts[userId])) {
@@ -925,8 +937,6 @@
   function currentUserId(data) {
     const localUser = localActiveUserId();
     if (isKnownUser(data, localUser)) return localUser;
-    const metaUser = data.meta && data.meta.currentUser ? data.meta.currentUser : "";
-    if (isKnownUser(data, metaUser)) return metaUser;
     return "usr_abdelaziz";
   }
 
@@ -939,7 +949,6 @@
     const user = (data.users || []).find((item) => item.id === userId);
     if (!user) return false;
     const meta = ensureMeta(data);
-    meta.currentUser = user.id;
     meta.lastLocalUserSwitchAt = new Date().toISOString();
     setLocalActiveUserId(user.id);
     if (options.cloud === true) {
@@ -994,37 +1003,48 @@
     }
   }
 
+  function setAuthSession(next) {
+    authSession = Object.assign({
+      active: false,
+      email: "",
+      userId: "",
+      userName: "",
+      roleName: "",
+      missing: false
+    }, next || {});
+  }
+
+  function authenticatedUserInfo() {
+    return Object.assign({}, authSession);
+  }
+
   async function applyAuthenticatedUser(data) {
     const payload = await loadAuthenticatedIdentity();
     const identity = payload && payload.identity ? payload.identity : payload;
     const email = normalizeEmail(identity && identity.email);
     if (!email) {
-      const meta = ensureMeta(data);
-      meta.authenticatedSessionActive = false;
-      saveLocalOnly(data);
+      setAuthSession({ active: false });
       return { ok: false, reason: "no-email" };
     }
 
-    const meta = ensureMeta(data);
-    meta.authenticatedSessionActive = true;
-    meta.authenticatedEmail = email;
-    meta.authenticatedName = identity.name || "";
-    meta.authenticatedAt = new Date().toISOString();
-
     const matchedUser = userForEmail(data, email);
     if (!matchedUser) {
-      meta.authenticatedUserMissing = true;
-      saveLocalOnly(data);
+      setAuthSession({ active: true, email, missing: true });
       return { ok: false, reason: "no-user-match", email };
     }
 
-    meta.authenticatedUserMissing = false;
-    meta.authenticatedUserId = matchedUser.id;
+    setAuthSession({
+      active: true,
+      email,
+      userId: matchedUser.id,
+      userName: matchedUser.name,
+      roleName: matchedUser.roleName || "Super Admin",
+      missing: false
+    });
     if (currentUserId(data) !== matchedUser.id) {
       setCurrentUser(data, matchedUser.id, { cloud: false });
     } else {
       setLocalActiveUserId(matchedUser.id);
-      saveLocalOnly(data);
     }
 
     return { ok: true, email, userId: matchedUser.id, userName: matchedUser.name };
@@ -1329,6 +1349,7 @@
       currentUserRecord,
       setCurrentUser,
       applyAuthenticatedUser,
+      authenticatedUserInfo,
       permissionsForCurrentUser,
       upsert,
       remove,

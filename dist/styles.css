@@ -3305,6 +3305,7 @@ body[data-sidebar="erp"] {
   display: flex;
   gap: 8px;
   min-height: 34px;
+  min-width: 160px;
   padding: 0 10px;
 }
 
@@ -3316,6 +3317,10 @@ body[data-sidebar="erp"] {
 .user-switch__locked small {
   color: var(--muted);
   font-size: 12px;
+}
+
+.top-shellbar__right .save-status {
+  white-space: nowrap;
 }
 
 body[data-sidebar="erp"] .main {
