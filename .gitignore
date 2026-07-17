@@ -1,0 +1,21 @@
+# Local browser/test profiles
+preview-profile/
+
+# Dependencies and local tooling
+node_modules/
+.wrangler/
+
+# Local secrets/config
+.env
+.env.*
+wrangler.toml
+
+# Generated packages/backups
+*.zip
+*.7z
+*.bak
+
+# Operating system files
+Thumbs.db
+Desktop.ini
+.DS_Store
