@@ -14,6 +14,13 @@
     { value: "kritisch", label: "Kritisch" }
   ];
 
+  const documentationTypeOptions = [
+    { value: "notiz", label: "Notiz" },
+    { value: "vorgehensweise", label: "Vorgehensweise" },
+    { value: "loesung", label: "Lösung" },
+    { value: "ergebnis", label: "Ergebnis / Test" }
+  ];
+
   const areaOptions = [
     "Management",
     "Vertrieb",
@@ -81,6 +88,18 @@
       month: "short",
       year: "numeric"
     }).format(date);
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "";
+    try {
+      return new Intl.DateTimeFormat("de-DE", {
+        dateStyle: "short",
+        timeStyle: "short"
+      }).format(new Date(value));
+    } catch (error) {
+      return value;
+    }
   }
 
   function escapeHtml(value) {
@@ -179,6 +198,36 @@
     `;
   }
 
+  function documentationTypeLabel(value) {
+    const option = documentationTypeOptions.find((item) => item.value === value);
+    return option ? option.label : displayText(value || "Notiz");
+  }
+
+  function taskDocumentation(task) {
+    return Array.isArray(task.workLog) ? task.workLog.slice() : [];
+  }
+
+  function renderDocumentationEntries(task) {
+    const entries = taskDocumentation(task)
+      .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+    if (!entries.length) {
+      return `<p class="task-detail-empty">Noch keine Dokumentation gespeichert. Füge hier Vorgehensweise, Lösung oder Testergebnis hinzu.</p>`;
+    }
+    return `
+      <div class="task-doc-list">
+        ${entries.map((entry) => `
+          <article class="task-doc-entry">
+            <div class="task-doc-entry__head">
+              <span class="task-doc-entry__type">${escapeHtml(documentationTypeLabel(entry.type))}</span>
+              <span>${escapeHtml(entry.createdBy || "-")} · ${escapeHtml(formatDateTime(entry.createdAt))}</span>
+            </div>
+            <p>${escapeHtml(entry.text || "")}</p>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
   function promptForTask(task) {
     const commentSections = splitKnownSections(task.comments);
     return sectionValue(commentSections, "Codex-Prompt") || task.codexPrompt || task.comments || "";
@@ -186,6 +235,11 @@
 
   function closeTaskDetail() {
     const modal = document.querySelector("[data-task-detail-modal]");
+    if (modal) modal.remove();
+  }
+
+  function closeTaskDocumentationForm() {
+    const modal = document.querySelector("[data-task-doc-modal]");
     if (modal) modal.remove();
   }
 
@@ -238,6 +292,7 @@
 
           <div class="task-detail-actions">
             <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
+            <button class="button" type="button" data-task-doc-add="${escapeHtml(task.id)}">Notiz / Lösung hinzufügen</button>
             <button class="button button--quiet" type="button" data-task-prompt-copy="${escapeHtml(task.id)}">Prompt kopieren</button>
           </div>
 
@@ -255,6 +310,7 @@
             ${promptContent}
             ${expectedOutput ? `<div class="task-detail-field task-detail-field--compact"><span>Erwartete Abschlussausgabe</span><p>${escapeHtml(expectedOutput)}</p></div>` : ""}
           `, true)}
+          ${renderDetailGroup("Dokumentation / Vorgehensweise", renderDocumentationEntries(task), true)}
           ${renderDetailGroup("Nachweis, Quelle und Notizen", renderDetailFields(noteSections, task.notes), false)}
           ${renderDetailGroup("Kommentarverlauf", renderDetailFields(commentSections.filter((section) => !["Codex-Prompt", "Erwartete Abschlussausgabe"].includes(section.label)), task.comments), false)}
           ${renderDetailGroup("Historie", renderTextBlock(task.history), false)}
@@ -263,6 +319,69 @@
     `;
 
     document.body.insertAdjacentHTML("beforeend", html);
+  }
+
+  function openTaskDocumentationForm(taskId) {
+    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    closeTaskDocumentationForm();
+    const html = `
+      <div class="task-doc-backdrop" data-task-doc-modal>
+        <form class="task-doc-modal" data-task-doc-form="${escapeHtml(task.id)}">
+          <div class="task-doc-modal__head">
+            <div>
+              <span>Aufgabe dokumentieren</span>
+              <strong>${escapeHtml(displayText(task.title || "Ohne Titel"))}</strong>
+            </div>
+            <button class="icon-button" type="button" data-task-doc-close>Schließen</button>
+          </div>
+          <label class="task-doc-field">
+            <span>Was ist das?</span>
+            <select name="type">
+              ${documentationTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="task-doc-field">
+            <span>Notiz, Vorgehensweise, Lösung oder Ergebnis</span>
+            <textarea name="text" rows="8" required placeholder="Beschreibe kurz, was du geplant, geändert, getestet oder entschieden hast."></textarea>
+          </label>
+          <div class="task-doc-actions">
+            <button type="button" class="button button--quiet" data-task-doc-close>Abbrechen</button>
+            <button type="submit" class="button">Speichern</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", html);
+    const textarea = document.querySelector('[data-task-doc-form] textarea[name="text"]');
+    if (textarea) textarea.focus();
+  }
+
+  function saveTaskDocumentation(form) {
+    const taskId = form.dataset.taskDocForm;
+    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    const text = String(form.elements.text.value || "").trim();
+    if (!text) return;
+    const type = form.elements.type.value || "notiz";
+    const userName = window.OSM.state.currentUser(window.OSM.data);
+    const entry = {
+      id: window.OSM.state.uid("tdoc"),
+      type,
+      text,
+      createdAt: new Date().toISOString(),
+      createdBy: userName,
+      createdById: currentUserId()
+    };
+    const nextWorkLog = taskDocumentation(task).concat(entry);
+    window.OSM.state.upsert(window.OSM.data, "tasks", {
+      id: task.id,
+      workLog: nextWorkLog
+    });
+    closeTaskDocumentationForm();
+    closeTaskDetail();
+    refresh();
+    requestAnimationFrame(() => openTaskDetail(task.id));
   }
 
   async function copyTaskPrompt(taskId) {
@@ -554,6 +673,7 @@
           ${task.sourceTaskId ? `<span class="task-property task-property--step">${h.escapeHtml(task.sourceTaskId)}</span>` : ""}
           <span class="task-property task-property--area">${h.escapeHtml(task.area || "Management")}</span>
           <span class="task-property task-property--${h.escapeHtml(task.priority || "mittel")}">${h.escapeHtml(h.displayText(task.priority || "mittel"))}</span>
+          ${taskDocumentation(task).length ? `<span class="task-property task-property--doc">${h.escapeHtml(taskDocumentation(task).length)} Doku</span>` : ""}
           ${customer && customer !== "-" ? `<span class="task-property">${h.escapeHtml(customer)}</span>` : ""}
         </div>
         <div class="notion-task-card__foot">
@@ -672,6 +792,22 @@
       return;
     }
 
+    const addDocumentationButton = event.target.closest("[data-task-doc-add]");
+    if (addDocumentationButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openTaskDocumentationForm(addDocumentationButton.dataset.taskDocAdd);
+      return;
+    }
+
+    const closeDocumentationButton = event.target.closest("[data-task-doc-close]");
+    if (closeDocumentationButton || event.target.matches("[data-task-doc-modal]")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeTaskDocumentationForm();
+      return;
+    }
+
     const target = event.target.closest("[data-task-view]");
     if (target) {
       localStorage.setItem(viewStorageKey(), target.dataset.taskView);
@@ -730,6 +866,14 @@
       status: event.target.value
     });
     refresh();
+  });
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target.closest("[data-task-doc-form]");
+    if (!form) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    saveTaskDocumentation(form);
   });
 
   window.OSM.registerModule({
