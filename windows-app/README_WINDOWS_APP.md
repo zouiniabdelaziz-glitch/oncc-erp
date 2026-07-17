@@ -5,26 +5,37 @@ Diese Windows-App ist eine installierte App-Verknüpfung auf die Cloudflare-Vers
 `https://oncc-erp.pages.dev`
 
 Sie öffnet das ERP in einem eigenen Fenster über Microsoft Edge oder Google Chrome.
-Die Verknüpfung nutzt das OSMP-App-Icon, nicht das Browser-Icon.
+Die Verknüpfung nutzt ein eigenes Browserprofil:
 
-## Updates
+`%LOCALAPPDATA%\ONCC ERP\BrowserProfile`
 
-Die Windows-App ist nur der Zugang. Der aktuelle ERP-Code kommt aus Cloudflare Pages.
+Damit wird die ERP-Anmeldung nicht mehr mit dem normalen Edge-/Chrome-Konto gemischt.
 
-Wenn Abdelaziz neuen Code zu GitHub/Cloudflare veröffentlicht, sieht Mohammed beim nächsten Start automatisch die neue Version. Für normale ERP-Updates muss die Windows-App nicht neu installiert werden.
+## Wichtig bei Abdelaziz und Mohammed
 
-## Installieren
+Jeder Benutzer meldet sich über Cloudflare Access mit seiner eigenen E-Mail an.
 
-Im Projektordner ausführen:
+- Abdelaziz-Mail zeigt Abdelaziz Dashboard.
+- Mohammed-Mail zeigt Mohammed Dashboard.
+- Falsche oder unbekannte Mail zeigt `Login nicht verbunden`.
+
+Wenn oben im ERP die falsche E-Mail steht, im ERP auf `Konto wechseln` klicken und danach mit der richtigen Cloudflare-E-Mail anmelden.
+
+## Einmalige Korrektur der bestehenden Verknüpfung
+
+Wenn die App schon vorher installiert war, einmal ausführen:
 
 ```powershell
 .\INSTALL_ONCC_ERP_WINDOWS.cmd
 ```
 
-Danach gibt es:
+Das ist keine neue ERP-Installation. Es aktualisiert nur die Windows-Verknüpfung auf das eigene ERP-Browserprofil.
 
-- Desktop-Verknüpfung `ONCC ERP`
-- Startmenü-Eintrag `ONCC ERP`
+## Updates
+
+Die Windows-App ist nur der Zugang. Der aktuelle ERP-Code kommt aus Cloudflare Pages.
+
+Wenn neuer Code zu GitHub/Cloudflare veröffentlicht wird, sieht Mohammed beim nächsten Start oder nach `Update prüfen` die neue Version. Für normale ERP-Updates muss die Windows-App nicht neu installiert werden.
 
 ## Direkt starten
 
@@ -51,7 +62,3 @@ Google Drive ist sinnvoll für:
 - Backups
 
 Google Drive ist nicht die Hauptdatenbank.
-
-## Nächster Schritt zur echten EXE
-
-Wenn später eine vollständig paketierte `.exe` gebraucht wird, bauen wir auf dieser Struktur eine Electron- oder Tauri-App. Dafür müssen dann einmal die Windows-Build-Abhängigkeiten installiert werden.

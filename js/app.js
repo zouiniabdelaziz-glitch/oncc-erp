@@ -382,8 +382,11 @@
     if (auth.active && auth.userId && auth.missing !== true) {
       region.innerHTML = `
         <div class="user-switch__locked" title="${escapeHtml(auth.email || "")}">
-          <strong>${escapeHtml(currentUser.name)}</strong>
-          <small>${escapeHtml(currentUser.roleName || "Super Admin")}</small>
+          <div class="user-switch__identity">
+            <strong>${escapeHtml(currentUser.name)}</strong>
+            <small>${escapeHtml(auth.email || currentUser.roleName || "Cloudflare Login")}</small>
+          </div>
+          <button class="shellbar__tool shellbar__tool--small" type="button" data-action="switch-account">Konto wechseln</button>
         </div>
       `;
       return;
@@ -392,8 +395,11 @@
     if (auth.active && auth.missing) {
       region.innerHTML = `
         <div class="user-switch__locked user-switch__locked--warn" title="${escapeHtml(auth.email || "")}">
-          <strong>Nicht zugeordnet</strong>
-          <small>${escapeHtml(auth.email || "Cloudflare Login")}</small>
+          <div class="user-switch__identity">
+            <strong>Nicht zugeordnet</strong>
+            <small>${escapeHtml(auth.email || "Cloudflare Login")}</small>
+          </div>
+          <button class="shellbar__tool shellbar__tool--small" type="button" data-action="switch-account">Konto wechseln</button>
         </div>
       `;
       return;
@@ -590,6 +596,7 @@
     if (action === "refresh-cloud") refreshCloud();
     if (action === "check-update") checkUpdate();
     if (action === "apply-update") applyUpdate();
+    if (action === "switch-account") switchAccount();
     if (action === "export-data") exportData();
     if (action === "import-data") document.getElementById("import-file").click();
     if (action === "reset-demo") resetDemoData();
@@ -611,6 +618,13 @@
       return;
     }
     window.OSM_UPDATE.apply();
+  }
+
+  function switchAccount() {
+    if (OSM.state.clearLocalUserPreference) {
+      OSM.state.clearLocalUserPreference();
+    }
+    window.location.href = `${window.location.origin}/cdn-cgi/access/logout`;
   }
 
   function updateUpdateStatus() {

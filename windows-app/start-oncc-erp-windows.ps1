@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $AppUrl = "https://oncc-erp.pages.dev"
+$ProfileDir = Join-Path $env:LOCALAPPDATA "ONCC ERP\BrowserProfile"
 
 $candidates = @(
   "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
@@ -14,5 +15,14 @@ if (!$browser) {
   throw "Microsoft Edge oder Google Chrome wurde nicht gefunden."
 }
 
+if (!(Test-Path -LiteralPath $ProfileDir)) {
+  New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
+}
+
 $launchUrl = "$AppUrl/?desktop=windows&launch=$(Get-Date -Format 'yyyyMMddHHmmss')"
-Start-Process -FilePath $browser -ArgumentList "--app=$launchUrl"
+$arguments = @(
+  "--user-data-dir=`"$ProfileDir`"",
+  "--profile-directory=Default",
+  "--app=`"$launchUrl`""
+)
+Start-Process -FilePath $browser -ArgumentList $arguments

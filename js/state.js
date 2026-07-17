@@ -949,6 +949,14 @@
     }
   }
 
+  function clearLocalUserPreference() {
+    try {
+      localStorage.removeItem(ACTIVE_USER_KEY);
+    } catch (error) {
+      // The Cloudflare login remains the authority when local storage is blocked.
+    }
+  }
+
   function isKnownUser(data, userId) {
     return !!(userId && (data.users || []).some((user) => user.id === userId));
   }
@@ -1408,6 +1416,7 @@
       currentUserId,
       currentUserRecord,
       setCurrentUser,
+      clearLocalUserPreference,
       applyAuthenticatedUser,
       authenticatedUserInfo,
       permissionsForCurrentUser,

@@ -3305,23 +3305,43 @@ body[data-sidebar="erp"] {
   display: flex;
   gap: 8px;
   min-height: 34px;
-  min-width: 160px;
+  min-width: 230px;
   padding: 0 10px;
+}
+
+.user-switch__identity {
+  display: grid;
+  line-height: 1.15;
+  min-width: 0;
 }
 
 .user-switch__locked strong {
   color: var(--ink);
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-switch__locked small {
   color: var(--muted);
   font-size: 12px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-switch__locked--warn {
   background: #fff8e6;
   border-color: #f0c66c;
+}
+
+.shellbar__tool--small {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 4px 8px;
+  white-space: nowrap;
 }
 
 .auth-block {
