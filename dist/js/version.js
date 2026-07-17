@@ -1,7 +1,7 @@
 ﻿(function () {
   window.OSM_APP_VERSION = {
     name: "ONCC ERP / OS.MECHPLAST Workspace",
-    version: "2026.07.17-dashboard-tasks.1",
+    version: "2026.07.17-user-lock.1",
     releaseDate: "2026-07-17",
     appUrl: "https://oncc-erp.pages.dev",
     deployment: "Cloudflare Pages",

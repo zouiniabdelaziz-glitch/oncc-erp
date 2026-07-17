@@ -1,7 +1,7 @@
 (function () {
   const defaultLayouts = {
-    usr_abdelaziz: ["overview", "salesFunnel", "tasks", "sales", "capacity", "audit", "quickLinks"],
-    usr_mohammed: ["overview", "salesFunnel", "tasks", "production", "quality", "map", "quickLinks"]
+    usr_abdelaziz: ["overview", "salesFunnel", "tasks", "teamProgress", "sales", "capacity", "audit", "quickLinks"],
+    usr_mohammed: ["overview", "salesFunnel", "tasks", "teamProgress", "production", "quality", "map", "quickLinks"]
   };
 
   function count(collection, data, filter) {
@@ -52,6 +52,7 @@
       { id: "overview", title: "Überblick", render: renderOverview },
       { id: "salesFunnel", title: "Vertriebswege", render: renderSalesFunnel },
       { id: "tasks", title: "Aufgaben", render: renderTasks },
+      { id: "teamProgress", title: "Team-Fortschritt", render: renderTeamProgress },
       { id: "sales", title: "Vertrieb", render: renderSales },
       { id: "capacity", title: "Kapazität", render: renderCapacity },
       { id: "production", title: "Fertigung", render: renderProduction },
@@ -223,6 +224,45 @@
       String(left.title || "").localeCompare(String(right.title || ""), "de");
   }
 
+  function taskStatsForUser(data, targetUserId) {
+    const rows = (data.tasks || []).filter((task) => task.assignedTo === targetUserId);
+    const done = rows.filter((task) => task.status === "erledigt").length;
+    const open = rows.filter((task) => task.status !== "erledigt").length;
+    const blocked = rows.filter((task) => task.status === "blockiert").length;
+    const total = rows.length;
+    const progress = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, open, blocked, progress };
+  }
+
+  function renderTeamProgress(data, h) {
+    const users = (data.users || []).filter((user) => user.status !== "archiviert");
+    return `
+      <div class="team-progress">
+        ${users.map((user) => {
+          const stats = taskStatsForUser(data, user.id);
+          return `
+            <div class="team-progress__row">
+              <div class="team-progress__person">
+                <strong>${h.escapeHtml(user.name)}</strong>
+                <span>${h.escapeHtml(user.roleName || "Benutzer")}</span>
+              </div>
+              <div class="team-progress__body">
+                <div class="team-progress__meta">
+                  <span>${h.escapeHtml(stats.progress)}% erledigt</span>
+                  <span>${h.escapeHtml(stats.open)} offen · ${h.escapeHtml(stats.done)} erledigt · ${h.escapeHtml(stats.blocked)} blockiert</span>
+                </div>
+                <div class="team-progress__bar" aria-label="Fortschritt ${h.escapeHtml(user.name)}">
+                  <span style="width: ${h.escapeHtml(stats.progress)}%"></span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <div class="notice notice--plain">Das ist nur ein Arbeitsstand. Rechte bleiben unverändert: Super Admins können alle Aufgaben im Aufgabenmodul öffnen.</div>
+    `;
+  }
+
   function renderTasks(data, h) {
     const currentUserId = userId(data);
     const tasks = (data.tasks || [])
@@ -238,7 +278,7 @@
         <button class="button" type="button" data-action="add" data-module="tasks">+ Aufgabe</button>
       </div>
       <div class="notice notice--plain">
-        PersÃ¶nliche Startseite: Hier erscheinen nur Aufgaben, bei denen ${h.escapeHtml(userName(data))} als zustÃ¤ndig eingetragen ist.
+        Persönliche Startseite: Hier erscheinen nur Aufgaben, bei denen ${h.escapeHtml(userName(data))} als zuständig eingetragen ist.
         Alle offenen Aufgaben im System: ${h.escapeHtml(allOpenCount)}.
       </div>
       <div class="list">
@@ -250,7 +290,7 @@
             </a>
             <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
           </div>
-        `).join("") : `<div class="empty">Keine offenen Aufgaben fÃ¼r ${h.escapeHtml(userName(data))}.</div>`}
+        `).join("") : `<div class="empty">Keine offenen Aufgaben für ${h.escapeHtml(userName(data))}.</div>`}
       </div>
     `;
   }

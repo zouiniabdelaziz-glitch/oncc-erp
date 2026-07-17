@@ -998,9 +998,15 @@
     const payload = await loadAuthenticatedIdentity();
     const identity = payload && payload.identity ? payload.identity : payload;
     const email = normalizeEmail(identity && identity.email);
-    if (!email) return { ok: false, reason: "no-email" };
+    if (!email) {
+      const meta = ensureMeta(data);
+      meta.authenticatedSessionActive = false;
+      saveLocalOnly(data);
+      return { ok: false, reason: "no-email" };
+    }
 
     const meta = ensureMeta(data);
+    meta.authenticatedSessionActive = true;
     meta.authenticatedEmail = email;
     meta.authenticatedName = identity.name || "";
     meta.authenticatedAt = new Date().toISOString();

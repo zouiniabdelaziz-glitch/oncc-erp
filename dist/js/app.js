@@ -288,10 +288,7 @@
               <input class="top-shellbar__search" type="search" data-action="global-search" placeholder="Suchen..." aria-label="Globale Suche" />
             </div>
             <div class="top-shellbar__right">
-              <label class="user-switch">
-                <span>Benutzer</span>
-                <select data-action="current-user" aria-label="Aktueller Benutzer"></select>
-              </label>
+              <div class="user-switch" data-region="current-user-control"></div>
               <button class="shellbar__save" type="button" data-action="manual-save">Speichern</button>
               <span class="save-status" data-save-status>Lokal</span>
               <button class="shellbar__tool" type="button" data-action="check-update">Update</button>
@@ -379,14 +376,32 @@
   }
 
   function renderUserSelect() {
-    const select = document.querySelector('[data-action="current-user"]');
-    if (!select) return;
+    const region = document.querySelector('[data-region="current-user-control"]');
+    if (!region) return;
     const currentId = OSM.state.currentUserId(OSM.data);
-    select.innerHTML = (OSM.data.users || []).map((user) => `
-      <option value="${escapeHtml(user.id)}" ${user.id === currentId ? "selected" : ""}>
-        ${escapeHtml(user.name)} · ${escapeHtml(user.roleName || "Super Admin")}
-      </option>
-    `).join("");
+    const meta = OSM.data && OSM.data.meta ? OSM.data.meta : {};
+    const currentUser = OSM.state.currentUserRecord(OSM.data);
+    if (meta.authenticatedSessionActive && meta.authenticatedEmail && meta.authenticatedUserId && meta.authenticatedUserMissing !== true) {
+      region.innerHTML = `
+        <span>Benutzer</span>
+        <div class="user-switch__locked" title="${escapeHtml(meta.authenticatedEmail)}">
+          <strong>${escapeHtml(currentUser.name)}</strong>
+          <small>${escapeHtml(currentUser.roleName || "Super Admin")}</small>
+        </div>
+      `;
+      return;
+    }
+
+    region.innerHTML = `
+      <span>Benutzer</span>
+      <select data-action="current-user" aria-label="Aktueller Benutzer">
+        ${(OSM.data.users || []).map((user) => `
+          <option value="${escapeHtml(user.id)}" ${user.id === currentId ? "selected" : ""}>
+            ${escapeHtml(user.name)} · ${escapeHtml(user.roleName || "Super Admin")}
+          </option>
+        `).join("")}
+      </select>
+    `;
   }
 
   function render() {
