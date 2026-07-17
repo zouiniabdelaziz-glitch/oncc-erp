@@ -1,6 +1,6 @@
 ﻿{
   "name": "ONCC ERP / OS.MECHPLAST Workspace",
-  "version": "2026.07.17-session-topbar.1",
+  "version": "2026.07.17-login-guard.2",
   "releaseDate": "2026-07-17",
   "appUrl": "https://oncc-erp.pages.dev",
   "deployment": "Cloudflare Pages",
@@ -10,3 +10,4 @@
   "fileStorageTarget": "Cloudflare R2 oder Google Drive fÃ¼r Dokumente",
   "note": "Die Windows-Installation ist nur der Zugang. Der aktuelle ERP-Code wird bei jedem Start aus Cloudflare geladen."
 }
+

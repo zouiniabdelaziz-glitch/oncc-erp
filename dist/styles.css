@@ -3319,6 +3319,53 @@ body[data-sidebar="erp"] {
   font-size: 12px;
 }
 
+.user-switch__locked--warn {
+  background: #fff8e6;
+  border-color: #f0c66c;
+}
+
+.auth-block {
+  margin: 18px auto;
+  max-width: 860px;
+}
+
+.auth-block h1 {
+  margin: 6px 0 8px;
+}
+
+.auth-block p {
+  color: var(--muted);
+  margin: 0 0 16px;
+  max-width: 720px;
+}
+
+.auth-block__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 14px 0;
+}
+
+.auth-block__grid div {
+  background: #f7f9fb;
+  border: 1px solid var(--line);
+  padding: 12px;
+}
+
+.auth-block__grid strong,
+.auth-block__grid span {
+  display: block;
+}
+
+.auth-block__grid strong {
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.auth-block__grid span {
+  color: var(--muted);
+}
+
 .top-shellbar__right .save-status {
   white-space: nowrap;
 }

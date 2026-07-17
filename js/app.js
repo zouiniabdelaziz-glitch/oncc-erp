@@ -389,6 +389,16 @@
       return;
     }
 
+    if (auth.active && auth.missing) {
+      region.innerHTML = `
+        <div class="user-switch__locked user-switch__locked--warn" title="${escapeHtml(auth.email || "")}">
+          <strong>Nicht zugeordnet</strong>
+          <small>${escapeHtml(auth.email || "Cloudflare Login")}</small>
+        </div>
+      `;
+      return;
+    }
+
     region.innerHTML = `
       <select data-action="current-user" aria-label="Aktueller Benutzer">
         ${(OSM.data.users || []).map((user) => `
@@ -403,13 +413,15 @@
   function render() {
     const module = currentModule();
     const authNotice = renderAuthNotice();
+    const auth = OSM.state.authenticatedUserInfo ? OSM.state.authenticatedUserInfo() : {};
+    const moduleContent = auth.active && auth.missing
+      ? renderAuthBlocked(auth)
+      : (module.render ? module.render(OSM.data, helpers) : renderGeneric(module));
     document.body.dataset.view = module.id === "dashboard" ? "dashboard" : "module";
     document.body.dataset.sidebar = "erp";
     document.querySelector('[data-region="sidebar-user"]').innerHTML = renderSidebarUser();
     document.querySelector('[data-region="nav"]').innerHTML = renderNav(module.id);
-    document.querySelector('[data-region="content"]').innerHTML = authNotice + (module.render
-      ? module.render(OSM.data, helpers)
-      : renderGeneric(module));
+    document.querySelector('[data-region="content"]').innerHTML = authNotice + moduleContent;
     document.title = `${module.title} - OS.MECHPLAST ERP`;
     renderUserSelect();
     updateSaveStatus();
@@ -418,12 +430,46 @@
 
   function renderAuthNotice() {
     const auth = OSM.state.authenticatedUserInfo ? OSM.state.authenticatedUserInfo() : {};
-    if (!auth.active || !auth.email || !auth.missing) return "";
+    if (!auth.active || !auth.missing) return "";
+    if (!auth.email) {
+      return `
+        <div class="notice notice--warn auth-notice">
+          Cloudflare-Login konnte nicht eindeutig erkannt werden. Bitte Cloudflare Access prüfen, damit jeder Benutzer sein eigenes Dashboard bekommt.
+        </div>
+      `;
+    }
     return `
       <div class="notice notice--warn auth-notice">
         Cloudflare-Login erkannt: ${escapeHtml(auth.email)}. Diese E-Mail ist noch keinem ERP-Benutzer zugeordnet.
         Bitte unter System & Einstellungen > Benutzerprofile beim passenden Benutzer in "Login-E-Mail (Cloudflare)" eintragen.
       </div>
+    `;
+  }
+
+  function renderAuthBlocked(auth) {
+    return `
+      <section class="panel panel--pad auth-block">
+        <span class="kicker">Zugriff wartet auf Zuordnung</span>
+        <h1>Login nicht verbunden</h1>
+        <p>
+          Das ERP hat diesen Cloudflare-Login nicht sicher einem Benutzer zugeordnet.
+          Damit Mohammed nicht versehentlich dein Dashboard sieht, bleibt die persönliche Startseite gesperrt.
+        </p>
+        <div class="auth-block__grid">
+          <div>
+            <strong>Erkannte Login-E-Mail</strong>
+            <span>${escapeHtml(auth.email || "Keine E-Mail von Cloudflare erhalten")}</span>
+          </div>
+          <div>
+            <strong>Nächster Schritt</strong>
+            <span>Die exakte E-Mail beim passenden Benutzerprofil eintragen, z. B. bei Mohammed.</span>
+          </div>
+        </div>
+        <div class="notice notice--plain">
+          Wenn Mohammed weiterhin diesen Hinweis sieht, ist seine Cloudflare-Mail noch nicht im Benutzerprofil Mohammed gespeichert
+          oder Cloudflare Access liefert die Login-Mail noch nicht an das ERP.
+        </div>
+      </section>
     `;
   }
 

@@ -19,8 +19,11 @@
     userId: "",
     userName: "",
     roleName: "",
-    missing: false
+    missing: false,
+    reason: "",
+    source: ""
   };
+  const UNASSIGNED_USER_ID = "usr_login_unassigned";
 
   const superAdminPermissions = {
     read: true,
@@ -31,6 +34,16 @@
     assign_tasks: true,
     view_all_modules: true,
     edit_all_modules: true
+  };
+  const noAccessPermissions = {
+    read: false,
+    write: false,
+    create: false,
+    update: false,
+    delete: false,
+    assign_tasks: false,
+    view_all_modules: false,
+    edit_all_modules: false
   };
 
   const defaultUsers = [
@@ -787,6 +800,12 @@
     return typeof fetch === "function" && location.protocol.startsWith("http");
   }
 
+  function cloudIdentityRequired() {
+    if (!cloudPossible()) return false;
+    const host = String(location.hostname || "").toLowerCase();
+    return host && host !== "localhost" && host !== "127.0.0.1";
+  }
+
   function withTimeout(promise, timeoutMs) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("Cloud-Speicher nicht erreichbar.")), timeoutMs);
@@ -935,13 +954,32 @@
   }
 
   function currentUserId(data) {
+    if (authSession.active && authSession.missing) {
+      return UNASSIGNED_USER_ID;
+    }
+    if (authSession.active && authSession.userId && isKnownUser(data, authSession.userId)) {
+      return authSession.userId;
+    }
     const localUser = localActiveUserId();
     if (isKnownUser(data, localUser)) return localUser;
     return "usr_abdelaziz";
   }
 
+  function authMissingUser() {
+    return {
+      id: UNASSIGNED_USER_ID,
+      name: "Login nicht zugeordnet",
+      roleId: "rol_unassigned",
+      roleName: "Cloudflare Login",
+      status: "gesperrt",
+      email: authSession.email || "",
+      permissions: noAccessPermissions
+    };
+  }
+
   function currentUserRecord(data) {
     const userId = currentUserId(data);
+    if (userId === UNASSIGNED_USER_ID) return authMissingUser();
     return (data.users || []).find((user) => user.id === userId) || (data.users || [])[0] || defaultUsers[0];
   }
 
@@ -1010,7 +1048,9 @@
       userId: "",
       userName: "",
       roleName: "",
-      missing: false
+      missing: false,
+      reason: "",
+      source: ""
     }, next || {});
   }
 
@@ -1023,13 +1063,28 @@
     const identity = payload && payload.identity ? payload.identity : payload;
     const email = normalizeEmail(identity && identity.email);
     if (!email) {
-      setAuthSession({ active: false });
+      if (cloudIdentityRequired()) {
+        setAuthSession({
+          active: true,
+          missing: true,
+          reason: "no-email",
+          source: identity && identity.source ? identity.source : "none"
+        });
+      } else {
+        setAuthSession({ active: false, reason: "local" });
+      }
       return { ok: false, reason: "no-email" };
     }
 
     const matchedUser = userForEmail(data, email);
     if (!matchedUser) {
-      setAuthSession({ active: true, email, missing: true });
+      setAuthSession({
+        active: true,
+        email,
+        missing: true,
+        reason: "no-user-match",
+        source: identity && identity.source ? identity.source : ""
+      });
       return { ok: false, reason: "no-user-match", email };
     }
 
@@ -1039,7 +1094,9 @@
       userId: matchedUser.id,
       userName: matchedUser.name,
       roleName: matchedUser.roleName || "Super Admin",
-      missing: false
+      missing: false,
+      reason: "",
+      source: identity && identity.source ? identity.source : ""
     });
     if (currentUserId(data) !== matchedUser.id) {
       setCurrentUser(data, matchedUser.id, { cloud: false });
@@ -1051,6 +1108,9 @@
   }
 
   function permissionsForCurrentUser(data) {
+    if (authSession.active && authSession.missing) {
+      return Object.assign({}, noAccessPermissions);
+    }
     const user = currentUserRecord(data);
     return Object.assign({}, superAdminPermissions, user && user.permissions ? user.permissions : {});
   }
