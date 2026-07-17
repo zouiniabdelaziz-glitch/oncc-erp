@@ -3760,7 +3760,7 @@ body[data-sidebar="erp"] .main {
 }
 
 .task-detail-pre,
-.task-detail-prompt {
+.task-detail-instruction {
   background: #f7f8fa;
   border: 1px solid #e2e6ea;
   border-radius: 7px;
@@ -3775,7 +3775,7 @@ body[data-sidebar="erp"] .main {
   white-space: pre-wrap;
 }
 
-.task-detail-prompt {
+.task-detail-instruction {
   background: #f9fafb;
   border-color: #dbe4ee;
 }

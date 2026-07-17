@@ -134,12 +134,14 @@
     "Ziel / Abnahmekriterium",
     "Umsetzungsschritte",
     "SEO Task-ID",
+    "Anweisung-ID",
     "Prompt-ID",
     "Abhängigkeit",
     "Gewicht am Gesamtplan",
     "Nachweis / Ergebnis",
     "Quelle",
     "Notizen",
+    "Arbeitsanweisung",
     "Codex-Prompt",
     "Erwartete Abschlussausgabe"
   ];
@@ -173,6 +175,12 @@
     return section ? section.value : "";
   }
 
+  function displaySectionLabel(labelText) {
+    if (labelText === "Prompt-ID") return "Anweisung-ID";
+    if (labelText === "Codex-Prompt") return "Arbeitsanweisung";
+    return labelText;
+  }
+
   function renderTextBlock(value) {
     if (!value) return `<p class="task-detail-empty">Noch keine Information gespeichert.</p>`;
     return `<pre class="task-detail-pre">${escapeHtml(value)}</pre>`;
@@ -183,7 +191,7 @@
     if (!sections.length) return renderTextBlock(fallback);
     return sections.map((section) => `
       <div class="task-detail-field">
-        ${section.label ? `<span>${escapeHtml(section.label)}</span>` : ""}
+        ${section.label ? `<span>${escapeHtml(displaySectionLabel(section.label))}</span>` : ""}
         <p>${escapeHtml(section.value)}</p>
       </div>
     `).join("");
@@ -228,9 +236,13 @@
     `;
   }
 
-  function promptForTask(task) {
+  function workInstructionForTask(task) {
     const commentSections = splitKnownSections(task.comments);
-    return sectionValue(commentSections, "Codex-Prompt") || task.codexPrompt || task.comments || "";
+    return sectionValue(commentSections, "Arbeitsanweisung") ||
+      sectionValue(commentSections, "Codex-Prompt") ||
+      task.codexPrompt ||
+      task.comments ||
+      "";
   }
 
   function closeTaskDetail() {
@@ -252,7 +264,7 @@
     const descriptionSections = splitKnownSections(task.description);
     const noteSections = splitKnownSections(task.notes);
     const commentSections = splitKnownSections(task.comments);
-    const taskPrompt = promptForTask(task);
+    const workInstruction = workInstructionForTask(task);
     const expectedOutput = sectionValue(commentSections, "Erwartete Abschlussausgabe");
     const title = displayText(task.title || "Ohne Titel");
     const assignee = label("users", task.assignedTo);
@@ -272,12 +284,12 @@
       ["Kunde", customer],
       ["Auftrag", order],
       ["SEO Task-ID", task.sourceTaskId || ""],
-      ["Prompt-ID", task.sourcePromptId || ""]
+      ["Anweisung-ID", task.sourcePromptId || ""]
     ].filter((item) => item[1] && item[1] !== "-");
 
-    const promptContent = taskPrompt
-      ? `<pre class="task-detail-prompt">${escapeHtml(taskPrompt)}</pre>`
-      : `<p class="task-detail-empty">Für diese Aufgabe ist noch kein Prompt gespeichert.</p>`;
+    const instructionContent = workInstruction
+      ? `<pre class="task-detail-instruction">${escapeHtml(workInstruction)}</pre>`
+      : `<p class="task-detail-empty">Für diese Aufgabe ist noch keine Arbeitsanweisung gespeichert.</p>`;
 
     const html = `
       <div class="task-detail-backdrop" data-task-detail-modal>
@@ -293,7 +305,6 @@
           <div class="task-detail-actions">
             <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
             <button class="button" type="button" data-task-doc-add="${escapeHtml(task.id)}">Notiz / Lösung hinzufügen</button>
-            <button class="button button--quiet" type="button" data-task-prompt-copy="${escapeHtml(task.id)}">Prompt kopieren</button>
           </div>
 
           <div class="task-detail-meta">
@@ -306,13 +317,13 @@
           </div>
 
           ${renderDetailGroup("Arbeitsinformationen", renderDetailFields(descriptionSections, task.description), true)}
-          ${renderDetailGroup("Prompt für Codex", `
-            ${promptContent}
+          ${renderDetailGroup("Arbeitsanweisung", `
+            ${instructionContent}
             ${expectedOutput ? `<div class="task-detail-field task-detail-field--compact"><span>Erwartete Abschlussausgabe</span><p>${escapeHtml(expectedOutput)}</p></div>` : ""}
           `, true)}
           ${renderDetailGroup("Dokumentation / Vorgehensweise", renderDocumentationEntries(task), true)}
           ${renderDetailGroup("Nachweis, Quelle und Notizen", renderDetailFields(noteSections, task.notes), false)}
-          ${renderDetailGroup("Kommentarverlauf", renderDetailFields(commentSections.filter((section) => !["Codex-Prompt", "Erwartete Abschlussausgabe"].includes(section.label)), task.comments), false)}
+          ${renderDetailGroup("Kommentarverlauf", renderDetailFields(commentSections.filter((section) => !["Arbeitsanweisung", "Codex-Prompt", "Erwartete Abschlussausgabe"].includes(section.label)), task.comments), false)}
           ${renderDetailGroup("Historie", renderTextBlock(task.history), false)}
         </article>
       </div>
@@ -382,37 +393,6 @@
     closeTaskDetail();
     refresh();
     requestAnimationFrame(() => openTaskDetail(task.id));
-  }
-
-  async function copyTaskPrompt(taskId) {
-    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
-    if (!task) return;
-    const taskPrompt = promptForTask(task);
-    const text = taskPrompt || [
-      task.title,
-      task.description,
-      task.notes,
-      task.comments
-    ].filter(Boolean).join("\n\n");
-    if (!text) {
-      alert("Für diese Aufgabe ist noch kein Prompt gespeichert.");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("Prompt wurde kopiert.");
-    } catch (error) {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
-      alert("Prompt wurde kopiert.");
-    }
   }
 
   function isOverdue(task) {
@@ -505,7 +485,7 @@
     ]);
     const notes = joinSections([
       { label: "SEO Task-ID", value: source.sourceTaskId },
-      { label: "Prompt-ID", value: source.promptId },
+      { label: "Anweisung-ID", value: source.promptId },
       { label: "Abhängigkeit", value: source.dependency },
       { label: "Gewicht am Gesamtplan", value: source.weight },
       { label: "Nachweis / Ergebnis", value: source.proof },
@@ -514,7 +494,7 @@
     ]);
     const comments = source.codexPrompt
       ? joinSections([
-        { label: "Codex-Prompt", value: source.codexPrompt },
+        { label: "Arbeitsanweisung", value: source.codexPrompt },
         { label: "Erwartete Abschlussausgabe", value: source.expectedOutput }
       ])
       : existing && existing.comments || "";
@@ -781,14 +761,6 @@
       const taskId = editDetailButton.dataset.taskDetailEdit;
       closeTaskDetail();
       if (window.OSM.openForm) window.OSM.openForm("tasks", taskId);
-      return;
-    }
-
-    const copyPromptButton = event.target.closest("[data-task-prompt-copy]");
-    if (copyPromptButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      copyTaskPrompt(copyPromptButton.dataset.taskPromptCopy);
       return;
     }
 
