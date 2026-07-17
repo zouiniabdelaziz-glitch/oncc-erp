@@ -32,7 +32,8 @@
       roleId: "rol_super_admin",
       roleName: "Super Admin",
       status: "aktiv",
-      emailAliases: [],
+      email: "ouhsine-88@hotmail.com",
+      emailAliases: ["ouhsine-88@hotmail.com"],
       loginHints: ["abdelaziz"],
       permissions: superAdminPermissions
     },
@@ -678,7 +679,11 @@
         existing.roleId = "rol_super_admin";
         existing.roleName = "Super Admin";
         existing.status = "aktiv";
+        if (!existing.email && user.email) existing.email = user.email;
         existing.emailAliases = Array.isArray(existing.emailAliases) ? existing.emailAliases : clone(user.emailAliases || []);
+        (user.emailAliases || []).forEach((email) => {
+          if (email && !existing.emailAliases.includes(email)) existing.emailAliases.push(email);
+        });
         existing.loginHints = Array.isArray(existing.loginHints) && existing.loginHints.length ? existing.loginHints : clone(user.loginHints || []);
         existing.permissions = clone(superAdminPermissions);
       } else {

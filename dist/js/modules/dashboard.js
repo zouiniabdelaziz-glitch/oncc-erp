@@ -188,10 +188,11 @@
   }
 
   function renderOverview(data, h) {
+    const currentUserId = userId(data);
     return `
       <div class="dashboard-metrics">
         ${metric("Offene RFQs", count("rfqs", data, (item) => !["abgelehnt", "gewonnen"].includes(item.status)), "#rfqs", h)}
-        ${metric("Offene Aufgaben", count("tasks", data, (item) => item.status !== "erledigt"), "#tasks", h)}
+        ${metric("Meine Aufgaben", count("tasks", data, (item) => item.assignedTo === currentUserId && item.status !== "erledigt"), "#tasks", h)}
         ${metric("Offene Aufträge", count("orders", data, (item) => item.status !== "geliefert"), "#orders", h)}
         ${metric("Materialbedarf", count("purchaseRequests", data, (item) => !["erhalten", "storniert"].includes(item.status)), "#purchase-requests", h)}
       </div>
@@ -225,15 +226,20 @@
   function renderTasks(data, h) {
     const currentUserId = userId(data);
     const tasks = (data.tasks || [])
-      .filter((task) => task.status !== "erledigt")
+      .filter((task) => task.assignedTo === currentUserId && task.status !== "erledigt")
       .sort(compareTasks)
       .slice(0, 6);
     const ownCount = (data.tasks || []).filter((task) => task.assignedTo === currentUserId && task.status !== "erledigt").length;
+    const allOpenCount = (data.tasks || []).filter((task) => task.status !== "erledigt").length;
     return `
       <div class="widget-summary">
         <strong>${h.escapeHtml(ownCount)}</strong>
         <span>offene Aufgaben für ${h.escapeHtml(userName(data))}</span>
         <button class="button" type="button" data-action="add" data-module="tasks">+ Aufgabe</button>
+      </div>
+      <div class="notice notice--plain">
+        PersÃ¶nliche Startseite: Hier erscheinen nur Aufgaben, bei denen ${h.escapeHtml(userName(data))} als zustÃ¤ndig eingetragen ist.
+        Alle offenen Aufgaben im System: ${h.escapeHtml(allOpenCount)}.
       </div>
       <div class="list">
         ${tasks.length ? tasks.map((task) => `
@@ -244,7 +250,7 @@
             </a>
             <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
           </div>
-        `).join("") : `<div class="empty">Keine offenen Aufgaben.</div>`}
+        `).join("") : `<div class="empty">Keine offenen Aufgaben fÃ¼r ${h.escapeHtml(userName(data))}.</div>`}
       </div>
     `;
   }
