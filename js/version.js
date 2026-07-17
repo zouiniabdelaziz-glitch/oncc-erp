@@ -1,8 +1,8 @@
-﻿(function () {
+(function () {
   window.OSM_APP_VERSION = {
     name: "ONCC ERP / OS.MECHPLAST Workspace",
-    version: "2026.07.17-account-switch.3",
-    releaseDate: "2026-07-17",
+    version: "2026.07.18-task-migration.5",
+    releaseDate: "2026-07-18",
     appUrl: "https://oncc-erp.pages.dev",
     deployment: "Cloudflare Pages",
     installMode: "Windows Cloud-App",
@@ -12,5 +12,8 @@
     note: "Die Windows-Installation ist nur der Zugang. Der aktuelle ERP-Code wird bei jedem Start aus Cloudflare geladen."
   };
 })();
+
+
+
 
 

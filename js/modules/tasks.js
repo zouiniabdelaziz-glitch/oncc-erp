@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const statusOptions = [
     { value: "neu", label: "Nicht begonnen", tone: "neutral" },
     { value: "in arbeit", label: "In Bearbeitung", tone: "active" },
@@ -17,7 +17,7 @@
   const documentationTypeOptions = [
     { value: "notiz", label: "Notiz" },
     { value: "vorgehensweise", label: "Vorgehensweise" },
-    { value: "loesung", label: "Lösung" },
+    { value: "loesung", label: "LÃ¶sung" },
     { value: "ergebnis", label: "Ergebnis / Test" }
   ];
 
@@ -28,7 +28,7 @@
     "Arbeitsvorbereitung",
     "Einkauf",
     "Lager",
-    "Qualität",
+    "QualitÃ¤t",
     "Marketing / SEO",
     "Personal",
     "Finanzen",
@@ -130,17 +130,36 @@
 
   const detailSectionLabels = [
     "Kategorie",
+    "Problem / Ausgangsbefund",
     "Audit-Befund",
     "Ziel / Abnahmekriterium",
     "Umsetzungsschritte",
+    "Aufgabenliste",
     "SEO Task-ID",
     "Anweisung-ID",
     "Prompt-ID",
-    "Abhängigkeit",
+    "AbhÃ¤ngigkeit",
     "Gewicht am Gesamtplan",
     "Nachweis / Ergebnis",
     "Quelle",
     "Notizen",
+    "Arbeitsanleitung",
+    "Arbeitsanweisung",
+    "Codex-Prompt",
+    "Erwartete Abschlussausgabe"
+  ];
+
+  const instructionHeadings = [
+    "AUFGABE",
+    "AUSGANGSBEFUND",
+    "UMSETZUNGSSCHRITTE",
+    "ABNAHMEKRITERIUM",
+    "ARBEITSREGELN",
+    "ABSCHLUSSBERICHT"
+  ];
+
+  const instructionCommentLabels = [
+    "Arbeitsanleitung",
     "Arbeitsanweisung",
     "Codex-Prompt",
     "Erwartete Abschlussausgabe"
@@ -177,7 +196,9 @@
 
   function displaySectionLabel(labelText) {
     if (labelText === "Prompt-ID") return "Anweisung-ID";
-    if (labelText === "Codex-Prompt") return "Arbeitsanweisung";
+    if (labelText === "Codex-Prompt") return "KI-Arbeitsauftrag";
+    if (labelText === "Arbeitsanweisung") return "KI-Arbeitsauftrag";
+    if (labelText === "Arbeitsanleitung") return "KI-Arbeitsauftrag";
     return labelText;
   }
 
@@ -219,7 +240,7 @@
     const entries = taskDocumentation(task)
       .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
     if (!entries.length) {
-      return `<p class="task-detail-empty">Noch keine Dokumentation gespeichert. Füge hier Vorgehensweise, Lösung oder Testergebnis hinzu.</p>`;
+      return `<p class="task-detail-empty">Noch keine Dokumentation gespeichert. FÃ¼ge hier Vorgehensweise, LÃ¶sung oder Testergebnis hinzu.</p>`;
     }
     return `
       <div class="task-doc-list">
@@ -227,7 +248,7 @@
           <article class="task-doc-entry">
             <div class="task-doc-entry__head">
               <span class="task-doc-entry__type">${escapeHtml(documentationTypeLabel(entry.type))}</span>
-              <span>${escapeHtml(entry.createdBy || "-")} · ${escapeHtml(formatDateTime(entry.createdAt))}</span>
+              <span>${escapeHtml(entry.createdBy || "-")} Â· ${escapeHtml(formatDateTime(entry.createdAt))}</span>
             </div>
             <p>${escapeHtml(entry.text || "")}</p>
           </article>
@@ -237,12 +258,282 @@
   }
 
   function workInstructionForTask(task) {
+    if (task.instructionRemoved) return "";
     const commentSections = splitKnownSections(task.comments);
-    return sectionValue(commentSections, "Arbeitsanweisung") ||
+    return task.workInstruction ||
+      sectionValue(commentSections, "Arbeitsanleitung") ||
+      sectionValue(commentSections, "Arbeitsanweisung") ||
       sectionValue(commentSections, "Codex-Prompt") ||
       task.codexPrompt ||
-      task.comments ||
+      (looksLikeWorkInstruction(task.comments) ? task.comments : "") ||
       "";
+  }
+
+  function looksLikeWorkInstruction(value) {
+    const text = String(value || "").trim();
+    if (!text) return false;
+    return /(?:^|\n)(AUFGABE|AUSGANGSBEFUND|UMSETZUNGSSCHRITTE|ABNAHMEKRITERIUM|ARBEITSREGELN|ABSCHLUSSBERICHT)\s*(?:\n|:)/i.test(text) ||
+      text.includes("Du arbeitest im bestehenden Projekt");
+  }
+
+  function splitInstructionSections(value) {
+    const text = String(value || "").replace(/\r\n/g, "\n").trim();
+    if (!text) return [];
+    const markers = [];
+    instructionHeadings.forEach((labelText) => {
+      const re = new RegExp(`(?:^|\\n)${escapeRegExp(labelText)}\\s*(?:\\n|:)`, "gi");
+      let match = re.exec(text);
+      while (match) {
+        markers.push({
+          label: labelText.toUpperCase(),
+          index: match.index + (match[0].startsWith("\n") ? 1 : 0),
+          valueStart: match.index + match[0].length
+        });
+        match = re.exec(text);
+      }
+    });
+    if (!markers.length) return [];
+    markers.sort((left, right) => left.index - right.index);
+    return markers.map((marker, index) => ({
+      label: marker.label,
+      value: text.slice(marker.valueStart, markers[index + 1] ? markers[index + 1].index : text.length).trim()
+    })).filter((section) => section.value);
+  }
+
+  function instructionSectionValue(sections, labelText) {
+    const section = sections.find((item) => item.label === labelText);
+    return section ? section.value : "";
+  }
+
+  function splitChecklistItems(value) {
+    return String(value || "")
+      .replace(/\r\n/g, "\n")
+      .split(/\n+|;\s*/)
+      .map((item) => item.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim())
+      .filter(Boolean);
+  }
+
+  function taskProblemText(task, descriptionSections, instructionSections) {
+    return task.problemStatement ||
+      sectionValue(descriptionSections, "Problem / Ausgangsbefund") ||
+      sectionValue(descriptionSections, "Audit-Befund") ||
+      instructionSectionValue(instructionSections, "AUSGANGSBEFUND") ||
+      "";
+  }
+
+  function taskGoalText(task, descriptionSections, instructionSections) {
+    return task.acceptance ||
+      sectionValue(descriptionSections, "Ziel / Abnahmekriterium") ||
+      instructionSectionValue(instructionSections, "ABNAHMEKRITERIUM") ||
+      "";
+  }
+
+  function taskChecklistText(task, descriptionSections, instructionSections) {
+    return task.checklist ||
+      sectionValue(descriptionSections, "Aufgabenliste") ||
+      sectionValue(descriptionSections, "Umsetzungsschritte") ||
+      instructionSectionValue(instructionSections, "UMSETZUNGSSCHRITTE") ||
+      "";
+  }
+
+  function renderProblemOverview(task, descriptionSections, instructionSections) {
+    const problem = taskProblemText(task, descriptionSections, instructionSections);
+    const goal = taskGoalText(task, descriptionSections, instructionSections);
+    const taskText = instructionSectionValue(instructionSections, "AUFGABE");
+    const rows = [
+      ["Problem / Ausgangsbefund", problem],
+      ["Ziel / Abnahmekriterium", goal],
+      ["Kurzauftrag", taskText]
+    ].filter((item) => item[1]);
+    if (!rows.length) {
+      return `<p class="task-detail-empty">Noch kein Problem oder Ziel gespeichert.</p>`;
+    }
+    return rows.map(([key, value]) => `
+      <div class="task-detail-field">
+        <span>${escapeHtml(key)}</span>
+        <p>${escapeHtml(value)}</p>
+      </div>
+    `).join("");
+  }
+
+  function renderTaskChecklist(task, descriptionSections, instructionSections) {
+    const items = splitChecklistItems(taskChecklistText(task, descriptionSections, instructionSections));
+    const defaults = [
+      "Ausgangsbefund prÃ¼fen und betroffene Stelle finden",
+      "Ã„nderung oder LÃ¶sung sauber umsetzen",
+      "Ergebnis testen und Nachweis dokumentieren",
+      "Offene Punkte oder Risiko festhalten"
+    ];
+    const finalItems = items.length ? items : defaults;
+    return `
+      <ol class="task-checklist">
+        ${finalItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ol>
+      <p class="task-checklist-note">Diese Liste dient dazu, spÃ¤ter nachvollziehen zu kÃ¶nnen, was das Problem war und wie es gelÃ¶st wurde.</p>
+    `;
+  }
+
+  function renderInstructionContent(task, workInstruction, expectedOutput) {
+    const sections = splitInstructionSections(workInstruction);
+    if (!workInstruction && !expectedOutput) {
+      return `<p class="task-detail-empty">Für diese Aufgabe ist noch kein optionaler KI-Arbeitsauftrag gespeichert.</p>`;
+    }
+    const content = sections.length
+      ? sections.map((section) => `
+        <div class="task-detail-field">
+          <span>${escapeHtml(displayInstructionHeading(section.label))}</span>
+          <p>${escapeHtml(section.value)}</p>
+        </div>
+      `).join("")
+      : `<pre class="task-detail-instruction">${escapeHtml(workInstruction)}</pre>`;
+    return `
+      ${content}
+      ${expectedOutput ? `<div class="task-detail-field task-detail-field--compact"><span>Erwartetes Ergebnis</span><p>${escapeHtml(expectedOutput)}</p></div>` : ""}
+    `;
+  }
+
+  function displayInstructionHeading(labelText) {
+    const labels = {
+      AUFGABE: "Aufgabe",
+      AUSGANGSBEFUND: "Ausgangsbefund",
+      UMSETZUNGSSCHRITTE: "Umsetzungsschritte",
+      ABNAHMEKRITERIUM: "Abnahmekriterium",
+      ARBEITSREGELN: "Arbeitsregeln",
+      ABSCHLUSSBERICHT: "Dokumentationspflicht"
+    };
+    return labels[labelText] || labelText;
+  }
+
+  function commentsWithoutInstructionSections(value, fullInstruction) {
+    const text = String(value || "").trim();
+    const instructionText = String(fullInstruction || "").trim();
+    if (text && instructionText && text === instructionText) return "";
+    if (text && looksLikeWorkInstruction(text)) return "";
+    const sections = splitKnownSections(value);
+    if (!sections.length) {
+      return text;
+    }
+    const remaining = sections.filter((section) => !instructionCommentLabels.includes(section.label));
+    return remaining.map((section) => section.label
+      ? `${section.label}: ${section.value}`
+      : section.value
+    ).join("\n\n");
+  }
+
+  function removeTaskInstruction(taskId) {
+    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    if (!confirm("Den gespeicherten KI-Arbeitsauftrag aus dieser Aufgabe löschen? Die Aufgabe und die Dokumentation bleiben erhalten.")) return;
+    const workInstruction = workInstructionForTask(task);
+    window.OSM.state.upsert(window.OSM.data, "tasks", {
+      id: task.id,
+      comments: commentsWithoutInstructionSections(task.comments, workInstruction),
+      workInstruction: "",
+      codexPrompt: "",
+      expectedOutput: "",
+      instructionRemoved: true
+    });
+    closeTaskDetail();
+    refresh();
+    requestAnimationFrame(() => openTaskDetail(task.id));
+  }
+
+  function buildAiWorkOrder(task, workInstruction, expectedOutput) {
+    const parts = [
+      `Aufgabe: ${displayText(task.title || "Ohne Titel")}`,
+      task.problemStatement ? `Problem / Ausgangsbefund:\n${task.problemStatement}` : "",
+      task.checklist ? `Aufgabenliste / Vorgehen:\n${task.checklist}` : "",
+      workInstruction ? `KI-Arbeitsauftrag:\n${workInstruction}` : "",
+      expectedOutput ? `Erwartetes Ergebnis:\n${expectedOutput}` : ""
+    ].filter(Boolean);
+    return parts.join("\n\n");
+  }
+
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+    } finally {
+      textarea.remove();
+    }
+    return Promise.resolve();
+  }
+
+  function copyTaskInstruction(taskId) {
+    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
+    if (!task) return;
+    const commentSections = splitKnownSections(task.comments);
+    const workInstruction = workInstructionForTask(task);
+    const expectedOutput = task.expectedOutput || sectionValue(commentSections, "Erwartete Abschlussausgabe");
+    const text = buildAiWorkOrder(task, workInstruction, expectedOutput);
+    if (!text.trim()) {
+      alert("Für diese Aufgabe ist kein KI-Arbeitsauftrag gespeichert.");
+      return;
+    }
+    copyTextToClipboard(text)
+      .then(() => alert("KI-Arbeitsauftrag wurde kopiert."))
+      .catch(() => alert("Kopieren war nicht möglich. Bitte Text manuell markieren."));
+  }
+
+  function normaliseTaskProfessionalFields(data) {
+    let changed = false;
+    (data.tasks || []).forEach((task) => {
+      const descriptionSections = splitKnownSections(task.description);
+      const commentSections = splitKnownSections(task.comments);
+      const commentInstruction = sectionValue(commentSections, "Arbeitsanleitung") ||
+        sectionValue(commentSections, "Arbeitsanweisung") ||
+        sectionValue(commentSections, "Codex-Prompt") ||
+        (looksLikeWorkInstruction(task.comments) ? task.comments : "");
+      const storedInstruction = task.instructionRemoved
+        ? ""
+        : task.workInstruction || commentInstruction || task.codexPrompt || "";
+      const instructionSections = splitInstructionSections(storedInstruction || commentInstruction || task.codexPrompt);
+      if (!task.problemStatement) {
+        task.problemStatement = taskProblemText(task, descriptionSections, instructionSections);
+        if (task.problemStatement) changed = true;
+      }
+      if (!task.checklist) {
+        task.checklist = taskChecklistText(task, descriptionSections, instructionSections);
+        if (task.checklist) changed = true;
+      }
+      if (!task.workInstruction && storedInstruction) {
+        task.workInstruction = storedInstruction;
+        changed = true;
+      }
+      if (!task.expectedOutput) {
+        task.expectedOutput = sectionValue(commentSections, "Erwartete Abschlussausgabe");
+        if (task.expectedOutput) changed = true;
+      }
+      if (task.comments) {
+        const cleanedComments = commentsWithoutInstructionSections(task.comments, commentInstruction || storedInstruction);
+        if (cleanedComments !== task.comments) {
+          task.comments = cleanedComments;
+          changed = true;
+        }
+      }
+      if (task.codexPrompt && (task.workInstruction || task.instructionRemoved)) {
+        task.codexPrompt = "";
+        changed = true;
+      }
+    });
+    if (changed) {
+      data.meta = data.meta || {};
+      data.meta.taskStructureMigratedAt = new Date().toISOString();
+      if (window.OSM && window.OSM.state && window.OSM.state.save) {
+        window.OSM.state.save(data, {
+          summary: "Aufgabenstruktur bereinigt"
+        });
+      }
+    }
   }
 
   function closeTaskDetail() {
@@ -265,7 +556,9 @@
     const noteSections = splitKnownSections(task.notes);
     const commentSections = splitKnownSections(task.comments);
     const workInstruction = workInstructionForTask(task);
-    const expectedOutput = sectionValue(commentSections, "Erwartete Abschlussausgabe");
+    const instructionSections = splitInstructionSections(workInstruction);
+    const expectedOutput = task.expectedOutput || sectionValue(commentSections, "Erwartete Abschlussausgabe");
+    const hasInstruction = !!(workInstruction || expectedOutput);
     const title = displayText(task.title || "Ohne Titel");
     const assignee = label("users", task.assignedTo);
     const creator = label("users", task.createdBy);
@@ -275,10 +568,10 @@
 
     const meta = [
       ["Status", statusLabel(task.status)],
-      ["Priorität", displayText(task.priority || "mittel")],
+      ["PrioritÃ¤t", displayText(task.priority || "mittel")],
       ["Bereich", task.area || "Management"],
-      ["Zuständig", assignee],
-      ["Fällig", formatDate(task.dueDate)],
+      ["ZustÃ¤ndig", assignee],
+      ["FÃ¤llig", formatDate(task.dueDate)],
       ["Erstellt von", creator],
       ["Projekt", project],
       ["Kunde", customer],
@@ -287,9 +580,6 @@
       ["Anweisung-ID", task.sourcePromptId || ""]
     ].filter((item) => item[1] && item[1] !== "-");
 
-    const instructionContent = workInstruction
-      ? `<pre class="task-detail-instruction">${escapeHtml(workInstruction)}</pre>`
-      : `<p class="task-detail-empty">Für diese Aufgabe ist noch keine Arbeitsanweisung gespeichert.</p>`;
 
     const html = `
       <div class="task-detail-backdrop" data-task-detail-modal>
@@ -299,12 +589,14 @@
               <span class="task-detail-kicker">${escapeHtml(task.area || "Aufgabe")}</span>
               <h2>${escapeHtml(title)}</h2>
             </div>
-            <button class="icon-button" type="button" data-task-detail-close>Schließen</button>
+            <button class="icon-button" type="button" data-task-detail-close>SchlieÃŸen</button>
           </header>
 
           <div class="task-detail-actions">
             <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
             <button class="button" type="button" data-task-doc-add="${escapeHtml(task.id)}">Notiz / Lösung hinzufügen</button>
+            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-copy="${escapeHtml(task.id)}">KI-Arbeitsauftrag kopieren</button>` : ""}
+            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-remove="${escapeHtml(task.id)}">KI-Arbeitsauftrag löschen</button>` : ""}
           </div>
 
           <div class="task-detail-meta">
@@ -316,14 +608,13 @@
             `).join("")}
           </div>
 
-          ${renderDetailGroup("Arbeitsinformationen", renderDetailFields(descriptionSections, task.description), true)}
-          ${renderDetailGroup("Arbeitsanweisung", `
-            ${instructionContent}
-            ${expectedOutput ? `<div class="task-detail-field task-detail-field--compact"><span>Erwartete Abschlussausgabe</span><p>${escapeHtml(expectedOutput)}</p></div>` : ""}
-          `, true)}
+          ${renderDetailGroup("Problem und Ziel", renderProblemOverview(task, descriptionSections, instructionSections), true)}
+          ${renderDetailGroup("Aufgabenliste / Vorgehen", renderTaskChecklist(task, descriptionSections, instructionSections), true)}
+          ${renderDetailGroup("Aufgabendaten", renderDetailFields(descriptionSections, task.description), false)}
+          ${renderDetailGroup("KI-Arbeitsauftrag", renderInstructionContent(task, workInstruction, expectedOutput), false)}
           ${renderDetailGroup("Dokumentation / Vorgehensweise", renderDocumentationEntries(task), true)}
           ${renderDetailGroup("Nachweis, Quelle und Notizen", renderDetailFields(noteSections, task.notes), false)}
-          ${renderDetailGroup("Kommentarverlauf", renderDetailFields(commentSections.filter((section) => !["Arbeitsanweisung", "Codex-Prompt", "Erwartete Abschlussausgabe"].includes(section.label)), task.comments), false)}
+          ${renderDetailGroup("Interne Notizen", renderDetailFields(commentSections.filter((section) => !instructionCommentLabels.includes(section.label)), commentsWithoutInstructionSections(task.comments, workInstruction)), false)}
           ${renderDetailGroup("Historie", renderTextBlock(task.history), false)}
         </article>
       </div>
@@ -344,7 +635,7 @@
               <span>Aufgabe dokumentieren</span>
               <strong>${escapeHtml(displayText(task.title || "Ohne Titel"))}</strong>
             </div>
-            <button class="icon-button" type="button" data-task-doc-close>Schließen</button>
+            <button class="icon-button" type="button" data-task-doc-close>SchlieÃŸen</button>
           </div>
           <label class="task-doc-field">
             <span>Was ist das?</span>
@@ -353,8 +644,8 @@
             </select>
           </label>
           <label class="task-doc-field">
-            <span>Notiz, Vorgehensweise, Lösung oder Ergebnis</span>
-            <textarea name="text" rows="8" required placeholder="Beschreibe kurz, was du geplant, geändert, getestet oder entschieden hast."></textarea>
+            <span>Notiz, Vorgehensweise, LÃ¶sung oder Ergebnis</span>
+            <textarea name="text" rows="8" required placeholder="Beschreibe kurz, was du geplant, geÃ¤ndert, getestet oder entschieden hast."></textarea>
           </label>
           <div class="task-doc-actions">
             <button type="button" class="button button--quiet" data-task-doc-close>Abbrechen</button>
@@ -428,7 +719,7 @@
   function mapSeoStatus(value) {
     const normalized = String(value || "").trim().toLowerCase();
     if (["erledigt", "done", "fertig", "abgeschlossen"].includes(normalized)) return "erledigt";
-    if (["in arbeit", "in bearbeitung", "läuft", "laufend"].includes(normalized)) return "in arbeit";
+    if (["in arbeit", "in bearbeitung", "lÃ¤uft", "laufend"].includes(normalized)) return "in arbeit";
     if (["wartet", "waiting"].includes(normalized)) return "wartet";
     if (["blockiert", "blocked"].includes(normalized)) return "blockiert";
     return "neu";
@@ -486,23 +777,25 @@
     const notes = joinSections([
       { label: "SEO Task-ID", value: source.sourceTaskId },
       { label: "Anweisung-ID", value: source.promptId },
-      { label: "Abhängigkeit", value: source.dependency },
+      { label: "AbhÃ¤ngigkeit", value: source.dependency },
       { label: "Gewicht am Gesamtplan", value: source.weight },
       { label: "Nachweis / Ergebnis", value: source.proof },
       { label: "Quelle", value: "OSMECHPLAST_SEO_100_Prozent_Plan.xlsx" },
       { label: "Notizen", value: source.notes }
     ]);
-    const comments = source.codexPrompt
-      ? joinSections([
-        { label: "Arbeitsanweisung", value: source.codexPrompt },
-        { label: "Erwartete Abschlussausgabe", value: source.expectedOutput }
-      ])
-      : existing && existing.comments || "";
+    const comments = existing && existing.comments
+      ? existing.comments
+      : "";
 
     return Object.assign({}, existing || {}, {
       id: source.id,
       title: source.title,
       description,
+      problemStatement: existing && existing.problemStatement ? existing.problemStatement : source.auditFinding,
+      checklist: existing && existing.checklist ? existing.checklist : source.steps,
+      workInstruction: existing && existing.workInstruction ? existing.workInstruction : existing && existing.instructionRemoved ? "" : source.codexPrompt,
+      expectedOutput: existing && existing.expectedOutput ? existing.expectedOutput : existing && existing.instructionRemoved ? "" : source.expectedOutput,
+      instructionRemoved: existing && existing.instructionRemoved ? true : false,
       area: "Marketing / SEO",
       priority: existing && existing.priority ? existing.priority : mapSeoPriority(source.priority),
       status: existing && existing.status ? existing.status : mapSeoStatus(source.excelStatus),
@@ -512,7 +805,7 @@
       customerId: existing && existing.customerId ? existing.customerId : "cus_internal",
       orderId: existing && existing.orderId ? existing.orderId : "",
       dueDate: existing && existing.dueDate ? existing.dueDate : "",
-      comments: existing && existing.comments ? existing.comments : comments,
+      comments,
       notes,
       sourcePackage: "osmechplast-seo-100-plan",
       sourceTaskId: source.sourceTaskId,
@@ -596,7 +889,7 @@
         <div class="task-import-panel__main">
           <span class="task-import-panel__eyebrow">Importpaket</span>
           <strong>${h.escapeHtml(pack.title)}</strong>
-          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, Zuständigem, Historie und Dashboard-Zählung.</span>
+          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, ZustÃ¤ndigem, Historie und Dashboard-ZÃ¤hlung.</span>
         </div>
         <div class="task-import-panel__stats" aria-label="SEO Import Status">
           <span><strong>${h.escapeHtml(imported.length)}</strong> im ERP</span>
@@ -629,7 +922,7 @@
 
   function statusSelect(task, h, className) {
     return `
-      <select class="${className || "task-status-select"}" data-task-status="${h.escapeHtml(task.id)}" aria-label="Status von ${h.escapeHtml(task.title)} ändern">
+      <select class="${className || "task-status-select"}" data-task-status="${h.escapeHtml(task.id)}" aria-label="Status von ${h.escapeHtml(task.title)} Ã¤ndern">
         ${statusOptions.map((option) => `
           <option value="${h.escapeHtml(option.value)}" ${task.status === option.value ? "selected" : ""}>${h.escapeHtml(option.label)}</option>
         `).join("")}
@@ -646,7 +939,7 @@
           <button class="notion-task-card__title" type="button" data-task-detail="${h.escapeHtml(task.id)}">
             ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
           </button>
-          <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
+          <button class="task-delete-x" type="button" title="Aufgabe lÃ¶schen" aria-label="Aufgabe lÃ¶schen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
         </div>
         ${task.description ? `<p class="notion-task-card__description">${h.escapeHtml(task.description)}</p>` : ""}
         <div class="notion-task-card__properties">
@@ -703,9 +996,9 @@
                   <th>Aufgabe</th>
                   <th>Status</th>
                   <th>Bereich</th>
-                  <th>Priorität</th>
-                  <th>Zuständig</th>
-                  <th>Fällig</th>
+                  <th>PrioritÃ¤t</th>
+                  <th>ZustÃ¤ndig</th>
+                  <th>FÃ¤llig</th>
                   <th></th>
                 </tr>
               </thead>
@@ -716,7 +1009,7 @@
                     <tr>
                       <td>
                         <button class="notion-task-title-link" type="button" data-task-detail="${h.escapeHtml(task.id)}">
-                          <span class="notion-check">${task.status === "erledigt" ? "✓" : ""}</span>
+                          <span class="notion-check">${task.status === "erledigt" ? "âœ“" : ""}</span>
                           ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
                         </button>
                       </td>
@@ -725,14 +1018,14 @@
                       <td><span class="task-property task-property--${h.escapeHtml(task.priority || "mittel")}">${h.escapeHtml(h.displayText(task.priority || "mittel"))}</span></td>
                       <td><span class="task-assignee"><span class="task-avatar">${h.escapeHtml(userInitials(assignee))}</span>${h.escapeHtml(assignee)}</span></td>
                       <td><span class="task-due ${isOverdue(task) ? "is-overdue" : ""}">${h.escapeHtml(formatDate(task.dueDate))}</span></td>
-                      <td><button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button></td>
+                      <td><button class="task-delete-x" type="button" title="Aufgabe lÃ¶schen" aria-label="Aufgabe lÃ¶schen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button></td>
                     </tr>
                   `;
                 }).join("")}
               </tbody>
             </table>
           </div>
-        ` : `<div class="empty">Keine Aufgaben für diese Auswahl.</div>`}
+        ` : `<div class="empty">Keine Aufgaben fÃ¼r diese Auswahl.</div>`}
       </section>
     `;
   }
@@ -769,6 +1062,22 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       openTaskDocumentationForm(addDocumentationButton.dataset.taskDocAdd);
+      return;
+    }
+
+    const removeInstructionButton = event.target.closest("[data-task-instruction-remove]");
+    if (removeInstructionButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      removeTaskInstruction(removeInstructionButton.dataset.taskInstructionRemove);
+      return;
+    }
+
+    const copyInstructionButton = event.target.closest("[data-task-instruction-copy]");
+    if (copyInstructionButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      copyTaskInstruction(copyInstructionButton.dataset.taskInstructionCopy);
       return;
     }
 
@@ -859,27 +1168,32 @@
     fields: [
       { key: "title", label: "Titel", required: true },
       { key: "description", label: "Beschreibung", type: "textarea", wide: true },
+      { key: "problemStatement", label: "Problem / Ausgangsbefund", type: "textarea", wide: true },
+      { key: "checklist", label: "Aufgabenliste / Vorgehen", type: "textarea", wide: true },
       { key: "area", label: "Bereich", type: "select", options: areaOptions, default: "Management" },
-      { key: "priority", label: "Priorität", type: "select", options: priorityOptions, default: "mittel" },
+      { key: "priority", label: "PrioritÃ¤t", type: "select", options: priorityOptions, default: "mittel" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "neu" },
-      { key: "assignedTo", label: "Zuständig", type: "select", options: (data, h) => h.options("users"), required: true },
+      { key: "assignedTo", label: "ZustÃ¤ndig", type: "select", options: (data, h) => h.options("users"), required: true },
       { key: "createdBy", label: "Erstellt von", type: "select", options: (data, h) => h.options("users"), default: () => currentUserId() },
-      { key: "dueDate", label: "Fälligkeitsdatum", type: "date" },
+      { key: "dueDate", label: "FÃ¤lligkeitsdatum", type: "date" },
       { key: "projectId", label: "Projekt", type: "select", options: (data, h) => h.options("projects") },
       { key: "customerId", label: "Kunde optional", type: "select", options: (data, h) => h.options("customers") },
       { key: "orderId", label: "Auftrag optional", type: "select", options: (data, h) => h.options("orders", "orderNo") },
-      { key: "comments", label: "Kommentarverlauf", type: "textarea", wide: true },
+      { key: "workInstruction", label: "KI-Arbeitsauftrag optional", type: "textarea", wide: true },
+      { key: "expectedOutput", label: "Erwartetes Ergebnis", type: "textarea", wide: true },
+      { key: "comments", label: "Interne Notizen", type: "textarea", wide: true },
       { key: "history", label: "Historie", type: "textarea", wide: true }
     ],
     columns: [
       { key: "title", label: "Aufgabe" },
       { key: "area", label: "Bereich" },
-      { key: "priority", label: "Priorität" },
+      { key: "priority", label: "PrioritÃ¤t" },
       { key: "status", label: "Status" },
-      { key: "assignedTo", label: "Zuständig" },
-      { key: "dueDate", label: "Fällig" }
+      { key: "assignedTo", label: "ZustÃ¤ndig" },
+      { key: "dueDate", label: "FÃ¤llig" }
     ],
     render(data, h) {
+      normaliseTaskProfessionalFields(data);
       const allRows = data.tasks || [];
       const currentId = currentUserId();
       const areas = Array.from(new Set(allRows.map((task) => task.area).filter(Boolean))).sort((a, b) => a.localeCompare(b, "de"));
@@ -899,14 +1213,14 @@
           <div class="notion-task-titlebar">
             <div>
               <div class="breadcrumb"><a href="#dashboard">Start</a><span>/</span><a href="#area-management">Management</a></div>
-              <h1><span class="notion-title-icon">✓</span> Aufgaben</h1>
+              <h1><span class="notion-title-icon">âœ“</span> Aufgaben</h1>
             </div>
             <button class="button button--blue" data-action="add" data-module="tasks">Neu <span aria-hidden="true">+</span></button>
           </div>
 
           <div class="notion-task-summary">
             <span><strong>${open}</strong> offen</span>
-            <span><strong>${mine}</strong> für mich</span>
+            <span><strong>${mine}</strong> fÃ¼r mich</span>
             <span class="${blocked ? "is-critical" : ""}"><strong>${blocked}</strong> blockiert</span>
           </div>
 
@@ -914,12 +1228,12 @@
 
           <div class="notion-task-toolbar">
             <div class="notion-view-tabs" role="tablist" aria-label="Aufgabenansicht">
-              <button class="${mode === "board" ? "is-active" : ""}" type="button" data-task-view="board"><span class="notion-view-icon">▥</span> Board</button>
-              <button class="${mode === "list" ? "is-active" : ""}" type="button" data-task-view="list"><span class="notion-view-icon">▤</span> Alle</button>
+              <button class="${mode === "board" ? "is-active" : ""}" type="button" data-task-view="board"><span class="notion-view-icon">â–¥</span> Board</button>
+              <button class="${mode === "list" ? "is-active" : ""}" type="button" data-task-view="list"><span class="notion-view-icon">â–¤</span> Alle</button>
             </div>
             <div class="notion-task-filters">
               <label class="notion-task-search">
-                <span aria-hidden="true">⌕</span>
+                <span aria-hidden="true">âŒ•</span>
                 <input type="search" value="${h.escapeHtml(searchTerm)}" data-task-search placeholder="Aufgaben suchen" aria-label="Aufgaben suchen" />
               </label>
               <select data-task-area aria-label="Nach Bereich filtern">
@@ -936,3 +1250,4 @@
     }
   });
 })();
+

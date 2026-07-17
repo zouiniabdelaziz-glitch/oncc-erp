@@ -21,6 +21,15 @@ Jeder Benutzer meldet sich über Cloudflare Access mit seiner eigenen E-Mail an.
 
 Wenn oben im ERP die falsche E-Mail steht, im ERP auf `Konto wechseln` klicken und danach mit der richtigen Cloudflare-E-Mail anmelden.
 
+Wenn danach immer noch dieselbe falsche E-Mail erscheint, ist der Browser oder der Identitätsanbieter noch mit diesem Konto angemeldet. Dann:
+
+1. ONCC ERP schließen.
+2. `RESET_ONCC_ERP_LOGIN.cmd` starten.
+3. ONCC ERP neu öffnen.
+4. Mit der richtigen Cloudflare-E-Mail anmelden.
+
+Der Reset löscht nur das lokale ERP-Browserprofil. Die ERP-Daten in Cloudflare bleiben erhalten.
+
 ## Einmalige Korrektur der bestehenden Verknüpfung
 
 Wenn die App schon vorher installiert war, einmal ausführen:
@@ -41,6 +50,14 @@ Wenn neuer Code zu GitHub/Cloudflare veröffentlicht wird, sieht Mohammed beim n
 
 ```powershell
 .\START_ONCC_ERP_WINDOWS.cmd
+```
+
+## Login zurücksetzen
+
+Wenn das falsche Konto festhängt:
+
+```powershell
+.\RESET_ONCC_ERP_LOGIN.cmd
 ```
 
 ## Deinstallieren

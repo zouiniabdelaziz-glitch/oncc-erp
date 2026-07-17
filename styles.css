@@ -3927,6 +3927,49 @@ body[data-sidebar="erp"] .main {
   border-color: #dbe4ee;
 }
 
+.task-checklist {
+  counter-reset: task-step;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-checklist li {
+  align-items: flex-start;
+  background: #fbfcfd;
+  border: 1px solid #e4e8ec;
+  border-radius: 7px;
+  color: #25364a;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  line-height: 1.45;
+  padding: 9px 10px;
+}
+
+.task-checklist li::before {
+  align-items: center;
+  background: #e8f1fb;
+  border-radius: 999px;
+  color: #0f4f8f;
+  content: counter(task-step);
+  counter-increment: task-step;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.task-checklist-note {
+  color: #6f7782;
+  font-size: 12px;
+  margin: 2px 0 0;
+}
+
 .task-detail-empty {
   color: #77808c;
   font-size: 13px;
