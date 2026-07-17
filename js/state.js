@@ -1,6 +1,8 @@
 (function () {
   const STORAGE_KEY = "osmechplast.management.erp.v1";
+  const ACTIVE_USER_KEY = "osmechplast.management.erp.activeUser.v1";
   const API_STATE_URL = "/api/state";
+  const API_ME_URL = "/api/me";
   const SYNC_TIMEOUT_MS = 4500;
   let syncStatus = {
     mode: "local",
@@ -30,6 +32,8 @@
       roleId: "rol_super_admin",
       roleName: "Super Admin",
       status: "aktiv",
+      emailAliases: [],
+      loginHints: ["abdelaziz"],
       permissions: superAdminPermissions
     },
     {
@@ -38,6 +42,8 @@
       roleId: "rol_super_admin",
       roleName: "Super Admin",
       status: "aktiv",
+      emailAliases: [],
+      loginHints: ["mohammed", "mohamed"],
       permissions: superAdminPermissions
     }
   ];
@@ -672,6 +678,8 @@
         existing.roleId = "rol_super_admin";
         existing.roleName = "Super Admin";
         existing.status = "aktiv";
+        existing.emailAliases = Array.isArray(existing.emailAliases) ? existing.emailAliases : clone(user.emailAliases || []);
+        existing.loginHints = Array.isArray(existing.loginHints) && existing.loginHints.length ? existing.loginHints : clone(user.loginHints || []);
         existing.permissions = clone(superAdminPermissions);
       } else {
         data.users.push(clone(user));
@@ -889,8 +897,32 @@
     return user ? user.name : "Abdelaziz";
   }
 
+  function localActiveUserId() {
+    try {
+      return localStorage.getItem(ACTIVE_USER_KEY) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function setLocalActiveUserId(userId) {
+    try {
+      localStorage.setItem(ACTIVE_USER_KEY, userId);
+    } catch (error) {
+      // Local user selection is a UI preference. If storage is blocked, the app still works.
+    }
+  }
+
+  function isKnownUser(data, userId) {
+    return !!(userId && (data.users || []).some((user) => user.id === userId));
+  }
+
   function currentUserId(data) {
-    return data.meta && data.meta.currentUser ? data.meta.currentUser : "usr_abdelaziz";
+    const localUser = localActiveUserId();
+    if (isKnownUser(data, localUser)) return localUser;
+    const metaUser = data.meta && data.meta.currentUser ? data.meta.currentUser : "";
+    if (isKnownUser(data, metaUser)) return metaUser;
+    return "usr_abdelaziz";
   }
 
   function currentUserRecord(data) {
@@ -898,12 +930,93 @@
     return (data.users || []).find((user) => user.id === userId) || (data.users || [])[0] || defaultUsers[0];
   }
 
-  function setCurrentUser(data, userId) {
+  function setCurrentUser(data, userId, options = {}) {
     const user = (data.users || []).find((item) => item.id === userId);
     if (!user) return false;
-    ensureMeta(data).currentUser = user.id;
-    save(data, { summary: `Benutzer gewechselt: ${user.name}` });
+    const meta = ensureMeta(data);
+    meta.currentUser = user.id;
+    meta.lastLocalUserSwitchAt = new Date().toISOString();
+    setLocalActiveUserId(user.id);
+    if (options.cloud === true) {
+      save(data, { summary: `Benutzer gewechselt: ${user.name}` });
+    } else {
+      saveLocalOnly(data);
+    }
     return true;
+  }
+
+  function normalizeEmail(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function normalizeLoginToken(value) {
+    return normalizeEmail(value).replace(/[^a-z0-9]/g, "");
+  }
+
+  function userMatchesEmail(user, email) {
+    const normalizedEmail = normalizeEmail(email);
+    const localPart = normalizedEmail.split("@")[0] || normalizedEmail;
+    const token = normalizeLoginToken(localPart);
+    const exactEmails = []
+      .concat(user.email || [])
+      .concat(user.mail || [])
+      .concat(user.emailAliases || [])
+      .map(normalizeEmail)
+      .filter(Boolean);
+
+    if (exactEmails.includes(normalizedEmail)) return true;
+
+    const hints = []
+      .concat(user.loginHints || [])
+      .concat(user.name || [])
+      .map(normalizeLoginToken)
+      .filter(Boolean);
+
+    return hints.some((hint) => hint && token.includes(hint));
+  }
+
+  function userForEmail(data, email) {
+    const users = data.users || [];
+    return users.find((user) => userMatchesEmail(user, email)) || null;
+  }
+
+  async function loadAuthenticatedIdentity() {
+    if (!cloudPossible()) return { ok: false, reason: "local" };
+    try {
+      return await requestJson(API_ME_URL, { method: "GET" });
+    } catch (error) {
+      return { ok: false, reason: "unavailable", error: error.message };
+    }
+  }
+
+  async function applyAuthenticatedUser(data) {
+    const payload = await loadAuthenticatedIdentity();
+    const identity = payload && payload.identity ? payload.identity : payload;
+    const email = normalizeEmail(identity && identity.email);
+    if (!email) return { ok: false, reason: "no-email" };
+
+    const meta = ensureMeta(data);
+    meta.authenticatedEmail = email;
+    meta.authenticatedName = identity.name || "";
+    meta.authenticatedAt = new Date().toISOString();
+
+    const matchedUser = userForEmail(data, email);
+    if (!matchedUser) {
+      meta.authenticatedUserMissing = true;
+      saveLocalOnly(data);
+      return { ok: false, reason: "no-user-match", email };
+    }
+
+    meta.authenticatedUserMissing = false;
+    meta.authenticatedUserId = matchedUser.id;
+    if (currentUserId(data) !== matchedUser.id) {
+      setCurrentUser(data, matchedUser.id, { cloud: false });
+    } else {
+      setLocalActiveUserId(matchedUser.id);
+      saveLocalOnly(data);
+    }
+
+    return { ok: true, email, userId: matchedUser.id, userName: matchedUser.name };
   }
 
   function permissionsForCurrentUser(data) {
@@ -1204,6 +1317,7 @@
       currentUserId,
       currentUserRecord,
       setCurrentUser,
+      applyAuthenticatedUser,
       permissionsForCurrentUser,
       upsert,
       remove,

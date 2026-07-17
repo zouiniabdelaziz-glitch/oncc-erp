@@ -262,6 +262,9 @@
 
   async function start() {
     OSM.data = await OSM.state.load();
+    if (OSM.state.applyAuthenticatedUser) {
+      await OSM.state.applyAuthenticatedUser(OSM.data);
+    }
     document.getElementById("app").innerHTML = `
       <div class="app-shell app-shell--erp">
         <aside class="sidebar">
@@ -388,17 +391,29 @@
 
   function render() {
     const module = currentModule();
+    const authNotice = renderAuthNotice();
     document.body.dataset.view = module.id === "dashboard" ? "dashboard" : "module";
     document.body.dataset.sidebar = "erp";
     document.querySelector('[data-region="sidebar-user"]').innerHTML = renderSidebarUser();
     document.querySelector('[data-region="nav"]').innerHTML = renderNav(module.id);
-    document.querySelector('[data-region="content"]').innerHTML = module.render
+    document.querySelector('[data-region="content"]').innerHTML = authNotice + (module.render
       ? module.render(OSM.data, helpers)
-      : renderGeneric(module);
+      : renderGeneric(module));
     document.title = `${module.title} - OS.MECHPLAST ERP`;
     renderUserSelect();
     updateSaveStatus();
     updateUpdateStatus();
+  }
+
+  function renderAuthNotice() {
+    const meta = OSM.data && OSM.data.meta ? OSM.data.meta : {};
+    if (!meta.authenticatedEmail || !meta.authenticatedUserMissing) return "";
+    return `
+      <div class="notice notice--warn auth-notice">
+        Cloudflare-Login erkannt: ${escapeHtml(meta.authenticatedEmail)}. Diese E-Mail ist noch keinem ERP-Benutzer zugeordnet.
+        Bitte unter System & Einstellungen > Benutzerprofile beim passenden Benutzer in "Login-E-Mail (Cloudflare)" eintragen.
+      </div>
+    `;
   }
 
   function renderGeneric(module) {

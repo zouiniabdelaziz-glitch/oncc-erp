@@ -62,6 +62,7 @@
     prefix: "usr",
     fields: [
       { key: "name", label: "Name", required: true },
+      { key: "email", label: "Login-E-Mail (Cloudflare)", default: "" },
       { key: "roleId", label: "Rolle", type: "select", options: (data, h) => h.options("roles") },
       { key: "roleName", label: "Rollenname", default: "Super Admin" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "aktiv" },
@@ -69,6 +70,7 @@
     ],
     columns: [
       { key: "name", label: "Benutzer" },
+      { key: "email", label: "Login-E-Mail" },
       { key: "roleName", label: "Rolle" },
       { key: "status", label: "Status", render: (row, data, h) => h.badge(row.status, h.toneForStatus(row.status)) },
       { key: "permissions", label: "Rechte", render: (row, data, h) => {
