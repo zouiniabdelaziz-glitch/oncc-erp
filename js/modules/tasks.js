@@ -420,70 +420,6 @@
     ).join("\n\n");
   }
 
-  function removeTaskInstruction(taskId) {
-    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
-    if (!task) return;
-    if (!confirm("Den gespeicherten Prompt aus dieser Aufgabe löschen? Die Aufgabe, das Problem und die Aufgabenliste bleiben erhalten.")) return;
-    const workInstruction = workInstructionForTask(task);
-    window.OSM.state.upsert(window.OSM.data, "tasks", {
-      id: task.id,
-      comments: commentsWithoutInstructionSections(task.comments, workInstruction),
-      workInstruction: "",
-      codexPrompt: "",
-      expectedOutput: "",
-      instructionRemoved: true
-    });
-    closeTaskDetail();
-    refresh();
-    requestAnimationFrame(() => openTaskDetail(task.id));
-  }
-
-  function buildAiWorkOrder(task, workInstruction, expectedOutput) {
-    const parts = [
-      `Aufgabe: ${displayText(task.title || "Ohne Titel")}`,
-      task.problemStatement ? `Problem / Ausgangsbefund:\n${task.problemStatement}` : "",
-      task.checklist ? `Aufgabenliste / Vorgehen:\n${task.checklist}` : "",
-      workInstruction ? `Prompt:\n${workInstruction}` : "",
-      expectedOutput ? `Erwartetes Ergebnis:\n${expectedOutput}` : ""
-    ].filter(Boolean);
-    return parts.join("\n\n");
-  }
-
-  function copyTextToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-      document.execCommand("copy");
-    } finally {
-      textarea.remove();
-    }
-    return Promise.resolve();
-  }
-
-  function copyTaskInstruction(taskId) {
-    const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
-    if (!task) return;
-    const commentSections = splitKnownSections(task.comments);
-    const workInstruction = workInstructionForTask(task);
-    const expectedOutput = task.expectedOutput || sectionValue(commentSections, "Erwartete Abschlussausgabe");
-    const text = buildAiWorkOrder(task, workInstruction, expectedOutput);
-    if (!text.trim()) {
-      alert("Für diese Aufgabe ist kein Prompt gespeichert.");
-      return;
-    }
-    copyTextToClipboard(text)
-      .then(() => alert("Prompt wurde kopiert."))
-      .catch(() => alert("Kopieren war nicht möglich. Bitte Text manuell markieren."));
-  }
-
   function normaliseTaskProfessionalFields(data) {
     let changed = false;
     (data.tasks || []).forEach((task) => {
@@ -595,8 +531,6 @@
           <div class="task-detail-actions">
             <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
             <button class="button" type="button" data-task-doc-add="${escapeHtml(task.id)}">Notiz / Lösung hinzufügen</button>
-            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-copy="${escapeHtml(task.id)}">Prompt kopieren</button>` : ""}
-            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-remove="${escapeHtml(task.id)}">x Prompt löschen</button>` : ""}
           </div>
 
           <div class="task-detail-meta">
@@ -1066,22 +1000,6 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       openTaskDocumentationForm(addDocumentationButton.dataset.taskDocAdd);
-      return;
-    }
-
-    const removeInstructionButton = event.target.closest("[data-task-instruction-remove]");
-    if (removeInstructionButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      removeTaskInstruction(removeInstructionButton.dataset.taskInstructionRemove);
-      return;
-    }
-
-    const copyInstructionButton = event.target.closest("[data-task-instruction-copy]");
-    if (copyInstructionButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      copyTaskInstruction(copyInstructionButton.dataset.taskInstructionCopy);
       return;
     }
 
