@@ -1972,6 +1972,36 @@ tr:last-child td {
   gap: 5px;
 }
 
+.form-field__label-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.form-field__clear {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 24px;
+  padding: 0 7px;
+}
+
+.form-field__clear:hover,
+.form-field__clear:focus {
+  border-color: var(--danger);
+  color: var(--danger);
+  outline: none;
+}
+
 .form-field--wide {
   grid-column: 1 / -1;
 }

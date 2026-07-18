@@ -195,10 +195,10 @@
   }
 
   function displaySectionLabel(labelText) {
-    if (labelText === "Prompt-ID") return "Anweisung-ID";
-    if (labelText === "Codex-Prompt") return "KI-Arbeitsauftrag";
-    if (labelText === "Arbeitsanweisung") return "KI-Arbeitsauftrag";
-    if (labelText === "Arbeitsanleitung") return "KI-Arbeitsauftrag";
+    if (labelText === "Anweisung-ID") return "Prompt-ID";
+    if (labelText === "Codex-Prompt") return "Prompt";
+    if (labelText === "Arbeitsanweisung") return "Prompt";
+    if (labelText === "Arbeitsanleitung") return "Prompt";
     return labelText;
   }
 
@@ -376,7 +376,7 @@
   function renderInstructionContent(task, workInstruction, expectedOutput) {
     const sections = splitInstructionSections(workInstruction);
     if (!workInstruction && !expectedOutput) {
-      return `<p class="task-detail-empty">Für diese Aufgabe ist noch kein optionaler KI-Arbeitsauftrag gespeichert.</p>`;
+      return `<p class="task-detail-empty">Für diese Aufgabe ist noch kein Prompt gespeichert.</p>`;
     }
     const content = sections.length
       ? sections.map((section) => `
@@ -423,7 +423,7 @@
   function removeTaskInstruction(taskId) {
     const task = (window.OSM.data.tasks || []).find((item) => item.id === taskId);
     if (!task) return;
-    if (!confirm("Den gespeicherten KI-Arbeitsauftrag aus dieser Aufgabe löschen? Die Aufgabe und die Dokumentation bleiben erhalten.")) return;
+    if (!confirm("Den gespeicherten Prompt aus dieser Aufgabe löschen? Die Aufgabe, das Problem und die Aufgabenliste bleiben erhalten.")) return;
     const workInstruction = workInstructionForTask(task);
     window.OSM.state.upsert(window.OSM.data, "tasks", {
       id: task.id,
@@ -443,7 +443,7 @@
       `Aufgabe: ${displayText(task.title || "Ohne Titel")}`,
       task.problemStatement ? `Problem / Ausgangsbefund:\n${task.problemStatement}` : "",
       task.checklist ? `Aufgabenliste / Vorgehen:\n${task.checklist}` : "",
-      workInstruction ? `KI-Arbeitsauftrag:\n${workInstruction}` : "",
+      workInstruction ? `Prompt:\n${workInstruction}` : "",
       expectedOutput ? `Erwartetes Ergebnis:\n${expectedOutput}` : ""
     ].filter(Boolean);
     return parts.join("\n\n");
@@ -476,11 +476,11 @@
     const expectedOutput = task.expectedOutput || sectionValue(commentSections, "Erwartete Abschlussausgabe");
     const text = buildAiWorkOrder(task, workInstruction, expectedOutput);
     if (!text.trim()) {
-      alert("Für diese Aufgabe ist kein KI-Arbeitsauftrag gespeichert.");
+      alert("Für diese Aufgabe ist kein Prompt gespeichert.");
       return;
     }
     copyTextToClipboard(text)
-      .then(() => alert("KI-Arbeitsauftrag wurde kopiert."))
+      .then(() => alert("Prompt wurde kopiert."))
       .catch(() => alert("Kopieren war nicht möglich. Bitte Text manuell markieren."));
   }
 
@@ -577,7 +577,7 @@
       ["Kunde", customer],
       ["Auftrag", order],
       ["SEO Task-ID", task.sourceTaskId || ""],
-      ["Anweisung-ID", task.sourcePromptId || ""]
+      ["Prompt-ID", task.sourcePromptId || ""]
     ].filter((item) => item[1] && item[1] !== "-");
 
 
@@ -595,8 +595,8 @@
           <div class="task-detail-actions">
             <button class="button" type="button" data-task-detail-edit="${escapeHtml(task.id)}">Bearbeiten</button>
             <button class="button" type="button" data-task-doc-add="${escapeHtml(task.id)}">Notiz / Lösung hinzufügen</button>
-            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-copy="${escapeHtml(task.id)}">KI-Arbeitsauftrag kopieren</button>` : ""}
-            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-remove="${escapeHtml(task.id)}">KI-Arbeitsauftrag löschen</button>` : ""}
+            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-copy="${escapeHtml(task.id)}">Prompt kopieren</button>` : ""}
+            ${hasInstruction ? `<button class="button button--quiet" type="button" data-task-instruction-remove="${escapeHtml(task.id)}">x Prompt löschen</button>` : ""}
           </div>
 
           <div class="task-detail-meta">
@@ -611,7 +611,7 @@
           ${renderDetailGroup("Problem und Ziel", renderProblemOverview(task, descriptionSections, instructionSections), true)}
           ${renderDetailGroup("Aufgabenliste / Vorgehen", renderTaskChecklist(task, descriptionSections, instructionSections), true)}
           ${renderDetailGroup("Aufgabendaten", renderDetailFields(descriptionSections, task.description), false)}
-          ${renderDetailGroup("KI-Arbeitsauftrag", renderInstructionContent(task, workInstruction, expectedOutput), false)}
+          ${hasInstruction ? renderDetailGroup("Prompt", renderInstructionContent(task, workInstruction, expectedOutput), false) : ""}
           ${renderDetailGroup("Dokumentation / Vorgehensweise", renderDocumentationEntries(task), true)}
           ${renderDetailGroup("Nachweis, Quelle und Notizen", renderDetailFields(noteSections, task.notes), false)}
           ${renderDetailGroup("Interne Notizen", renderDetailFields(commentSections.filter((section) => !instructionCommentLabels.includes(section.label)), commentsWithoutInstructionSections(task.comments, workInstruction)), false)}
@@ -684,6 +684,10 @@
     closeTaskDetail();
     refresh();
     requestAnimationFrame(() => openTaskDetail(task.id));
+  }
+
+  function promptFieldVisible(record) {
+    return !(record && record.instructionRemoved);
   }
 
   function isOverdue(task) {
@@ -776,7 +780,7 @@
     ]);
     const notes = joinSections([
       { label: "SEO Task-ID", value: source.sourceTaskId },
-      { label: "Anweisung-ID", value: source.promptId },
+      { label: "Prompt-ID", value: source.promptId },
       { label: "AbhÃ¤ngigkeit", value: source.dependency },
       { label: "Gewicht am Gesamtplan", value: source.weight },
       { label: "Nachweis / Ergebnis", value: source.proof },
@@ -1179,8 +1183,18 @@
       { key: "projectId", label: "Projekt", type: "select", options: (data, h) => h.options("projects") },
       { key: "customerId", label: "Kunde optional", type: "select", options: (data, h) => h.options("customers") },
       { key: "orderId", label: "Auftrag optional", type: "select", options: (data, h) => h.options("orders", "orderNo") },
-      { key: "workInstruction", label: "KI-Arbeitsauftrag optional", type: "textarea", wide: true },
-      { key: "expectedOutput", label: "Erwartetes Ergebnis", type: "textarea", wide: true },
+      {
+        key: "workInstruction",
+        label: "Prompt",
+        type: "textarea",
+        wide: true,
+        clearable: true,
+        clearRelated: ["expectedOutput"],
+        removeOnClear: true,
+        visible: promptFieldVisible,
+        clearLabel: "Prompt komplett löschen"
+      },
+      { key: "expectedOutput", label: "Erwartetes Ergebnis", type: "textarea", wide: true, visible: promptFieldVisible },
       { key: "comments", label: "Interne Notizen", type: "textarea", wide: true },
       { key: "history", label: "Historie", type: "textarea", wide: true }
     ],

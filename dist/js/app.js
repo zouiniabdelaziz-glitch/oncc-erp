@@ -597,10 +597,32 @@
     if (action === "check-update") checkUpdate();
     if (action === "apply-update") applyUpdate();
     if (action === "switch-account") switchAccount();
+    if (action === "clear-form-field") clearFormField(target);
     if (action === "export-data") exportData();
     if (action === "import-data") document.getElementById("import-file").click();
     if (action === "reset-demo") resetDemoData();
     if (action === "toggle-sidebar-section") toggleSidebarSection(target.dataset.section);
+  }
+
+  function clearFormField(button) {
+    const form = button.closest("form");
+    if (!form) return;
+    const removeField = button.dataset.removeField === "true";
+    const fields = [button.dataset.field]
+      .concat(String(button.dataset.relatedFields || "").split(","))
+      .map((fieldName) => fieldName.trim())
+      .filter(Boolean);
+    fields.forEach((fieldName) => {
+      const element = form.elements[fieldName];
+      if (element) element.value = "";
+      if (removeField) {
+        const row = Array.from(form.querySelectorAll("[data-field-row]"))
+          .find((item) => item.dataset.fieldRow === fieldName);
+        if (row) row.hidden = true;
+      }
+    });
+    const mainField = form.elements[button.dataset.field];
+    if (mainField && !removeField) mainField.focus();
   }
 
   async function checkUpdate() {
@@ -743,9 +765,16 @@
       const form = event.currentTarget;
       const nextRecord = { id: record.id };
       module.fields.forEach((field) => {
+        if (field.visible && field.visible(record, OSM.data, helpers) === false) return;
         const element = form.elements[field.key];
+        if (!element) return;
         nextRecord[field.key] = field.type === "number" ? Number(element.value || 0) : element.value;
       });
+      if (module.id === "tasks" && Object.prototype.hasOwnProperty.call(nextRecord, "workInstruction")) {
+        const hasInstruction = String(nextRecord.workInstruction || nextRecord.expectedOutput || "").trim();
+        nextRecord.codexPrompt = "";
+        nextRecord.instructionRemoved = !hasInstruction;
+      }
       OSM.state.upsert(OSM.data, module.collection, nextRecord);
       closeModal();
       render();
@@ -753,10 +782,23 @@
   }
 
   function renderField(field, record) {
+    if (field.visible && field.visible(record, OSM.data, helpers) === false) return "";
     const defaultValue = typeof field.default === "function" ? field.default(OSM.data, helpers) : field.default;
     const value = record[field.key] ?? defaultValue ?? "";
     const wide = field.type === "textarea" || field.wide ? " form-field--wide" : "";
     const required = field.required ? " required" : "";
+    const clearButton = field.clearable ? `
+      <button
+        class="form-field__clear"
+        type="button"
+        data-action="clear-form-field"
+        data-field="${escapeHtml(field.key)}"
+        data-related-fields="${escapeHtml((field.clearRelated || []).join(","))}"
+        data-remove-field="${field.removeOnClear ? "true" : "false"}"
+        aria-label="${escapeHtml(displayText(field.clearLabel || `${field.label} leeren`))}"
+        title="${escapeHtml(displayText(field.clearLabel || `${field.label} leeren`))}"
+      >x</button>
+    ` : "";
     let control = "";
 
     if (field.type === "textarea") {
@@ -778,8 +820,11 @@
     }
 
     return `
-      <div class="form-field${wide}">
-        <label>${escapeHtml(displayText(field.label))}</label>
+      <div class="form-field${wide}" data-field-row="${escapeHtml(field.key)}">
+        <div class="form-field__label-row">
+          <label>${escapeHtml(displayText(field.label))}</label>
+          ${clearButton}
+        </div>
         ${control}
       </div>
     `;
