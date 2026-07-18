@@ -38,6 +38,7 @@
   let searchTerm = "";
   let mineOnly = false;
   let areaFilter = "";
+  let activeTaskRootId = "";
   let activeTaskGroupId = "";
 
   function currentUserId() {
@@ -714,7 +715,32 @@
   function seoImportedTasks(data) {
     const pack = seoImportPackage();
     if (!pack) return [];
-    return (data.tasks || []).filter((task) => task.sourcePackage === pack.id || String(task.id || "").startsWith("tsk_seo_"));
+    return (data.tasks || []).filter((task) => isSeoTask(task, pack));
+  }
+
+  function isSeoTask(task, pack) {
+    const packageId = pack && pack.id ? pack.id : "osmechplast-seo-100-plan";
+    return task.sourcePackage === packageId ||
+      task.projectId === "pro_seo_website_100" ||
+      String(task.id || "").startsWith("tsk_seo_");
+  }
+
+  function rootTaskGroups(rows, data) {
+    const pack = seoImportPackage();
+    const seoRows = rows.filter((task) => isSeoTask(task, pack));
+    if (!seoRows.length) return [];
+    return [Object.assign({
+      id: "root:seo",
+      title: "SEO Aufgabe",
+      subtitle: "OS.MECHPLAST Website 100-%-Plan",
+      type: "Hauptaufgabe",
+      sort: 1,
+      tasks: seoRows
+    }, taskGroupProgress(seoRows))];
+  }
+
+  function tasksFromGroups(groups) {
+    return groups.flatMap((group) => group.tasks || []);
   }
 
   function mapSeoStatus(value) {
@@ -876,35 +902,6 @@
     alert(`SEO-Plan importiert.\nNeu: ${created}\nAktualisiert: ${updated}`);
   }
 
-  function renderSeoImportPanel(data, h) {
-    const pack = seoImportPackage();
-    if (!pack) return "";
-    const imported = seoImportedTasks(data);
-    const done = imported.filter((task) => task.status === "erledigt").length;
-    const open = imported.filter((task) => task.status !== "erledigt").length;
-    const progress = imported.length ? Math.round((done / imported.length) * 100) : 0;
-    const label = imported.length ? "SEO-Plan aktualisieren" : "SEO-Plan importieren";
-
-    return `
-      <section class="task-import-panel">
-        <div class="task-import-panel__main">
-          <span class="task-import-panel__eyebrow">Importpaket</span>
-          <strong>${h.escapeHtml(pack.title)}</strong>
-          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, Zuständigem, Historie und Dashboard-Zählung.</span>
-        </div>
-        <div class="task-import-panel__stats" aria-label="SEO Import Status">
-          <span><strong>${h.escapeHtml(imported.length)}</strong> im ERP</span>
-          <span><strong>${h.escapeHtml(open)}</strong> offen</span>
-          <span><strong>${h.escapeHtml(progress)}%</strong> erledigt</span>
-        </div>
-        <div class="task-import-panel__actions">
-          <button class="button" type="button" data-seo-import>${h.escapeHtml(label)}</button>
-          ${imported.length ? `<button class="button button--quiet" type="button" data-seo-filter>SEO-Aufgaben anzeigen</button>` : ""}
-        </div>
-      </section>
-    `;
-  }
-
   function projectName(data, projectId) {
     if (!projectId) return "";
     const project = (data.projects || []).find((item) => item.id === projectId);
@@ -917,7 +914,7 @@
         id: `source:${task.sourceLevel1}`,
         title: cleanTaskText(task.sourceLevel1),
         subtitle: projectName(data, task.projectId) || cleanTaskText(task.area || "Aufgaben"),
-        type: "SEO-Hauptaufgabe",
+        type: "Unterhauptaufgabe",
         sort: taskPlanOrder(task) || 9999
       };
     }
@@ -973,14 +970,19 @@
       });
   }
 
-  function renderTaskGroupOverview(groups, h) {
+  function renderTaskGroupOverview(groups, h, options) {
+    const settings = Object.assign({
+      label: "Hauptaufgaben",
+      openAttribute: "data-task-root-open",
+      gridClass: ""
+    }, options || {});
     if (!groups.length) {
-      return `<section class="task-main-empty">Keine Hauptaufgaben für diese Auswahl.</section>`;
+      return `<section class="task-main-empty">Keine ${h.escapeHtml(settings.label)} für diese Auswahl.</section>`;
     }
     return `
-      <section class="task-main-grid" aria-label="Hauptaufgaben">
+      <section class="task-main-grid ${h.escapeHtml(settings.gridClass)}" aria-label="${h.escapeHtml(settings.label)}">
         ${groups.map((group) => `
-          <button class="task-main-card" type="button" data-task-group-open="${h.escapeHtml(group.id)}">
+          <button class="task-main-card" type="button" ${settings.openAttribute}="${h.escapeHtml(group.id)}">
             <span class="task-main-card__type">${h.escapeHtml(group.type)}</span>
             <strong>${h.escapeHtml(group.title || "Ohne Titel")}</strong>
             <span class="task-main-card__subtitle">${h.escapeHtml(group.subtitle || "")}</span>
@@ -990,6 +992,7 @@
             </span>
             <span class="task-main-card__bar"><i style="width: ${h.escapeHtml(group.progress)}%"></i></span>
             <span class="task-main-card__meta">
+              <span>${h.escapeHtml(group.total)} Aufgaben</span>
               <span>${h.escapeHtml(group.done)} erledigt</span>
               <span>${h.escapeHtml(group.open)} offen</span>
               ${group.blocked ? `<span class="is-critical">${h.escapeHtml(group.blocked)} blockiert</span>` : ""}
@@ -1127,17 +1130,37 @@
   }
 
   document.addEventListener("click", (event) => {
-    const groupOpenButton = event.target.closest("[data-task-group-open]");
-    if (groupOpenButton) {
+    const rootOpenButton = event.target.closest("[data-task-root-open]");
+    if (rootOpenButton) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      activeTaskGroupId = groupOpenButton.dataset.taskGroupOpen || "";
+      activeTaskRootId = rootOpenButton.dataset.taskRootOpen || "";
+      activeTaskGroupId = "";
       refresh();
       return;
     }
 
-    const groupBackButton = event.target.closest("[data-task-group-back]");
-    if (groupBackButton) {
+    const subgroupOpenButton = event.target.closest("[data-task-subgroup-open]");
+    if (subgroupOpenButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      activeTaskGroupId = subgroupOpenButton.dataset.taskSubgroupOpen || "";
+      refresh();
+      return;
+    }
+
+    const rootBackButton = event.target.closest("[data-task-root-back]");
+    if (rootBackButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      activeTaskRootId = "";
+      activeTaskGroupId = "";
+      refresh();
+      return;
+    }
+
+    const subgroupBackButton = event.target.closest("[data-task-subgroup-back]");
+    if (subgroupBackButton) {
       event.preventDefault();
       event.stopImmediatePropagation();
       activeTaskGroupId = "";
@@ -1211,18 +1234,6 @@
       return;
     }
 
-    const seoImportButton = event.target.closest("[data-seo-import]");
-    if (seoImportButton) {
-      importSeoTasks();
-      refresh();
-      return;
-    }
-
-    const seoFilterButton = event.target.closest("[data-seo-filter]");
-    if (seoFilterButton) {
-      areaFilter = "Marketing / SEO";
-      refresh();
-    }
   });
 
   document.addEventListener("input", (event) => {
@@ -1311,18 +1322,38 @@
         const matchesArea = !areaFilter || task.area === areaFilter;
         return matchesSearch && matchesOwner && matchesArea;
       });
-      const groups = taskGroups(filteredRows, data);
-      let activeGroup = activeTaskGroupId ? groups.find((group) => group.id === activeTaskGroupId) : null;
+      const rootGroups = rootTaskGroups(filteredRows, data);
+      let activeRoot = activeTaskRootId ? rootGroups.find((group) => group.id === activeTaskRootId) : null;
+      if (activeTaskRootId && !activeRoot) {
+        activeTaskRootId = "";
+        activeTaskGroupId = "";
+        activeRoot = null;
+      }
+      const subGroups = activeRoot ? taskGroups(activeRoot.tasks, data) : [];
+      let activeGroup = activeTaskGroupId ? subGroups.find((group) => group.id === activeTaskGroupId) : null;
       if (activeTaskGroupId && !activeGroup) {
         activeTaskGroupId = "";
         activeGroup = null;
       }
-      const visibleRows = activeGroup ? activeGroup.tasks : filteredRows;
+      const visibleRows = activeGroup
+        ? activeGroup.tasks
+        : activeRoot
+          ? activeRoot.tasks
+          : tasksFromGroups(rootGroups);
       const open = visibleRows.filter((task) => task.status !== "erledigt").length;
       const mine = visibleRows.filter((task) => task.assignedTo === currentId && task.status !== "erledigt").length;
       const blocked = visibleRows.filter((task) => task.status === "blockiert").length;
       const mode = taskView();
+      const isRootOpen = !!activeRoot;
       const isGroupOpen = !!activeGroup;
+      const currentTitle = isGroupOpen ? activeGroup.title : isRootOpen ? activeRoot.title : "Aufgaben";
+      const currentSubtitle = isGroupOpen
+        ? activeGroup.subtitle || ""
+        : isRootOpen
+          ? "Unterhauptaufgaben mit Fortschritt. Öffne eine Unterhauptaufgabe, um das Board der Einzelaufgaben zu sehen."
+          : "Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um die Unterhauptaufgaben zu sehen.";
+      const toolbarTitle = isGroupOpen ? "" : isRootOpen ? "Unterhauptaufgaben" : "Hauptaufgaben";
+      const searchPlaceholder = isGroupOpen ? "Einzelaufgaben suchen" : isRootOpen ? "Unterhauptaufgaben suchen" : "Hauptaufgaben suchen";
 
       return `
         <div class="notion-task-page">
@@ -1330,13 +1361,15 @@
             <div>
               <div class="breadcrumb">
                 <a href="#dashboard">Start</a><span>/</span><a href="#area-management">Management</a>
-                ${isGroupOpen ? `<span>/</span><button class="breadcrumb-button" type="button" data-task-group-back>Hauptaufgaben</button>` : ""}
+                ${isRootOpen ? `<span>/</span><button class="breadcrumb-button" type="button" data-task-root-back>Hauptaufgaben</button>` : ""}
+                ${isGroupOpen ? `<span>/</span><button class="breadcrumb-button" type="button" data-task-subgroup-back>${h.escapeHtml(activeRoot.title)}</button>` : ""}
               </div>
-              <h1><span class="notion-title-icon">✓</span>${isGroupOpen ? h.escapeHtml(activeGroup.title) : "Aufgaben"}</h1>
-              ${isGroupOpen ? `<p class="notion-task-subtitle">${h.escapeHtml(activeGroup.subtitle || "")}</p>` : `<p class="notion-task-subtitle">Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um das Board der Einzelaufgaben zu sehen.</p>`}
+              <h1><span class="notion-title-icon">✓</span>${h.escapeHtml(currentTitle)}</h1>
+              <p class="notion-task-subtitle">${h.escapeHtml(currentSubtitle)}</p>
             </div>
             <div class="page-actions">
-              ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-group-back>Zurück zu Hauptaufgaben</button>` : ""}
+              ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-subgroup-back>Zurück zu Unterhauptaufgaben</button>` : ""}
+              ${isRootOpen && !isGroupOpen ? `<button class="button button--quiet" type="button" data-task-root-back>Zurück zu Hauptaufgaben</button>` : ""}
               <button class="button button--blue" data-action="add" data-module="tasks">Neu <span aria-hidden="true">+</span></button>
             </div>
           </div>
@@ -1345,10 +1378,10 @@
             <span><strong>${open}</strong> offen</span>
             <span><strong>${mine}</strong> für mich</span>
             <span class="${blocked ? "is-critical" : ""}"><strong>${blocked}</strong> blockiert</span>
-            ${isGroupOpen ? `<span><strong>${activeGroup.progress}%</strong> erledigt</span>` : `<span><strong>${groups.length}</strong> Hauptaufgaben</span>`}
+            ${isGroupOpen ? `<span><strong>${activeGroup.progress}%</strong> erledigt</span>` : ""}
+            ${isRootOpen && !isGroupOpen ? `<span><strong>${subGroups.length}</strong> Unterhauptaufgaben</span>` : ""}
+            ${!isRootOpen ? `<span><strong>${rootGroups.length}</strong> Hauptaufgaben</span>` : ""}
           </div>
-
-          ${!isGroupOpen ? renderSeoImportPanel(data, h) : ""}
 
           <div class="notion-task-toolbar">
             ${isGroupOpen ? `
@@ -1356,11 +1389,11 @@
                 <button class="${mode === "board" ? "is-active" : ""}" type="button" data-task-view="board"><span class="notion-view-icon">▥</span> Board</button>
                 <button class="${mode === "list" ? "is-active" : ""}" type="button" data-task-view="list"><span class="notion-view-icon">▤</span> Liste</button>
               </div>
-            ` : `<div class="notion-view-tabs"><span class="task-main-toolbar-title">Hauptaufgaben</span></div>`}
+            ` : `<div class="notion-view-tabs"><span class="task-main-toolbar-title">${h.escapeHtml(toolbarTitle)}</span></div>`}
             <div class="notion-task-filters">
               <label class="notion-task-search">
                 <span aria-hidden="true">⌕</span>
-                <input type="search" value="${h.escapeHtml(searchTerm)}" data-task-search placeholder="${isGroupOpen ? "Einzelaufgaben suchen" : "Hauptaufgaben suchen"}" aria-label="Aufgaben suchen" />
+                <input type="search" value="${h.escapeHtml(searchTerm)}" data-task-search placeholder="${h.escapeHtml(searchPlaceholder)}" aria-label="Aufgaben suchen" />
               </label>
               <select data-task-area aria-label="Nach Bereich filtern">
                 <option value="">Alle Bereiche</option>
@@ -1372,7 +1405,16 @@
 
           ${isGroupOpen
             ? (mode === "board" ? renderBoard(visibleRows, data, h) : renderList(visibleRows, data, h))
-            : renderTaskGroupOverview(groups, h)}
+            : isRootOpen
+              ? renderTaskGroupOverview(subGroups, h, {
+                  label: "Unterhauptaufgaben",
+                  openAttribute: "data-task-subgroup-open"
+                })
+              : renderTaskGroupOverview(rootGroups, h, {
+                  label: "Hauptaufgaben",
+                  openAttribute: "data-task-root-open",
+                  gridClass: "task-main-grid--root"
+                })}
         </div>
       `;
     }

@@ -3817,6 +3817,10 @@ body[data-sidebar="erp"] .main {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
+.task-main-grid--root {
+  grid-template-columns: minmax(280px, 430px);
+}
+
 .task-main-card {
   background: #ffffff;
   border: 1px solid #e2e1de;

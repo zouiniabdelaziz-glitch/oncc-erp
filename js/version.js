@@ -1,7 +1,7 @@
 (function () {
   window.OSM_APP_VERSION = {
     name: "ONCC ERP / OS.MECHPLAST Workspace",
-    version: "2026.07.18-prompt-remove-row.11",
+    version: "2026.07.18-task-seo-hierarchy.12",
     releaseDate: "2026-07-18",
     appUrl: "https://oncc-erp.pages.dev",
     deployment: "Cloudflare Pages",
