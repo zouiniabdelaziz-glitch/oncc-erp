@@ -3766,6 +3766,23 @@ body[data-sidebar="erp"] .main {
   width: 31px;
 }
 
+.notion-task-subtitle {
+  color: #6f6e69;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 8px 0 0 45px;
+}
+
+.breadcrumb-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .notion-task-summary {
   align-items: center;
   color: #6f6e69;
@@ -3783,6 +3800,109 @@ body[data-sidebar="erp"] .main {
 .notion-task-summary .is-critical,
 .notion-task-summary .is-critical strong {
   color: var(--danger);
+}
+
+.task-main-toolbar-title {
+  align-items: center;
+  color: #37352f;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 12px;
+}
+
+.task-main-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.task-main-card {
+  background: #ffffff;
+  border: 1px solid #e2e1de;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: #2f2e2b;
+  cursor: pointer;
+  display: grid;
+  gap: 9px;
+  min-height: 178px;
+  padding: 16px;
+  text-align: left;
+}
+
+.task-main-card:hover,
+.task-main-card:focus {
+  border-color: #c7c5c1;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.task-main-card__type {
+  color: #787774;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.task-main-card strong {
+  color: #18212b;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.task-main-card__subtitle {
+  color: #6f6e69;
+  font-size: 13px;
+  min-height: 18px;
+}
+
+.task-main-card__progress-row,
+.task-main-card__meta {
+  align-items: center;
+  color: #6f6e69;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 8px 12px;
+  justify-content: space-between;
+}
+
+.task-main-card__progress-row b {
+  color: #18212b;
+  font-size: 18px;
+}
+
+.task-main-card__bar {
+  background: #edf0f3;
+  border-radius: 999px;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+}
+
+.task-main-card__bar i {
+  background: var(--osmp-red);
+  display: block;
+  height: 100%;
+}
+
+.task-main-card__meta {
+  justify-content: flex-start;
+}
+
+.task-main-card__meta .is-critical {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.task-main-empty {
+  background: #ffffff;
+  border: 1px solid #e2e1de;
+  border-radius: 8px;
+  color: #6f6e69;
+  padding: 18px;
 }
 
 .task-detail-backdrop {

@@ -17,7 +17,7 @@
   const documentationTypeOptions = [
     { value: "notiz", label: "Notiz" },
     { value: "vorgehensweise", label: "Vorgehensweise" },
-    { value: "loesung", label: "LÃ¶sung" },
+    { value: "loesung", label: "Lösung" },
     { value: "ergebnis", label: "Ergebnis / Test" }
   ];
 
@@ -28,7 +28,7 @@
     "Arbeitsvorbereitung",
     "Einkauf",
     "Lager",
-    "QualitÃ¤t",
+    "Qualität",
     "Marketing / SEO",
     "Personal",
     "Finanzen",
@@ -38,6 +38,7 @@
   let searchTerm = "";
   let mineOnly = false;
   let areaFilter = "";
+  let activeTaskGroupId = "";
 
   function currentUserId() {
     return window.OSM.state.currentUserId(window.OSM.data);
@@ -49,6 +50,33 @@
 
   function taskView() {
     return localStorage.getItem(viewStorageKey()) || "board";
+  }
+
+  const mojibake = (...codePoints) => String.fromCodePoint(...codePoints);
+  const textCorrections = [
+    [mojibake(0x00c3, 0x00a4), "ä"],
+    [mojibake(0x00c3, 0x201e), "Ä"],
+    [mojibake(0x00c3, 0x00b6), "ö"],
+    [mojibake(0x00c3, 0x2013), "Ö"],
+    [mojibake(0x00c3, 0x00bc), "ü"],
+    [mojibake(0x00c3, 0x0152), "Ü"],
+    [mojibake(0x00c3, 0x0178), "ß"],
+    [mojibake(0x00e2, 0x0153, 0x201c), "✓"],
+    [mojibake(0x00e2, 0x2013, 0x00a5), "▥"],
+    [mojibake(0x00e2, 0x2013, 0x00a4), "▤"],
+    [mojibake(0x00e2, 0x0152, 0x2022), "⌕"],
+    [mojibake(0x00c2, 0x00b7), "·"]
+  ];
+
+  function repairTaskText(value) {
+    return textCorrections.reduce(
+      (text, correction) => text.replaceAll(correction[0], correction[1]),
+      String(value ?? "")
+    );
+  }
+
+  function cleanTaskText(value) {
+    return repairTaskText(displayText(value));
   }
 
   function refresh(focusSelector) {
@@ -138,7 +166,7 @@
     "SEO Task-ID",
     "Anweisung-ID",
     "Prompt-ID",
-    "AbhÃ¤ngigkeit",
+    "Abhängigkeit",
     "Gewicht am Gesamtplan",
     "Nachweis / Ergebnis",
     "Quelle",
@@ -240,7 +268,7 @@
     const entries = taskDocumentation(task)
       .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
     if (!entries.length) {
-      return `<p class="task-detail-empty">Noch keine Dokumentation gespeichert. FÃ¼ge hier Vorgehensweise, LÃ¶sung oder Testergebnis hinzu.</p>`;
+      return `<p class="task-detail-empty">Noch keine Dokumentation gespeichert. Füge hier Vorgehensweise, Lösung oder Testergebnis hinzu.</p>`;
     }
     return `
       <div class="task-doc-list">
@@ -248,7 +276,7 @@
           <article class="task-doc-entry">
             <div class="task-doc-entry__head">
               <span class="task-doc-entry__type">${escapeHtml(documentationTypeLabel(entry.type))}</span>
-              <span>${escapeHtml(entry.createdBy || "-")} Â· ${escapeHtml(formatDateTime(entry.createdAt))}</span>
+              <span>${escapeHtml(entry.createdBy || "-")} · ${escapeHtml(formatDateTime(entry.createdAt))}</span>
             </div>
             <p>${escapeHtml(entry.text || "")}</p>
           </article>
@@ -359,8 +387,8 @@
   function renderTaskChecklist(task, descriptionSections, instructionSections) {
     const items = splitChecklistItems(taskChecklistText(task, descriptionSections, instructionSections));
     const defaults = [
-      "Ausgangsbefund prÃ¼fen und betroffene Stelle finden",
-      "Ã„nderung oder LÃ¶sung sauber umsetzen",
+      "Ausgangsbefund prüfen und betroffene Stelle finden",
+      "Änderung oder Lösung sauber umsetzen",
       "Ergebnis testen und Nachweis dokumentieren",
       "Offene Punkte oder Risiko festhalten"
     ];
@@ -369,7 +397,7 @@
       <ol class="task-checklist">
         ${finalItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
       </ol>
-      <p class="task-checklist-note">Diese Liste dient dazu, spÃ¤ter nachvollziehen zu kÃ¶nnen, was das Problem war und wie es gelÃ¶st wurde.</p>
+      <p class="task-checklist-note">Diese Liste dient dazu, später nachvollziehen zu können, was das Problem war und wie es gelöst wurde.</p>
     `;
   }
 
@@ -423,6 +451,41 @@
   function normaliseTaskProfessionalFields(data) {
     let changed = false;
     (data.tasks || []).forEach((task) => {
+      const textFields = [
+        "title",
+        "description",
+        "problemStatement",
+        "checklist",
+        "area",
+        "comments",
+        "notes",
+        "workInstruction",
+        "expectedOutput",
+        "history",
+        "sourceLevel1",
+        "sourceLevel2",
+        "sourceLevel3"
+      ];
+      textFields.forEach((field) => {
+        if (typeof task[field] !== "string") return;
+        const repaired = repairTaskText(task[field]);
+        if (repaired !== task[field]) {
+          task[field] = repaired;
+          changed = true;
+        }
+      });
+      if (Array.isArray(task.workLog)) {
+        task.workLog.forEach((entry) => {
+          ["type", "text", "createdBy"].forEach((field) => {
+            if (typeof entry[field] !== "string") return;
+            const repaired = repairTaskText(entry[field]);
+            if (repaired !== entry[field]) {
+              entry[field] = repaired;
+              changed = true;
+            }
+          });
+        });
+      }
       const descriptionSections = splitKnownSections(task.description);
       const commentSections = splitKnownSections(task.comments);
       const commentInstruction = sectionValue(commentSections, "Arbeitsanleitung") ||
@@ -504,10 +567,10 @@
 
     const meta = [
       ["Status", statusLabel(task.status)],
-      ["PrioritÃ¤t", displayText(task.priority || "mittel")],
+      ["Priorität", displayText(task.priority || "mittel")],
       ["Bereich", task.area || "Management"],
-      ["ZustÃ¤ndig", assignee],
-      ["FÃ¤llig", formatDate(task.dueDate)],
+      ["Zuständig", assignee],
+      ["Fällig", formatDate(task.dueDate)],
       ["Erstellt von", creator],
       ["Projekt", project],
       ["Kunde", customer],
@@ -525,7 +588,7 @@
               <span class="task-detail-kicker">${escapeHtml(task.area || "Aufgabe")}</span>
               <h2>${escapeHtml(title)}</h2>
             </div>
-            <button class="icon-button" type="button" data-task-detail-close>SchlieÃŸen</button>
+            <button class="icon-button" type="button" data-task-detail-close>Schließen</button>
           </header>
 
           <div class="task-detail-actions">
@@ -569,7 +632,7 @@
               <span>Aufgabe dokumentieren</span>
               <strong>${escapeHtml(displayText(task.title || "Ohne Titel"))}</strong>
             </div>
-            <button class="icon-button" type="button" data-task-doc-close>SchlieÃŸen</button>
+            <button class="icon-button" type="button" data-task-doc-close>Schließen</button>
           </div>
           <label class="task-doc-field">
             <span>Was ist das?</span>
@@ -578,8 +641,8 @@
             </select>
           </label>
           <label class="task-doc-field">
-            <span>Notiz, Vorgehensweise, LÃ¶sung oder Ergebnis</span>
-            <textarea name="text" rows="8" required placeholder="Beschreibe kurz, was du geplant, geÃ¤ndert, getestet oder entschieden hast."></textarea>
+            <span>Notiz, Vorgehensweise, Lösung oder Ergebnis</span>
+            <textarea name="text" rows="8" required placeholder="Beschreibe kurz, was du geplant, geändert, getestet oder entschieden hast."></textarea>
           </label>
           <div class="task-doc-actions">
             <button type="button" class="button button--quiet" data-task-doc-close>Abbrechen</button>
@@ -657,7 +720,7 @@
   function mapSeoStatus(value) {
     const normalized = String(value || "").trim().toLowerCase();
     if (["erledigt", "done", "fertig", "abgeschlossen"].includes(normalized)) return "erledigt";
-    if (["in arbeit", "in bearbeitung", "lÃ¤uft", "laufend"].includes(normalized)) return "in arbeit";
+    if (["in arbeit", "in bearbeitung", "läuft", "laufend"].includes(normalized)) return "in arbeit";
     if (["wartet", "waiting"].includes(normalized)) return "wartet";
     if (["blockiert", "blocked"].includes(normalized)) return "blockiert";
     return "neu";
@@ -715,7 +778,7 @@
     const notes = joinSections([
       { label: "SEO Task-ID", value: source.sourceTaskId },
       { label: "Prompt-ID", value: source.promptId },
-      { label: "AbhÃ¤ngigkeit", value: source.dependency },
+      { label: "Abhängigkeit", value: source.dependency },
       { label: "Gewicht am Gesamtplan", value: source.weight },
       { label: "Nachweis / Ergebnis", value: source.proof },
       { label: "Quelle", value: "OSMECHPLAST_SEO_100_Prozent_Plan.xlsx" },
@@ -827,7 +890,7 @@
         <div class="task-import-panel__main">
           <span class="task-import-panel__eyebrow">Importpaket</span>
           <strong>${h.escapeHtml(pack.title)}</strong>
-          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, ZustÃ¤ndigem, Historie und Dashboard-ZÃ¤hlung.</span>
+          <span>${h.escapeHtml(pack.taskCount)} Aufgaben aus Excel. Importierte Aufgaben bleiben normale ERP-Aufgaben mit Status, Zuständigem, Historie und Dashboard-Zählung.</span>
         </div>
         <div class="task-import-panel__stats" aria-label="SEO Import Status">
           <span><strong>${h.escapeHtml(imported.length)}</strong> im ERP</span>
@@ -838,6 +901,101 @@
           <button class="button" type="button" data-seo-import>${h.escapeHtml(label)}</button>
           ${imported.length ? `<button class="button button--quiet" type="button" data-seo-filter>SEO-Aufgaben anzeigen</button>` : ""}
         </div>
+      </section>
+    `;
+  }
+
+  function projectName(data, projectId) {
+    if (!projectId) return "";
+    const project = (data.projects || []).find((item) => item.id === projectId);
+    return project ? cleanTaskText(project.name || project.id) : projectId;
+  }
+
+  function taskGroupMeta(task, data) {
+    if (task.sourceLevel1) {
+      return {
+        id: `source:${task.sourceLevel1}`,
+        title: cleanTaskText(task.sourceLevel1),
+        subtitle: projectName(data, task.projectId) || cleanTaskText(task.area || "Aufgaben"),
+        type: "SEO-Hauptaufgabe",
+        sort: taskPlanOrder(task) || 9999
+      };
+    }
+    if (task.projectId) {
+      return {
+        id: `project:${task.projectId}`,
+        title: projectName(data, task.projectId),
+        subtitle: cleanTaskText(task.area || "Aufgaben"),
+        type: "Projekt",
+        sort: 9000
+      };
+    }
+    const area = task.area || "Management";
+    return {
+      id: `area:${area}`,
+      title: cleanTaskText(area),
+      subtitle: "Allgemeine Aufgaben",
+      type: "Bereich",
+      sort: 9500
+    };
+  }
+
+  function taskGroupProgress(tasks) {
+    const total = tasks.length;
+    const done = tasks.filter((task) => task.status === "erledigt").length;
+    const blocked = tasks.filter((task) => task.status === "blockiert").length;
+    const open = total - done;
+    const weights = tasks.map((task) => Number(task.sourceWeight || 0)).filter((value) => value > 0);
+    const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+    const doneWeight = tasks
+      .filter((task) => task.status === "erledigt")
+      .reduce((sum, task) => sum + Math.max(0, Number(task.sourceWeight || 0)), 0);
+    const progress = total
+      ? Math.round(totalWeight > 0 ? (doneWeight / totalWeight) * 100 : (done / total) * 100)
+      : 0;
+    return { total, done, open, blocked, progress: Math.max(0, Math.min(100, progress)) };
+  }
+
+  function taskGroups(rows, data) {
+    const groups = new Map();
+    rows.forEach((task) => {
+      const meta = taskGroupMeta(task, data);
+      if (!groups.has(meta.id)) {
+        groups.set(meta.id, Object.assign({}, meta, { tasks: [] }));
+      }
+      groups.get(meta.id).tasks.push(task);
+    });
+    return Array.from(groups.values())
+      .map((group) => Object.assign(group, taskGroupProgress(group.tasks)))
+      .sort((left, right) => {
+        if (left.sort !== right.sort) return left.sort - right.sort;
+        return left.title.localeCompare(right.title, "de");
+      });
+  }
+
+  function renderTaskGroupOverview(groups, h) {
+    if (!groups.length) {
+      return `<section class="task-main-empty">Keine Hauptaufgaben für diese Auswahl.</section>`;
+    }
+    return `
+      <section class="task-main-grid" aria-label="Hauptaufgaben">
+        ${groups.map((group) => `
+          <button class="task-main-card" type="button" data-task-group-open="${h.escapeHtml(group.id)}">
+            <span class="task-main-card__type">${h.escapeHtml(group.type)}</span>
+            <strong>${h.escapeHtml(group.title || "Ohne Titel")}</strong>
+            <span class="task-main-card__subtitle">${h.escapeHtml(group.subtitle || "")}</span>
+            <span class="task-main-card__progress-row">
+              <span>Fortschritt</span>
+              <b>${h.escapeHtml(group.progress)}%</b>
+            </span>
+            <span class="task-main-card__bar"><i style="width: ${h.escapeHtml(group.progress)}%"></i></span>
+            <span class="task-main-card__meta">
+              <span>${h.escapeHtml(group.done)} erledigt</span>
+              <span>${h.escapeHtml(group.open)} offen</span>
+              ${group.blocked ? `<span class="is-critical">${h.escapeHtml(group.blocked)} blockiert</span>` : ""}
+            </span>
+          </button>
+        `).join("")}
       </section>
     `;
   }
@@ -860,7 +1018,7 @@
 
   function statusSelect(task, h, className) {
     return `
-      <select class="${className || "task-status-select"}" data-task-status="${h.escapeHtml(task.id)}" aria-label="Status von ${h.escapeHtml(task.title)} Ã¤ndern">
+      <select class="${className || "task-status-select"}" data-task-status="${h.escapeHtml(task.id)}" aria-label="Status von ${h.escapeHtml(task.title)} ändern">
         ${statusOptions.map((option) => `
           <option value="${h.escapeHtml(option.value)}" ${task.status === option.value ? "selected" : ""}>${h.escapeHtml(option.label)}</option>
         `).join("")}
@@ -877,7 +1035,7 @@
           <button class="notion-task-card__title" type="button" data-task-detail="${h.escapeHtml(task.id)}">
             ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
           </button>
-          <button class="task-delete-x" type="button" title="Aufgabe lÃ¶schen" aria-label="Aufgabe lÃ¶schen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
+          <button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button>
         </div>
         ${task.description ? `<p class="notion-task-card__description">${h.escapeHtml(task.description)}</p>` : ""}
         <div class="notion-task-card__properties">
@@ -934,9 +1092,9 @@
                   <th>Aufgabe</th>
                   <th>Status</th>
                   <th>Bereich</th>
-                  <th>PrioritÃ¤t</th>
-                  <th>ZustÃ¤ndig</th>
-                  <th>FÃ¤llig</th>
+                  <th>Priorität</th>
+                  <th>Zuständig</th>
+                  <th>Fällig</th>
                   <th></th>
                 </tr>
               </thead>
@@ -947,7 +1105,7 @@
                     <tr>
                       <td>
                         <button class="notion-task-title-link" type="button" data-task-detail="${h.escapeHtml(task.id)}">
-                          <span class="notion-check">${task.status === "erledigt" ? "âœ“" : ""}</span>
+                          <span class="notion-check">${task.status === "erledigt" ? "✓" : ""}</span>
                           ${h.escapeHtml(h.displayText(task.title || "Ohne Titel"))}
                         </button>
                       </td>
@@ -956,19 +1114,37 @@
                       <td><span class="task-property task-property--${h.escapeHtml(task.priority || "mittel")}">${h.escapeHtml(h.displayText(task.priority || "mittel"))}</span></td>
                       <td><span class="task-assignee"><span class="task-avatar">${h.escapeHtml(userInitials(assignee))}</span>${h.escapeHtml(assignee)}</span></td>
                       <td><span class="task-due ${isOverdue(task) ? "is-overdue" : ""}">${h.escapeHtml(formatDate(task.dueDate))}</span></td>
-                      <td><button class="task-delete-x" type="button" title="Aufgabe lÃ¶schen" aria-label="Aufgabe lÃ¶schen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button></td>
+                      <td><button class="task-delete-x" type="button" title="Aufgabe löschen" aria-label="Aufgabe löschen" data-action="delete" data-module="tasks" data-id="${h.escapeHtml(task.id)}">&times;</button></td>
                     </tr>
                   `;
                 }).join("")}
               </tbody>
             </table>
           </div>
-        ` : `<div class="empty">Keine Aufgaben fÃ¼r diese Auswahl.</div>`}
+        ` : `<div class="empty">Keine Aufgaben für diese Auswahl.</div>`}
       </section>
     `;
   }
 
   document.addEventListener("click", (event) => {
+    const groupOpenButton = event.target.closest("[data-task-group-open]");
+    if (groupOpenButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      activeTaskGroupId = groupOpenButton.dataset.taskGroupOpen || "";
+      refresh();
+      return;
+    }
+
+    const groupBackButton = event.target.closest("[data-task-group-back]");
+    if (groupBackButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      activeTaskGroupId = "";
+      refresh();
+      return;
+    }
+
     const detailButton = event.target.closest("[data-task-detail]");
     if (detailButton) {
       event.preventDefault();
@@ -1093,11 +1269,11 @@
       { key: "problemStatement", label: "Problem / Ausgangsbefund", type: "textarea", wide: true },
       { key: "checklist", label: "Aufgabenliste / Vorgehen", type: "textarea", wide: true },
       { key: "area", label: "Bereich", type: "select", options: areaOptions, default: "Management" },
-      { key: "priority", label: "PrioritÃ¤t", type: "select", options: priorityOptions, default: "mittel" },
+      { key: "priority", label: "Priorität", type: "select", options: priorityOptions, default: "mittel" },
       { key: "status", label: "Status", type: "select", options: statusOptions, default: "neu" },
-      { key: "assignedTo", label: "ZustÃ¤ndig", type: "select", options: (data, h) => h.options("users"), required: true },
+      { key: "assignedTo", label: "Zuständig", type: "select", options: (data, h) => h.options("users"), required: true },
       { key: "createdBy", label: "Erstellt von", type: "select", options: (data, h) => h.options("users"), default: () => currentUserId() },
-      { key: "dueDate", label: "FÃ¤lligkeitsdatum", type: "date" },
+      { key: "dueDate", label: "Fälligkeitsdatum", type: "date" },
       { key: "projectId", label: "Projekt", type: "select", options: (data, h) => h.options("projects") },
       { key: "customerId", label: "Kunde optional", type: "select", options: (data, h) => h.options("customers") },
       { key: "orderId", label: "Auftrag optional", type: "select", options: (data, h) => h.options("orders", "orderNo") },
@@ -1119,10 +1295,10 @@
     columns: [
       { key: "title", label: "Aufgabe" },
       { key: "area", label: "Bereich" },
-      { key: "priority", label: "PrioritÃ¤t" },
+      { key: "priority", label: "Priorität" },
       { key: "status", label: "Status" },
-      { key: "assignedTo", label: "ZustÃ¤ndig" },
-      { key: "dueDate", label: "FÃ¤llig" }
+      { key: "assignedTo", label: "Zuständig" },
+      { key: "dueDate", label: "Fällig" }
     ],
     render(data, h) {
       normaliseTaskProfessionalFields(data);
@@ -1135,38 +1311,56 @@
         const matchesArea = !areaFilter || task.area === areaFilter;
         return matchesSearch && matchesOwner && matchesArea;
       });
-      const open = allRows.filter((task) => task.status !== "erledigt").length;
-      const mine = allRows.filter((task) => task.assignedTo === currentId && task.status !== "erledigt").length;
-      const blocked = allRows.filter((task) => task.status === "blockiert").length;
+      const groups = taskGroups(filteredRows, data);
+      let activeGroup = activeTaskGroupId ? groups.find((group) => group.id === activeTaskGroupId) : null;
+      if (activeTaskGroupId && !activeGroup) {
+        activeTaskGroupId = "";
+        activeGroup = null;
+      }
+      const visibleRows = activeGroup ? activeGroup.tasks : filteredRows;
+      const open = visibleRows.filter((task) => task.status !== "erledigt").length;
+      const mine = visibleRows.filter((task) => task.assignedTo === currentId && task.status !== "erledigt").length;
+      const blocked = visibleRows.filter((task) => task.status === "blockiert").length;
       const mode = taskView();
+      const isGroupOpen = !!activeGroup;
 
       return `
         <div class="notion-task-page">
           <div class="notion-task-titlebar">
             <div>
-              <div class="breadcrumb"><a href="#dashboard">Start</a><span>/</span><a href="#area-management">Management</a></div>
-              <h1><span class="notion-title-icon">âœ“</span> Aufgaben</h1>
+              <div class="breadcrumb">
+                <a href="#dashboard">Start</a><span>/</span><a href="#area-management">Management</a>
+                ${isGroupOpen ? `<span>/</span><button class="breadcrumb-button" type="button" data-task-group-back>Hauptaufgaben</button>` : ""}
+              </div>
+              <h1><span class="notion-title-icon">✓</span>${isGroupOpen ? h.escapeHtml(activeGroup.title) : "Aufgaben"}</h1>
+              ${isGroupOpen ? `<p class="notion-task-subtitle">${h.escapeHtml(activeGroup.subtitle || "")}</p>` : `<p class="notion-task-subtitle">Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um das Board der Einzelaufgaben zu sehen.</p>`}
             </div>
-            <button class="button button--blue" data-action="add" data-module="tasks">Neu <span aria-hidden="true">+</span></button>
+            <div class="page-actions">
+              ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-group-back>Zurück zu Hauptaufgaben</button>` : ""}
+              <button class="button button--blue" data-action="add" data-module="tasks">Neu <span aria-hidden="true">+</span></button>
+            </div>
           </div>
 
           <div class="notion-task-summary">
             <span><strong>${open}</strong> offen</span>
-            <span><strong>${mine}</strong> fÃ¼r mich</span>
+            <span><strong>${mine}</strong> für mich</span>
             <span class="${blocked ? "is-critical" : ""}"><strong>${blocked}</strong> blockiert</span>
+            ${isGroupOpen ? `<span><strong>${activeGroup.progress}%</strong> erledigt</span>` : `<span><strong>${groups.length}</strong> Hauptaufgaben</span>`}
           </div>
 
-          ${renderSeoImportPanel(data, h)}
+          ${!isGroupOpen ? renderSeoImportPanel(data, h) : ""}
 
           <div class="notion-task-toolbar">
-            <div class="notion-view-tabs" role="tablist" aria-label="Aufgabenansicht">
-              <button class="${mode === "board" ? "is-active" : ""}" type="button" data-task-view="board"><span class="notion-view-icon">â–¥</span> Board</button>
-              <button class="${mode === "list" ? "is-active" : ""}" type="button" data-task-view="list"><span class="notion-view-icon">â–¤</span> Alle</button>
-            </div>
+            ${isGroupOpen ? `
+              <div class="notion-view-tabs" role="tablist" aria-label="Aufgabenansicht">
+                <button class="${mode === "board" ? "is-active" : ""}" type="button" data-task-view="board"><span class="notion-view-icon">▥</span> Board</button>
+                <button class="${mode === "list" ? "is-active" : ""}" type="button" data-task-view="list"><span class="notion-view-icon">▤</span> Liste</button>
+              </div>
+            ` : `<div class="notion-view-tabs"><span class="task-main-toolbar-title">Hauptaufgaben</span></div>`}
             <div class="notion-task-filters">
               <label class="notion-task-search">
-                <span aria-hidden="true">âŒ•</span>
-                <input type="search" value="${h.escapeHtml(searchTerm)}" data-task-search placeholder="Aufgaben suchen" aria-label="Aufgaben suchen" />
+                <span aria-hidden="true">⌕</span>
+                <input type="search" value="${h.escapeHtml(searchTerm)}" data-task-search placeholder="${isGroupOpen ? "Einzelaufgaben suchen" : "Hauptaufgaben suchen"}" aria-label="Aufgaben suchen" />
               </label>
               <select data-task-area aria-label="Nach Bereich filtern">
                 <option value="">Alle Bereiche</option>
@@ -1176,7 +1370,9 @@
             </div>
           </div>
 
-          ${mode === "board" ? renderBoard(filteredRows, data, h) : renderList(filteredRows, data, h)}
+          ${isGroupOpen
+            ? (mode === "board" ? renderBoard(visibleRows, data, h) : renderList(visibleRows, data, h))
+            : renderTaskGroupOverview(groups, h)}
         </div>
       `;
     }

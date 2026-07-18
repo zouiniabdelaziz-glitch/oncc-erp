@@ -618,7 +618,16 @@
       if (removeField) {
         const row = Array.from(form.querySelectorAll("[data-field-row]"))
           .find((item) => item.dataset.fieldRow === fieldName);
-        if (row) row.hidden = true;
+        if (row) row.remove();
+        let hidden = Array.from(form.querySelectorAll('input[type="hidden"]'))
+          .find((item) => item.name === fieldName);
+        if (!hidden) {
+          hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = fieldName;
+          form.appendChild(hidden);
+        }
+        hidden.value = "";
       }
     });
     const mainField = form.elements[button.dataset.field];
