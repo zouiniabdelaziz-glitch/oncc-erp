@@ -728,15 +728,44 @@
   function rootTaskGroups(rows, data) {
     const pack = seoImportPackage();
     const seoRows = rows.filter((task) => isSeoTask(task, pack));
-    if (!seoRows.length) return [];
-    return [Object.assign({
-      id: "root:seo",
-      title: "SEO Aufgabe",
-      subtitle: "OS.MECHPLAST Website 100-%-Plan",
-      type: "Hauptaufgabe",
-      sort: 1,
-      tasks: seoRows
-    }, taskGroupProgress(seoRows))];
+    const groups = [];
+    if (seoRows.length) {
+      groups.push(Object.assign({
+        id: "root:seo",
+        title: "SEO Aufgabe",
+        subtitle: "OS.MECHPLAST Website 100-%-Plan",
+        type: "Hauptaufgabe",
+        sort: 1,
+        tasks: seoRows
+      }, taskGroupProgress(seoRows)));
+    }
+
+    rows
+      .filter((task) => !isSeoTask(task, pack))
+      .forEach((task) => {
+        const id = task.projectId ? `root:project:${task.projectId}` : `root:task:${task.id}`;
+        const existing = groups.find((group) => group.id === id);
+        const title = task.projectId ? projectName(data, task.projectId) : cleanTaskText(task.title || "Neue Hauptaufgabe");
+        const subtitle = task.projectId ? cleanTaskText(task.area || "Aufgaben") : cleanTaskText(task.area || "Allgemeine Aufgabe");
+        if (existing) {
+          existing.tasks.push(task);
+          Object.assign(existing, taskGroupProgress(existing.tasks));
+          return;
+        }
+        groups.push(Object.assign({
+          id,
+          title,
+          subtitle,
+          type: "Hauptaufgabe",
+          sort: task.projectId ? 5000 : 8000 + groups.length,
+          tasks: [task]
+        }, taskGroupProgress([task])));
+      });
+
+    return groups.sort((left, right) => {
+      if (left.sort !== right.sort) return left.sort - right.sort;
+      return left.title.localeCompare(right.title, "de");
+    });
   }
 
   function tasksFromGroups(groups) {
@@ -923,16 +952,15 @@
         id: `project:${task.projectId}`,
         title: projectName(data, task.projectId),
         subtitle: cleanTaskText(task.area || "Aufgaben"),
-        type: "Projekt",
+        type: "Unterhauptaufgabe",
         sort: 9000
       };
     }
-    const area = task.area || "Management";
     return {
-      id: `area:${area}`,
-      title: cleanTaskText(area),
-      subtitle: "Allgemeine Aufgaben",
-      type: "Bereich",
+      id: `task:${task.id}`,
+      title: cleanTaskText(task.title || "Neue Aufgabe"),
+      subtitle: cleanTaskText(task.area || "Allgemeine Aufgabe"),
+      type: "Unterhauptaufgabe",
       sort: 9500
     };
   }
