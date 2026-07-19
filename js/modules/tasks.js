@@ -728,6 +728,7 @@
   function rootTaskGroups(rows, data) {
     const pack = seoImportPackage();
     const seoRows = rows.filter((task) => isSeoTask(task, pack));
+    const manualRows = rows.filter((task) => !isSeoTask(task, pack));
     const groups = [];
     if (seoRows.length) {
       groups.push(Object.assign({
@@ -740,15 +741,20 @@
       }, taskGroupProgress(seoRows)));
     }
 
-    rows
-      .filter((task) => !isSeoTask(task, pack))
+    manualRows
+      .filter((task) => !task.rootTaskId && !task.parentTaskId)
       .forEach((task) => {
         const id = task.projectId ? `root:project:${task.projectId}` : `root:task:${task.id}`;
         const existing = groups.find((group) => group.id === id);
         const title = task.projectId ? projectName(data, task.projectId) : cleanTaskText(task.title || "Neue Hauptaufgabe");
         const subtitle = task.projectId ? cleanTaskText(task.area || "Aufgaben") : cleanTaskText(task.area || "Allgemeine Aufgabe");
+        const groupTasks = task.projectId
+          ? manualRows.filter((item) => item.projectId === task.projectId && !item.rootTaskId)
+          : [task].concat(manualRows.filter((item) => item.rootTaskId === task.id));
         if (existing) {
-          existing.tasks.push(task);
+          groupTasks.forEach((item) => {
+            if (!existing.tasks.some((existingTask) => existingTask.id === item.id)) existing.tasks.push(item);
+          });
           Object.assign(existing, taskGroupProgress(existing.tasks));
           return;
         }
@@ -758,8 +764,10 @@
           subtitle,
           type: "Hauptaufgabe",
           sort: task.projectId ? 5000 : 8000 + groups.length,
-          tasks: [task]
-        }, taskGroupProgress([task])));
+          rootTaskId: task.projectId ? "" : task.id,
+          rootTask: task.projectId ? null : task,
+          tasks: groupTasks
+        }, taskGroupProgress(groupTasks)));
       });
 
     return groups.sort((left, right) => {
@@ -770,6 +778,72 @@
 
   function tasksFromGroups(groups) {
     return groups.flatMap((group) => group.tasks || []);
+  }
+
+  function taskById(data, taskId) {
+    return (data.tasks || []).find((task) => task.id === taskId) || null;
+  }
+
+  function subgroupTaskGroups(activeRoot, rows, data) {
+    if (!activeRoot) return [];
+    if (activeRoot.id === "root:seo") return taskGroups(activeRoot.tasks, data);
+    if (!activeRoot.rootTaskId) return taskGroups(activeRoot.tasks, data);
+
+    const rootId = activeRoot.rootTaskId;
+    const directChildren = rows
+      .filter((task) => !isSeoTask(task, seoImportPackage()))
+      .filter((task) => task.rootTaskId === rootId && task.parentTaskId === rootId);
+
+    return directChildren.map((task, index) => {
+      const children = rows
+        .filter((item) => !isSeoTask(item, seoImportPackage()))
+        .filter((item) => item.rootTaskId === rootId && item.parentTaskId === task.id);
+      const groupTasks = [task].concat(children);
+      return Object.assign({
+        id: `task:${task.id}`,
+        title: cleanTaskText(task.title || "Neue Unterhauptaufgabe"),
+        subtitle: cleanTaskText(task.area || activeRoot.subtitle || "Aufgaben"),
+        type: "Unterhauptaufgabe",
+        sort: 8000 + index,
+        rootTaskId: rootId,
+        groupTaskId: task.id,
+        groupTask: task,
+        tasks: groupTasks
+      }, taskGroupProgress(groupTasks));
+    }).sort((left, right) => {
+      if (left.sort !== right.sort) return left.sort - right.sort;
+      return left.title.localeCompare(right.title, "de");
+    });
+  }
+
+  function dataDefaultAttributes(defaults, h) {
+    return Object.entries(defaults || {})
+      .filter((entry) => entry[1] !== undefined && entry[1] !== null)
+      .map(([key, value]) => `data-default-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}="${h.escapeHtml(value)}"`)
+      .join(" ");
+  }
+
+  function addDefaultsForContext(activeRoot, activeGroup) {
+    const defaults = {
+      status: "neu",
+      priority: "mittel",
+      assignedTo: currentUserId(),
+      createdBy: currentUserId()
+    };
+    if (!activeRoot) return defaults;
+    if (activeRoot.id === "root:seo") {
+      defaults.area = "Marketing / SEO";
+      defaults.projectId = "pro_seo_website_100";
+      if (activeGroup) defaults.sourceLevel1 = activeGroup.title || "";
+      return defaults;
+    }
+    if (activeRoot.rootTaskId) {
+      defaults.area = activeRoot.rootTask && activeRoot.rootTask.area ? activeRoot.rootTask.area : "Management";
+      defaults.rootTaskId = activeRoot.rootTaskId;
+      defaults.parentTaskId = activeGroup && activeGroup.groupTaskId ? activeGroup.groupTaskId : activeRoot.rootTaskId;
+      return defaults;
+    }
+    return defaults;
   }
 
   function mapSeoStatus(value) {
@@ -1316,6 +1390,9 @@
       { key: "projectId", label: "Projekt", type: "select", options: (data, h) => h.options("projects") },
       { key: "customerId", label: "Kunde optional", type: "select", options: (data, h) => h.options("customers") },
       { key: "orderId", label: "Auftrag optional", type: "select", options: (data, h) => h.options("orders", "orderNo") },
+      { key: "rootTaskId", label: "Hauptaufgabe", type: "hidden" },
+      { key: "parentTaskId", label: "Übergeordnete Aufgabe", type: "hidden" },
+      { key: "sourceLevel1", label: "SEO-Unterhauptaufgabe", type: "hidden" },
       {
         key: "workInstruction",
         label: "Prompt",
@@ -1357,7 +1434,7 @@
         activeTaskGroupId = "";
         activeRoot = null;
       }
-      const subGroups = activeRoot ? taskGroups(activeRoot.tasks, data) : [];
+      const subGroups = activeRoot ? subgroupTaskGroups(activeRoot, filteredRows, data) : [];
       let activeGroup = activeTaskGroupId ? subGroups.find((group) => group.id === activeTaskGroupId) : null;
       if (activeTaskGroupId && !activeGroup) {
         activeTaskGroupId = "";
@@ -1382,6 +1459,10 @@
           : "Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um die Unterhauptaufgaben zu sehen.";
       const toolbarTitle = isGroupOpen ? "" : isRootOpen ? "Unterhauptaufgaben" : "Hauptaufgaben";
       const searchPlaceholder = isGroupOpen ? "Einzelaufgaben suchen" : isRootOpen ? "Unterhauptaufgaben suchen" : "Hauptaufgaben suchen";
+      const addDefaults = addDefaultsForContext(activeRoot, activeGroup);
+      const addButtonLabel = isGroupOpen ? "Aufgabe hinzufügen" : isRootOpen ? "Unterhauptaufgabe hinzufügen" : "Hauptaufgabe hinzufügen";
+      const rootEditId = isRootOpen && activeRoot.rootTaskId ? activeRoot.rootTaskId : "";
+      const groupEditId = isGroupOpen && activeGroup.groupTaskId ? activeGroup.groupTaskId : "";
 
       return `
         <div class="notion-task-page">
@@ -1396,9 +1477,11 @@
               <p class="notion-task-subtitle">${h.escapeHtml(currentSubtitle)}</p>
             </div>
             <div class="page-actions">
+              ${groupEditId ? `<button class="button button--quiet" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(groupEditId)}">Unterhauptaufgabe bearbeiten</button>` : ""}
+              ${!groupEditId && rootEditId ? `<button class="button button--quiet" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(rootEditId)}">Hauptaufgabe bearbeiten</button>` : ""}
               ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-subgroup-back>Zurück zu Unterhauptaufgaben</button>` : ""}
               ${isRootOpen && !isGroupOpen ? `<button class="button button--quiet" type="button" data-task-root-back>Zurück zu Hauptaufgaben</button>` : ""}
-              <button class="button button--blue" data-action="add" data-module="tasks">Neu <span aria-hidden="true">+</span></button>
+              <button class="button button--blue" data-action="add" data-module="tasks" ${dataDefaultAttributes(addDefaults, h)}>${h.escapeHtml(addButtonLabel)} <span aria-hidden="true">+</span></button>
             </div>
           </div>
 

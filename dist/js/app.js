@@ -588,7 +588,7 @@
     if (!target) return;
     const action = target.dataset.action;
 
-    if (action === "add") openForm(target.dataset.module);
+    if (action === "add") openForm(target.dataset.module, null, formDefaultsFromDataset(target.dataset, target.dataset.module));
     if (action === "edit") openForm(target.dataset.module, target.dataset.id);
     if (action === "delete") deleteRecord(target.dataset.module, target.dataset.id);
     if (action === "close-modal") closeModal();
@@ -742,11 +742,24 @@
     render();
   }
 
-  function openForm(moduleId, id) {
+  function formDefaultsFromDataset(dataset, moduleId) {
+    const module = OSM.modules.find((item) => item.id === moduleId);
+    if (!module || !module.fields) return {};
+    const defaults = {};
+    module.fields.forEach((field) => {
+      const datasetKey = `default${field.key.charAt(0).toUpperCase()}${field.key.slice(1)}`;
+      if (Object.prototype.hasOwnProperty.call(dataset, datasetKey)) {
+        defaults[field.key] = dataset[datasetKey];
+      }
+    });
+    return defaults;
+  }
+
+  function openForm(moduleId, id, defaults) {
     const module = OSM.modules.find((item) => item.id === moduleId);
     if (!module || !module.collection) return;
     const existing = id ? OSM.state.findById(OSM.data, module.collection, id) : null;
-    const record = existing || { id: OSM.state.uid(module.prefix || module.collection.slice(0, 3)) };
+    const record = existing || Object.assign({ id: OSM.state.uid(module.prefix || module.collection.slice(0, 3)) }, defaults || {});
 
     const html = `
       <div class="modal-backdrop" data-modal>
@@ -794,6 +807,9 @@
     if (field.visible && field.visible(record, OSM.data, helpers) === false) return "";
     const defaultValue = typeof field.default === "function" ? field.default(OSM.data, helpers) : field.default;
     const value = record[field.key] ?? defaultValue ?? "";
+    if (field.type === "hidden") {
+      return `<input name="${escapeHtml(field.key)}" type="hidden" value="${escapeHtml(value)}" />`;
+    }
     const wide = field.type === "textarea" || field.wide ? " form-field--wide" : "";
     const required = field.required ? " required" : "";
     const clearButton = field.clearable ? `
