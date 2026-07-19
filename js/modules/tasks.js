@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const statusOptions = [
     { value: "neu", label: "Nicht begonnen", tone: "neutral" },
     { value: "in arbeit", label: "In Bearbeitung", tone: "active" },
@@ -750,7 +750,7 @@
         const subtitle = task.projectId ? cleanTaskText(task.area || "Aufgaben") : cleanTaskText(task.area || "Allgemeine Aufgabe");
         const groupTasks = task.projectId
           ? manualRows.filter((item) => item.projectId === task.projectId && !item.rootTaskId)
-          : [task].concat(manualRows.filter((item) => item.rootTaskId === task.id));
+          : manualRows.filter((item) => item.rootTaskId === task.id && item.parentTaskId !== task.id);
         if (existing) {
           groupTasks.forEach((item) => {
             if (!existing.tasks.some((existingTask) => existingTask.id === item.id)) existing.tasks.push(item);
@@ -798,18 +798,17 @@
       const children = rows
         .filter((item) => !isSeoTask(item, seoImportPackage()))
         .filter((item) => item.rootTaskId === rootId && item.parentTaskId === task.id);
-      const groupTasks = [task].concat(children);
       return Object.assign({
         id: `task:${task.id}`,
-        title: cleanTaskText(task.title || "Neue Unterhauptaufgabe"),
+        title: cleanTaskText(task.title || "Neue Unteraufgabe"),
         subtitle: cleanTaskText(task.area || activeRoot.subtitle || "Aufgaben"),
-        type: "Unterhauptaufgabe",
+        type: "Unteraufgabe",
         sort: 8000 + index,
         rootTaskId: rootId,
         groupTaskId: task.id,
         groupTask: task,
-        tasks: groupTasks
-      }, taskGroupProgress(groupTasks));
+        tasks: children
+      }, taskGroupProgress(children));
     }).sort((left, right) => {
       if (left.sort !== right.sort) return left.sort - right.sort;
       return left.title.localeCompare(right.title, "de");
@@ -1017,7 +1016,7 @@
         id: `source:${task.sourceLevel1}`,
         title: cleanTaskText(task.sourceLevel1),
         subtitle: projectName(data, task.projectId) || cleanTaskText(task.area || "Aufgaben"),
-        type: "Unterhauptaufgabe",
+        type: "Unteraufgabe",
         sort: taskPlanOrder(task) || 9999
       };
     }
@@ -1026,7 +1025,7 @@
         id: `project:${task.projectId}`,
         title: projectName(data, task.projectId),
         subtitle: cleanTaskText(task.area || "Aufgaben"),
-        type: "Unterhauptaufgabe",
+        type: "Unteraufgabe",
         sort: 9000
       };
     }
@@ -1034,7 +1033,7 @@
       id: `task:${task.id}`,
       title: cleanTaskText(task.title || "Neue Aufgabe"),
       subtitle: cleanTaskText(task.area || "Allgemeine Aufgabe"),
-      type: "Unterhauptaufgabe",
+      type: "Unteraufgabe",
       sort: 9500
     };
   }
@@ -1162,11 +1161,12 @@
     `;
   }
 
-  function renderBoard(rows, data, h) {
+  function renderBoard(rows, data, h, defaults) {
     return `
       <div class="notion-task-board">
         ${statusOptions.map((column) => {
           const tasks = sortedTasks(rows.filter((task) => task.status === column.value));
+          const addDefaults = Object.assign({}, defaults || {}, { status: column.value });
           return `
             <section class="notion-task-column notion-task-column--${h.escapeHtml(column.tone)}">
               <div class="notion-task-column__head">
@@ -1176,7 +1176,7 @@
               <div class="notion-task-column__cards">
                 ${tasks.map((task) => renderTaskCard(task, data, h)).join("")}
               </div>
-              <button class="notion-add-task" type="button" data-action="add" data-module="tasks" data-default-status="${h.escapeHtml(column.value)}">
+              <button class="notion-add-task" type="button" data-action="add" data-module="tasks" ${dataDefaultAttributes(addDefaults, h)}>
                 <span>+</span> Neue Aufgabe
               </button>
             </section>
@@ -1392,7 +1392,7 @@
       { key: "orderId", label: "Auftrag optional", type: "select", options: (data, h) => h.options("orders", "orderNo") },
       { key: "rootTaskId", label: "Hauptaufgabe", type: "hidden" },
       { key: "parentTaskId", label: "Übergeordnete Aufgabe", type: "hidden" },
-      { key: "sourceLevel1", label: "SEO-Unterhauptaufgabe", type: "hidden" },
+      { key: "sourceLevel1", label: "SEO-Unteraufgabe", type: "hidden" },
       {
         key: "workInstruction",
         label: "Prompt",
@@ -1455,12 +1455,12 @@
       const currentSubtitle = isGroupOpen
         ? activeGroup.subtitle || ""
         : isRootOpen
-          ? "Unterhauptaufgaben mit Fortschritt. Öffne eine Unterhauptaufgabe, um das Board der Einzelaufgaben zu sehen."
-          : "Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um die Unterhauptaufgaben zu sehen.";
-      const toolbarTitle = isGroupOpen ? "" : isRootOpen ? "Unterhauptaufgaben" : "Hauptaufgaben";
-      const searchPlaceholder = isGroupOpen ? "Einzelaufgaben suchen" : isRootOpen ? "Unterhauptaufgaben suchen" : "Hauptaufgaben suchen";
+          ? "Unteraufgaben mit Fortschritt. Öffne eine Unteraufgabe, um das Board der Einzelaufgaben zu sehen."
+          : "Hauptaufgaben mit Fortschritt. Öffne eine Hauptaufgabe, um die Unteraufgaben zu sehen.";
+      const toolbarTitle = isGroupOpen ? "" : isRootOpen ? "Unteraufgaben" : "Hauptaufgaben";
+      const searchPlaceholder = isGroupOpen ? "Einzelaufgaben suchen" : isRootOpen ? "Unteraufgaben suchen" : "Hauptaufgaben suchen";
       const addDefaults = addDefaultsForContext(activeRoot, activeGroup);
-      const addButtonLabel = isGroupOpen ? "Aufgabe hinzufügen" : isRootOpen ? "Unterhauptaufgabe hinzufügen" : "Hauptaufgabe hinzufügen";
+      const addButtonLabel = isGroupOpen ? "Aufgabe hinzufügen" : isRootOpen ? "Unteraufgabe hinzufügen" : "Hauptaufgabe hinzufügen";
       const rootEditId = isRootOpen && activeRoot.rootTaskId ? activeRoot.rootTaskId : "";
       const groupEditId = isGroupOpen && activeGroup.groupTaskId ? activeGroup.groupTaskId : "";
 
@@ -1477,9 +1477,9 @@
               <p class="notion-task-subtitle">${h.escapeHtml(currentSubtitle)}</p>
             </div>
             <div class="page-actions">
-              ${groupEditId ? `<button class="button button--quiet" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(groupEditId)}">Unterhauptaufgabe bearbeiten</button>` : ""}
+              ${groupEditId ? `<button class="button button--quiet" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(groupEditId)}">Unteraufgabe bearbeiten</button>` : ""}
               ${!groupEditId && rootEditId ? `<button class="button button--quiet" type="button" data-action="edit" data-module="tasks" data-id="${h.escapeHtml(rootEditId)}">Hauptaufgabe bearbeiten</button>` : ""}
-              ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-subgroup-back>Zurück zu Unterhauptaufgaben</button>` : ""}
+              ${isGroupOpen ? `<button class="button button--quiet" type="button" data-task-subgroup-back>Zurück zu Unteraufgaben</button>` : ""}
               ${isRootOpen && !isGroupOpen ? `<button class="button button--quiet" type="button" data-task-root-back>Zurück zu Hauptaufgaben</button>` : ""}
               <button class="button button--blue" data-action="add" data-module="tasks" ${dataDefaultAttributes(addDefaults, h)}>${h.escapeHtml(addButtonLabel)} <span aria-hidden="true">+</span></button>
             </div>
@@ -1490,7 +1490,7 @@
             <span><strong>${mine}</strong> für mich</span>
             <span class="${blocked ? "is-critical" : ""}"><strong>${blocked}</strong> blockiert</span>
             ${isGroupOpen ? `<span><strong>${activeGroup.progress}%</strong> erledigt</span>` : ""}
-            ${isRootOpen && !isGroupOpen ? `<span><strong>${subGroups.length}</strong> Unterhauptaufgaben</span>` : ""}
+            ${isRootOpen && !isGroupOpen ? `<span><strong>${subGroups.length}</strong> Unteraufgaben</span>` : ""}
             ${!isRootOpen ? `<span><strong>${rootGroups.length}</strong> Hauptaufgaben</span>` : ""}
           </div>
 
@@ -1515,10 +1515,10 @@
           </div>
 
           ${isGroupOpen
-            ? (mode === "board" ? renderBoard(visibleRows, data, h) : renderList(visibleRows, data, h))
+            ? (mode === "board" ? renderBoard(visibleRows, data, h, addDefaults) : renderList(visibleRows, data, h))
             : isRootOpen
               ? renderTaskGroupOverview(subGroups, h, {
-                  label: "Unterhauptaufgaben",
+                  label: "Unteraufgaben",
                   openAttribute: "data-task-subgroup-open"
                 })
               : renderTaskGroupOverview(rootGroups, h, {

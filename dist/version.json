@@ -1,6 +1,6 @@
 {
   "name": "ONCC ERP / OS.MECHPLAST Workspace",
-  "version": "2026.07.19-task-context-add.14",
+  "version": "2026.07.19-task-subtask-containers.15",
   "releaseDate": "2026-07-18",
   "appUrl": "https://oncc-erp.pages.dev",
   "deployment": "Cloudflare Pages",
