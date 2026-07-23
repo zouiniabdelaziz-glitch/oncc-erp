@@ -449,8 +449,50 @@
     ).join("\n\n");
   }
 
-  function normaliseTaskProfessionalFields(data) {
+  function seoTaskCompletions() {
+    return window.OSM_SEO_TASK_COMPLETIONS && Array.isArray(window.OSM_SEO_TASK_COMPLETIONS)
+      ? window.OSM_SEO_TASK_COMPLETIONS
+      : [];
+  }
+
+  function applySeoTaskCompletions(data) {
+    const patches = seoTaskCompletions();
+    if (!patches.length || !Array.isArray(data.tasks)) return false;
     let changed = false;
+    patches.forEach((patch) => {
+      const task = data.tasks.find((item) => item.sourceTaskId === patch.sourceTaskId || item.id === patch.taskId);
+      if (!task || task.status === "erledigt") return;
+      const applied = Array.isArray(task.seoCompletionPatchIds) ? task.seoCompletionPatchIds : [];
+      if (applied.includes(patch.id)) return;
+
+      const entry = {
+        id: `tdoc_${patch.id}`,
+        type: "ergebnis",
+        text: patch.note,
+        createdAt: patch.completedAt || new Date().toISOString(),
+        createdBy: patch.completedBy || "System",
+        createdById: patch.completedById || currentUserId()
+      };
+      task.workLog = taskDocumentation(task).concat(entry);
+      task.status = "erledigt";
+      task.progress = 100;
+      task.completedAt = patch.completedAt || new Date().toISOString();
+      task.workInstruction = "";
+      task.expectedOutput = "";
+      task.codexPrompt = "";
+      task.instructionRemoved = true;
+      task.seoCompletionPatchIds = applied.concat(patch.id);
+      task.history = [
+        `${formatDateTime(entry.createdAt)} ${entry.createdBy}: SEO-Aufgabe abgeschlossen, Prompt entfernt und Abschlussnotiz gespeichert.`,
+        task.history || ""
+      ].filter(Boolean).join("\n");
+      changed = true;
+    });
+    return changed;
+  }
+
+  function normaliseTaskProfessionalFields(data) {
+    let changed = applySeoTaskCompletions(data);
     (data.tasks || []).forEach((task) => {
       const textFields = [
         "title",
